@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom"; 
-import Navbar from "./Navbar";
 import { useLocation, useParams } from 'react-router-dom';
 import MarketplaceJSON from "../Marketplace.json";
 import axios from "axios";
@@ -7,7 +6,7 @@ import { useState, useEffect } from "react";
 import NFTTile from "./NFTTile";
 import { FaEthereum, FaWallet, FaImages } from 'react-icons/fa';
 import { BsFillExclamationCircleFill } from 'react-icons/bs';
-import Footer from "./Footer";
+
 
 export default function Profile() {
     const [data, updateData] = useState([]);
@@ -59,7 +58,6 @@ export default function Profile() {
 
     return (
         <div className="min-h-screen bg-grey-900 text-white">
-            <Navbar />
             <div className="container mx-auto py-10 px-5">
                 <div className="bg-gradient-to-r from-purple-500 via-indigo-600 to-purple-700 p-6 rounded-lg shadow-lg mb-10">
                     <h2 className="text-3xl font-bold text-center text-white mb-5">Profile Overview</h2>
@@ -102,7 +100,6 @@ export default function Profile() {
                     )}
                 </div>
             </div>
-            <Footer/>
         </div>
     );
 };

@@ -1,13 +1,12 @@
 import { Link } from "react-router-dom";
 import { FaTwitter, FaFacebook, FaInstagram } from "react-icons/fa";
 import { FaPaintBrush, FaShoppingCart, FaUser } from "react-icons/fa"; // Import icons for the cards
-import Navbar from "./Navbar";
-import Footer from "./Footer";
+
 
 function HomePage() {
   return (
     <div className="min-h-screen bg-transparent text-white">
-      <Navbar />
+      
       
       {/* Hero Section */}
       <section className="py-20">
@@ -79,7 +78,6 @@ function HomePage() {
         </div>
       </section>
       
-      <Footer />
     </div>
   );
 }

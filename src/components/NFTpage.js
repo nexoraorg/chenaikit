@@ -1,10 +1,12 @@
-import Navbar from "./Navbar";
 import { useLocation, useParams } from "react-router-dom";
 import MarketplaceJSON from "../Marketplace.json";
 import axios from "axios";
 import { useState } from "react";
 import { GetIpfsUrlFromPinata } from "../utils";
 import { DollarSign, User, Tag, ShoppingCart, Heart } from "lucide-react"; // Added Heart Icon
+import { ToastContainer, toast, Slide } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { FaEthereum } from "react-icons/fa";
 
 export default function NFTPage(props) {
   const [data, updateData] = useState({});
@@ -47,13 +49,45 @@ export default function NFTPage(props) {
       const signer = provider.getSigner();
       let contract = new ethers.Contract(MarketplaceJSON.address, MarketplaceJSON.abi, signer);
       const salePrice = ethers.utils.parseUnits(data.price, "ether");
-      updateMessage("Buying the NFT... Please Wait (Upto 5 mins)");
+      updateMessage("Buying the NFT... Please Wait ");
+
+      // Check user's balance
+      const balance = await signer.getBalance();
+      if (balance.lt(salePrice)) {
+        toast.error("Insufficient funds! Please ensure you have enough ETH to complete the purchase.", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          transition: Slide,
+        });
+        updateMessage("");
+        return;
+      }
+
       let transaction = await contract.executeSale(tokenId, { value: salePrice });
       await transaction.wait();
-      alert("You successfully bought the NFT!");
+      toast.success("You successfully bought the NFT!", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       updateMessage("");
     } catch (e) {
-      alert("Upload Error" + e);
+      toast.error(`Transaction failed: ${e.message}`, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      updateMessage("");
     }
   }
 
@@ -70,66 +104,69 @@ export default function NFTPage(props) {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-r from-purple-600 to-blue-500 flex flex-col items-center text-white"
+    className="min-h-screen bg-gradient-to-r from-purple-900 to-gray-900 flex flex-col items-center text-white"
       style={{ fontFamily: "Poppins, sans-serif" }}
     >
-    <Navbar />
-      <div className="mt-10 flex flex-col items-center w-full">
-        <div
-          className="w-3/4 max-w-5xl bg-white rounded-3xl shadow-2xl p-10 text-gray-800 flex flex-col items-center transform transition-transform hover:scale-105"
-        >
-          <img
-            src={data.image}
-            alt="NFT"
-            className="rounded-lg shadow-lg w-3/5 max-w-sm transform transition-transform hover:scale-105"
-          />
-          <h1 className="text-4xl font-bold mt-5 animate__animated animate__fadeIn animate__delay-1s">
-            {data.name || "NFT Name"}
-          </h1>
-          <p className="mt-4 text-lg text-black text-center animate__animated animate__fadeIn animate__delay-2s">
-            {data.description || "NFT Description"}
-          </p>
-          <div className="grid grid-cols-2 gap-5 w-full mt-8 text-lg ">
-            <div className="flex justify-between items-center">
-              <DollarSign className="text-black w-5 h-5" />
-              <span className="font-semibold text-black">Price:</span>
-              <span className="text-black-600">{data.price ? `${data.price} ETH` : "Loading..."}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <User className="text-white w-5 h-5" />
-              <span className="font-semibold text-white">Owner:</span>
-              <span className="truncate">{data.owner || "Loading..."}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <Tag className="text-white w-5 h-5" />
-              <span className="font-semibold text-white">Seller:</span>
-              <span className="truncate">{data.seller || "Loading..."}</span>
-            </div>
-          </div>
-          <div className="flex justify-between items-center w-full mt-4">
-            {/* Like Button */}
-            <div
-              className={`flex items-center space-x-2 cursor-pointer ${liked ? "text-red-500" : "text-gray-400"}`}
-              onClick={toggleLike}
-            >
-              <Heart className="w-6 h-6" />
-              <span className="text-sm">{likes}</span>
-            </div>
-            {/* Buy Button */}
-            {currAddress !== data.owner && currAddress !== data.seller ? (
-              <button
-                onClick={() => buyNFT(tokenId)}
-                className="mt-8 px-10 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg flex items-center justify-center gap-2 transform transition-transform hover:scale-105"
-              >
-                <ShoppingCart className="w-5 h-5" /> Buy this NFT
-              </button>
-            ) : (
-              <p className="mt-8 text-lg text-green-600">You are the owner of this NFT</p>
-            )}
-          </div>
-          {message && <p className="mt-4 text-center text-yellow-500">{message}</p>}
-        </div>
+  <ToastContainer />
+<div className="mt-10 flex flex-col items-center w-auto h-auto pb-10">
+  <div
+    className="w-11/12 max-w-4xl bg-white rounded-2xl shadow-lg p-8 text-gray-800 flex flex-col items-center transform transition-transform hover:scale-105"
+  >
+    <img
+      src={data.image}
+      alt="NFT"
+      className="rounded-lg shadow-lg w-2/5 max-w-xs transform transition-transform hover:scale-105"
+    />
+    <h1 className="text-3xl font-bold mt-6 text-gray-900">
+      {data.name || "NFT Name"}
+    </h1>
+    <p className="mt-4 text-base text-center text-gray-700">
+      {data.description || "NFT Description"}
+    </p>
+    <div className="grid grid-cols-2 gap-4 w-full mt-6 text-sm">
+      <div className="flex justify-between items-center">
+        <FaEthereum className="text-purple-600 w-8 h-8" />
+        <span className="font-semibold text-gray-800">Price:</span>
+        <span>{data.price ? `${data.price} ETH` : "Loading..."}</span>
       </div>
+      <div className="flex justify-between items-center">
+        <User className="text-purple-600 w-8 h-8" />
+        <span className="font-semibold text-gray-800">Owner:</span>
+        <span className="truncate">{data.owner || "Loading..."}</span>
+      </div>
+      <div className="flex justify-between items-center">
+        <Tag className="text-purple-600 w-8 h-8" />
+        <span className="font-semibold text-gray-800">Seller:</span>
+        <span className="truncate">{data.seller || "Loading..."}</span>
+      </div>
+    </div>
+    <div className="flex justify-between items-center w-full mt-6">
+      {/* Like Button */}
+      <div
+        className={`flex items-center space-x-2 cursor-pointer ${
+          liked ? "text-red-500" : "text-gray-400"
+        }`}
+        onClick={toggleLike}
+      >
+        <Heart className="w-6 h-6" />
+        <span className="text-sm">{likes}</span>
+      </div>
+      {/* Buy Button */}
+      {currAddress !== data.owner && currAddress !== data.seller ? (
+        <button
+          onClick={() => buyNFT(tokenId)}
+          className="mt-4 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md shadow-lg flex items-center justify-center gap-2 transform transition-transform hover:scale-105"
+        >
+          <ShoppingCart className="w-5 h-5" /> Buy this NFT
+        </button>
+      ) : (
+        <p className="mt-4 text-sm text-green-600">You are the owner of this NFT</p>
+      )}
+    </div>
+    {message && <p className="mt-4 text-center text-yellow-500">{message}</p>}
+  </div>
+</div>
+
     </div>
   );
 }

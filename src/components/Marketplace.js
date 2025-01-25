@@ -1,7 +1,5 @@
-import Navbar from "./Navbar";
 import NFTTile from "./NFTTile";
 import MarketplaceJSON from "../Marketplace.json";
-import Footer from "./Footer"; // Import Footer
 import axios from "axios";
 import { useState } from "react";
 import { GetIpfsUrlFromPinata } from "../utils";
@@ -51,8 +49,7 @@ export default function Marketplace() {
 
     return (
         <div>
-            <Navbar />
-            <div className="flex flex-col bg-gradient-to-r from-purple-500 via-indigo-600 to-purple-700 items-center mt-10">
+            <div className="flex flex-col  items-center mt-10">
                 {/* Hero Section */}
                 <div className="w-full text-center bg-gradient-to-r from-purple-500 via-indigo-600 to-purple-700 text-white py-10">
                     <h1 className="text-4xl font-bold">Explore, Buy, and Sell NFTs</h1>
@@ -78,8 +75,6 @@ export default function Marketplace() {
                     )}
                 </div>
             </div>
-            {/* Footer */}
-            <Footer />
         </div>
     );
 }

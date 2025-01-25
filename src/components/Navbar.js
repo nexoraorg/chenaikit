@@ -1,6 +1,5 @@
-import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router";
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from "react-router-dom";
 
 function Navbar() {
   const [connected, toggleConnect] = useState(false);
@@ -9,11 +8,25 @@ function Navbar() {
 
   // Fetch connected wallet address
   async function getAddress() {
-    const ethers = require("ethers");
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const addr = await signer.getAddress();
-    updateAddress(addr);
+    if (!window.ethereum) {
+      console.error("MetaMask is not installed or not connected.");
+      return;
+    }
+
+    try {
+      const ethers = require("ethers");
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const addr = await signer.getAddress();
+      updateAddress(addr);
+    } catch (error) {
+      if (error.code === "UNSUPPORTED_OPERATION") {
+        console.error("MetaMask is not connected");
+        alert("Please connect your MetaMask wallet to access this feature.");
+      } else {
+        console.error("An unexpected error occurred:", error);
+      }
+    }
   }
 
   // Update button styles when connected
@@ -31,25 +44,28 @@ function Navbar() {
       return;
     }
 
-    const chainId = await window.ethereum.request({ method: "eth_chainId" });
-    if (chainId !== "0xaa36a7") {
-      // Switch to Sepolia
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0xaa36a7" }], // Sepolia's chain ID
-      });
-    }
+    try {
+      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+      if (chainId !== "0xaa36a7") {
+        // Switch to Sepolia
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0xaa36a7" }],
+        });
+      }
 
-    await window.ethereum
-      .request({ method: "eth_requestAccounts" })
-      .then(() => {
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+
+      if (accounts && accounts.length > 0) {
         updateButton();
-        getAddress();
+        await getAddress();
         toggleConnect(true);
-      })
-      .catch((error) => {
-        console.error("Error connecting to MetaMask:", error);
-      });
+      } else {
+        alert('No accounts found. Please ensure you have an account in MetaMask.');
+      }
+    } catch (error) {
+      console.error("Error connecting to MetaMask:", error);
+    }
   }
 
   // Disconnect Wallet
@@ -78,7 +94,7 @@ function Navbar() {
 
   return (
     <div>
-      <nav className="w-full fixed top-0 bg-transparent text-white shadow-lg z-10">
+      <nav className="w-full relative top-0 bg-transparent text-white shadow-lg z-10">
         <div className="flex items-center justify-between px-6 py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
@@ -152,7 +168,7 @@ function Navbar() {
       </nav>
 
       {/* Connected Address Display */}
-      <div className="text-right px-6 py-2 text-sm text-gray-300 mt-16">
+      <div className="text-right px-6 py-2 text-sm text-gray-300 mt-1">
         {currAddress !== "0x" ? (
           <span>
             <span className="text-green-400">Connected:</span>{" "}
