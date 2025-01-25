@@ -1,5 +1,7 @@
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-ethers");
+require("dotenv").config(); // Add this line to load the environment variables
+
 const fs = require('fs');
 // const infuraId = fs.readFileSync(".infuraid").toString().trim() || "";
 
@@ -17,9 +19,9 @@ module.exports = {
     hardhat: {
       chainId: 1337
     },
-    goerli: {
-      url: "<YOUR_ALCHEMY_URL>",
-      accounts: [ "<YOUR_PRIVATE_KEY>" ]
+    sepolia: {
+      url: process.env.REACT_APP_ALCHEMY_API_URL,
+      accounts: [ process.env.REACT_APP_PRIVATE_KEY ]
     }
   },
   solidity: {
