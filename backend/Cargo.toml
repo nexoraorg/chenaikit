@@ -32,6 +32,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Time handling
 time = { version = "0.3", features = ["serde"] }
+chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.7", features = ["v4", "serde"] }
 
 # Configuration
@@ -41,3 +42,10 @@ dotenv = "0.15"
 # Smart contract interaction
 ethers = "2.0"
 web3 = "0.19"
+
+[dev-dependencies]
+# Testing
+tokio-test = "0.4"
+tower = { version = "0.4", features = ["util", "test-util"] }
+hyper = { version = "0.14", features = ["full"] }
+rand = "0.8"
