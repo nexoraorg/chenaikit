@@ -4,7 +4,8 @@ CREATE TABLE users (
     username VARCHAR(30) NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     wallet_address CHAR(42) NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    role VARCHAR(20) NOT NULL DEFAULT 'user' -- Added role column
 );
 
 -- Create quests table
@@ -12,6 +13,8 @@ CREATE TABLE quests (
     id UUID PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
     description TEXT NOT NULL,
+    code_template TEXT NOT NULL, -- Added code_template
+    tests TEXT NOT NULL,         -- Added tests
     requirements JSONB NOT NULL,
     rewards JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -40,4 +43,14 @@ CREATE TABLE nft_metadata (
     metadata JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Create audit_logs table for quest changes
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id),
+    quest_id UUID,
+    action VARCHAR(20) NOT NULL, -- 'create', 'update', 'delete'
+    details JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ); 
