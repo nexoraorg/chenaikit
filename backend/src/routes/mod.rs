@@ -22,7 +22,10 @@ pub fn create_router(app_state: AppState) -> Router {
         .route("/", get(handlers::quest::list_quests))
         .route("/:id", get(handlers::quest::get_quest))
         .route("/start/:id", post(handlers::quest::start_quest))
-        .route("/complete/:id", post(handlers::quest::complete_quest));
+        .route("/complete/:id", post(handlers::quest::complete_quest))
+        .route("/", post(handlers::quest::create_quest))
+        .route("/:id", axum::routing::put(handlers::quest::update_quest))
+        .route("/:id", axum::routing::delete(handlers::quest::delete_quest));
 
     // NFT routes
     let nft_routes = Router::new()

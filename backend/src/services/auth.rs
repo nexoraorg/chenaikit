@@ -42,12 +42,16 @@ pub async fn register(
         .map_err(|e| AppError::Internal(e.into()))?
         .to_string();
 
+    // Use provided role or default to 'user'
+    let role = req.role.clone().unwrap_or_else(|| "user".to_string());
+
     // Create user
     let user = users::create_user(
         &state.db,
         &req.username,
         &password_hash,
         &req.wallet_address,
+        &role,
     )
     .await?;
 
