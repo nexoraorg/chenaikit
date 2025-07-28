@@ -1,4 +1,9 @@
 pub mod user;
+
+pub mod quest;
+pub mod nft;
+pub mod progress;
+
 // Quest and NFT models will be added when needed
 
 pub struct Quest {
@@ -12,3 +17,4 @@ pub struct Quest {
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
+

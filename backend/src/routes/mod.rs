@@ -33,11 +33,17 @@ pub fn create_router(app_state: AppState) -> Router {
         .route("/mint", post(handlers::nft::mint_nft))
         .route("/transfer", post(handlers::nft::transfer_nft));
 
+    // Progress routes
+    let progress_routes = Router::new()
+        .route("/:user_id/progress", get(handlers::progress::get_user_progress))
+        .route("/:user_id/progress/graph", get(handlers::progress::get_user_progress_graph));
+
     Router::new()
         .route("/health", get(handlers::health::check))
         .nest("/api/auth", auth_routes)
         .nest("/api/quests", quest_routes)
         .nest("/api/nfts", nft_routes)
+        .nest("/api/users", progress_routes)
         .layer(cors)
         .with_state(app_state)
 }

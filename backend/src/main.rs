@@ -10,6 +10,9 @@ mod models;
 mod routes;
 mod services;
 
+#[cfg(test)]
+mod tests;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // Initialize tracing
