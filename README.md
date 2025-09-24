@@ -1,30 +1,24 @@
-# 🌲 Skillsig
+# ChenAIKit
 
-*Skillsig* is a gamified learning platform where users complete real-world coding and logic quests to level up an on-chain NFT character. Every quest you conquer earns you proof-of-skill badges — minted directly to your wallet.
+> ⚡ A TypeScript toolkit for building AI-powered blockchain applications.
 
-> Learn. Prove. Evolve.
-
----
-
-## 🚀 Features
-- 🧙 Soulbound Character NFT (your identity in SkillTree)
-- 🧠 Coding & Logic Quests (with validator engine)
-- 🏅 Skill Badge NFTs (ERC-721)
-- 🌿 Visual Skill Tree Progression
-- 🔐 Onchain verification of learning
+AI Kit helps developers quickly add machine-learning features like credit scoring, fraud detection, and smart decisioning to their apps.  
+It wraps common blockchain operations (starting with Stellar support) and connects them to AI models so you can focus on building products instead of plumbing.
 
 ---
 
-## 🧪 Local Development
+## ✨ Features
 
-```bash
-# Clone the repo
-git clone https://github.com/yourusername/skillsig.git
-cd skillsig
+- 🧠 *AI integrations* – ready-to-use wrapper.
+- 🔗 *Blockchain connectors* – simple APIs for fetching account data and interacting with contracts.
+- ⚙ *TypeScript SDK* – strongly-typed, easy to extend, works in Node and browser.
+- 🛠 *Examples & templates* – jump-start your own project.
 
+---
 
-# Install dependencies
-npm install
+## 🚀 Quick Start
 
-# Run the dev server
-npm run dev
+Install the core package:
+
+bash
+pnpm install chenaikit
