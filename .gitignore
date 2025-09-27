@@ -1,3 +1,4 @@
 node_modules
 target/
- .env
+ .envpackages/core/dist/
+packages/core/.rollup.cache/

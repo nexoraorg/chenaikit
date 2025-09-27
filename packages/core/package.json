@@ -1,0 +1,101 @@
+{
+  "name": "@chenaikit/core",
+  "version": "0.1.0",
+  "description": "Core TypeScript SDK for ChenAIKit - AI-powered blockchain applications",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./stellar": {
+      "import": "./dist/stellar/index.esm.js",
+      "require": "./dist/stellar/index.js",
+      "types": "./dist/stellar/index.d.ts"
+    },
+    "./ai": {
+      "import": "./dist/ai/index.esm.js",
+      "require": "./dist/ai/index.js",
+      "types": "./dist/ai/index.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/utils/index.esm.js",
+      "require": "./dist/utils/index.js",
+      "types": "./dist/utils/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "build:watch": "rollup -c --watch",
+    "dev": "rollup -c --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "prepublishOnly": "pnpm run clean && pnpm run build"
+  },
+  "keywords": [
+    "blockchain",
+    "stellar",
+    "ai",
+    "typescript",
+    "sdk",
+    "chenaikit",
+    "gamification",
+    "nft",
+    "smart-contracts"
+  ],
+  "author": "ChenAIKit Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/chenaikit.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/chenaikit/issues"
+  },
+  "homepage": "https://github.com/your-org/chenaikit#readme",
+  "dependencies": {
+    "stellar-sdk": "^11.2.2",
+    "axios": "^1.6.2",
+    "uuid": "^9.0.1"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.9.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.8",
+    "@types/node": "^20.9.0",
+    "@types/uuid": "^9.0.6",
+    "@typescript-eslint/eslint-plugin": "^6.11.0",
+    "@typescript-eslint/parser": "^6.11.0",
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "rollup": "^4.6.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-typescript": "^11.1.5",
+    "@rollup/plugin-terser": "^0.4.4",
+    "rimraf": "^5.0.5",
+    "ts-jest": "^29.1.1",
+    "tslib": "^2.6.2",
+    "typescript": "^5.2.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0",
+    "pnpm": ">=7.0.0"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "name": "chenaikit",
+  "version": "0.1.0",
+  "description": "A TypeScript toolkit for building AI-powered blockchain applications",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "clean": "pnpm -r clean",
+    "dev": "pnpm -r --parallel dev"
+  },
+  "keywords": [
+    "blockchain",
+    "stellar",
+    "ai",
+    "typescript",
+    "sdk",
+    "gamification",
+    "nft",
+    "smart-contracts"
+  ],
+  "author": "ChenAIKit Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/chenaikit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/chenaikit/issues"
+  },
+  "homepage": "https://github.com/your-org/chenaikit#readme",
+  "devDependencies": {
+    "@types/node": "^20.9.0",
+    "typescript": "^5.2.2"
+  },
+  "packageManager": "pnpm@8.0.0",
+  "engines": {
+    "node": ">=16.0.0",
+    "pnpm": ">=7.0.0"
+  }
+}
