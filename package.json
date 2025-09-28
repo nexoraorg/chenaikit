@@ -15,8 +15,12 @@
     "lint": "pnpm -r lint",
     "clean": "pnpm -r clean",
     "type-check": "pnpm -r type-check",
-    "contracts:build": "cd contracts/credit-score && cargo build && cd ../fraud-detect && cargo build && cd ../common-utils && cargo build",
-    "contracts:test": "cd contracts/credit-score && cargo test && cd ../fraud-detect && cargo test && cd ../common-utils && cargo test"
+    "backend:build": "cd packages/core && pnpm build && cd ../cli && pnpm build && cd ../../backend && pnpm build",
+    "backend:test": "cd packages/core && pnpm test && cd ../cli && pnpm test && cd ../../backend && pnpm test",
+    "blockchain:build": "cd contracts/credit-score && cargo build && cd ../fraud-detect && cargo build && cd ../common-utils && cargo build",
+    "blockchain:test": "cd contracts/credit-score && cargo test && cd ../fraud-detect && cargo test && cd ../common-utils && cargo test",
+    "frontend:build": "cd examples/credit-scoring-app && pnpm build && cd ../wallet-chatbot && pnpm build && cd ../fraud-detection-service && pnpm build && cd ../../frontend && pnpm build",
+    "frontend:test": "cd examples/credit-scoring-app && pnpm test && cd ../wallet-chatbot && pnpm test && cd ../fraud-detection-service && pnpm test && cd ../../frontend && pnpm test"
   },
   "keywords": [
     "stellar",

@@ -1,37 +1,19 @@
-import { Server } from '@stellar/stellar-sdk';
-
-export interface StellarConfig {
-  network: 'testnet' | 'mainnet';
-  horizonUrl?: string;
-}
+import { StellarConfig } from './types';
 
 export class StellarConnector {
-  private server: Server;
   private config: StellarConfig;
 
   constructor(config: StellarConfig) {
     this.config = config;
-    this.server = new Server(config.horizonUrl || this.getDefaultHorizonUrl());
   }
 
-  private getDefaultHorizonUrl(): string {
-    return this.config.network === 'testnet' 
-      ? 'https://horizon-testnet.stellar.org'
-      : 'https://horizon.stellar.org';
+  async getAccount(accountId: string): Promise<any> {
+    // TODO: Implement Stellar account retrieval - Issue #24
+    throw new Error('Not implemented yet - see issue #24');
   }
 
-  async getAccount(accountId: string) {
-    // TODO: Implement account fetching
-    throw new Error('Not implemented yet');
-  }
-
-  async getAccountBalances(accountId: string) {
-    // TODO: Implement balance fetching
-    throw new Error('Not implemented yet');
-  }
-
-  async getAccountTransactions(accountId: string, limit = 10) {
-    // TODO: Implement transaction history fetching
-    throw new Error('Not implemented yet');
+  async submitTransaction(xdr: string): Promise<any> {
+    // TODO: Implement transaction submission - Issue #24
+    throw new Error('Not implemented yet - see issue #24');
   }
 }

@@ -1,7 +1,4 @@
-export interface AIConfig {
-  apiKey: string;
-  baseUrl?: string;
-}
+import { AIConfig } from './types';
 
 export class AIService {
   private config: AIConfig;
@@ -11,12 +8,12 @@ export class AIService {
   }
 
   async calculateCreditScore(accountData: any): Promise<number> {
-    // TODO: Implement credit scoring logic
-    throw new Error('Not implemented yet');
+    // TODO: Implement credit scoring logic - Issue #25
+    throw new Error('Not implemented yet - see issue #25');
   }
 
   async detectFraud(transactionData: any): Promise<boolean> {
-    // TODO: Implement fraud detection logic
-    throw new Error('Not implemented yet');
+    // TODO: Implement fraud detection logic - Issue #28
+    throw new Error('Not implemented yet - see issue #28');
   }
 }
