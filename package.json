@@ -1,0 +1,56 @@
+{
+  "name": "chenaikit",
+  "version": "0.1.0",
+  "description": "A TypeScript toolkit for building AI-powered blockchain applications",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "examples/*",
+    "tests/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r dev",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "clean": "pnpm -r clean",
+    "type-check": "pnpm -r type-check",
+    "contracts:build": "cd contracts/credit-score && cargo build && cd ../fraud-detect && cargo build && cd ../common-utils && cargo build",
+    "contracts:test": "cd contracts/credit-score && cargo test && cd ../fraud-detect && cargo test && cd ../common-utils && cargo test"
+  },
+  "keywords": [
+    "stellar",
+    "soroban",
+    "ai",
+    "blockchain",
+    "typescript",
+    "sdk",
+    "credit-scoring",
+    "fraud-detection"
+  ],
+  "author": "ChenAIKit Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "prettier": "^3.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nexoraorg/chenaikit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nexoraorg/chenaikit/issues"
+  },
+  "homepage": "https://github.com/nexoraorg/chenaikit#readme"
+}
+
