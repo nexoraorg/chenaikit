@@ -20,6 +20,12 @@ export * from './ai';
 // Utility functions
 export * from './utils';
 
+// Main classes (from main branch)
+export { StellarConnector } from './stellar/connector';
+export { AIService } from './ai/service';
+export { CreditScorer } from './ai/credit-scorer';
+export { FraudDetector } from './ai/fraud-detector';
+
 // Version information
 export const VERSION = '0.1.0';
 
