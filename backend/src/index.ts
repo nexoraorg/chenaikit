@@ -1,10 +1,9 @@
 // ChenAIKit Backend Server
-// TODO: Implement backend API endpoints - See backend issues in .github/ISSUE_TEMPLATE/
-
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import accountRoutes from './routes/accounts';
 
 // Load environment variables
 dotenv.config();
@@ -15,40 +14,63 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+  res.json({
+    status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'chenaikit-backend',
-    message: 'Backend implementation pending - see backend issue templates'
+    version: '1.0.0'
   });
 });
 
-// Placeholder endpoints - implementation pending
-app.get('/api/accounts/:id', (req, res) => {
-  res.json({ 
-    message: 'Account endpoint - implementation pending - see backend-01-api-endpoints.md' 
-  });
-});
+// API Routes
+app.use('/api/accounts', accountRoutes);
 
-app.post('/api/accounts', (req, res) => {
-  res.json({ 
-    message: 'Account creation endpoint - implementation pending - see backend-01-api-endpoints.md' 
-  });
-});
-
+// Placeholder endpoints for future implementation
 app.get('/api/accounts/:id/credit-score', (req, res) => {
-  res.json({ 
-    message: 'Credit scoring endpoint - implementation pending - see backend-01-api-endpoints.md' 
+  res.json({
+    message: 'Credit scoring endpoint - implementation pending'
   });
 });
 
 app.post('/api/fraud/detect', (req, res) => {
-  res.json({ 
-    message: 'Fraud detection endpoint - implementation pending - see backend-01-api-endpoints.md' 
+  res.json({
+    message: 'Fraud detection endpoint - implementation pending'
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: {
+      code: 'ENDPOINT_NOT_FOUND',
+      message: `Endpoint ${req.method} ${req.originalUrl} not found`,
+      timestamp: new Date().toISOString()
+    }
+  });
+});
+
+// Global error handler
+app.use((error: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Unhandled error:', error);
+
+  res.status(500).json({
+    success: false,
+    error: {
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'An unexpected error occurred',
+      timestamp: new Date().toISOString()
+    }
   });
 });
 
