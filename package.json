@@ -30,13 +30,24 @@
     "typescript",
     "sdk",
     "credit-scoring",
-    "fraud-detection"
+    "fraud-detection",
+    "gamification",
+    "nft",
+    "smart-contracts"
   ],
   "author": "ChenAIKit Team",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akintewe/chenaikit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/akintewe/chenaikit/issues"
+  },
+  "homepage": "https://github.com/akintewe/chenaikit#readme",
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
+    "@types/node": "^20.9.0",
+    "typescript": "^5.2.2",
     "eslint": "^8.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
@@ -44,17 +55,9 @@
     "jest": "^29.0.0",
     "@types/jest": "^29.0.0"
   },
+  "packageManager": "pnpm@8.0.0",
   "engines": {
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nexoraorg/chenaikit.git"
-  },
-  "bugs": {
-    "url": "https://github.com/nexoraorg/chenaikit/issues"
-  },
-  "homepage": "https://github.com/nexoraorg/chenaikit#readme"
+  }
 }
-

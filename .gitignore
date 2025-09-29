@@ -109,3 +109,7 @@ Cargo.lock
 
 # IDE
 .qodo/
+
+# Package-specific build artifacts
+packages/core/dist/
+packages/core/.rollup.cache/
