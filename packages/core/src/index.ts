@@ -9,3 +9,7 @@ export { StellarConnector } from './stellar/connector';
 export { AIService } from './ai/service';
 export { CreditScorer } from './ai/credit-scorer';
 export { FraudDetector } from './ai/fraud-detector';
+
+// Form validation utilities
+export { ValidationRules, validateField, validateFields } from './utils/validation';
+export * from './types/form';
