@@ -98,4 +98,11 @@ pub fn require_role(env: &Env, caller: &Address, role: Symbol) {
     }
 }
 
-/
+// Transfer admin rights to a new admin (current admin only)
+pub fn transfer_admin(env: &Env, caller: Address, new_admin: Address) {
+    caller.require_auth();
+    require_admin(env, &caller);
+    new_admin.require_auth();
+    
+    env.storage().instance().set(&ADMIN_KEY, &new_admin);
+}
