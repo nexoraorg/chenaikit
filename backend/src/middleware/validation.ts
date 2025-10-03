@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ValidationError, ApiError } from '../types/api';
+import { ValidationError } from '../types/api';
 
 export class ValidationMiddleware {
   static validateAccountId(req: Request, res: Response, next: NextFunction) {

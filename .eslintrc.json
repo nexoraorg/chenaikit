@@ -1,0 +1,37 @@
+{
+  "root": true,
+  "env": {
+    "es2020": true,
+    "node": true,
+    "browser": false
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module"
+  },
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    "build/",
+    "coverage/",
+    "**/*.d.ts"
+  ],
+  "overrides": [
+    {
+      "files": ["**/*.tsx", "frontend/src/**/*.{ts,tsx}"],
+      "env": { "browser": true },
+      "parserOptions": { "ecmaFeatures": { "jsx": true } }
+    }
+  ],
+  "rules": {
+    "no-console": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
+  }
+}

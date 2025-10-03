@@ -13,7 +13,7 @@ function isObject(value: any): value is object {
  * @returns {string}
  */
 export function handleStellarError(error: any): string {
-  if (isObject(error) && error.hasOwnProperty('response')) {
+  if (isObject(error) && Object.prototype.hasOwnProperty.call(error, 'response')) {
     const response = (error as any).response;
     if (response && response.data && response.data.extras && response.data.extras.result_codes) {
       const { result_codes } = response.data.extras;

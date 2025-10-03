@@ -12,6 +12,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
+    "baseUrl": ".",
+    "paths": {
+      "@chenaikit/core": ["packages/core/src/index.ts"],
+      "@chenaikit/core/*": ["packages/core/src/*"]
+    },
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true

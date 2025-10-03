@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+coverage/
+**/*.d.ts
+contracts/
+.qodo/
+.vscode/
+frontend/build/
