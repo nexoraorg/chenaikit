@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 name: Frontend CI
 
 on:
@@ -76,4 +74,4 @@ jobs:
     - name: Run linting
       run: pnpm lint
 
->>>>>>> 3950e5c (workflow)
+
