@@ -1,11 +1,24 @@
+import { RealTimeFraudScorer } from './fraud/riskScorer';
+import { RiskResult, Transaction } from './fraud/types';
+
 export class FraudDetector {
-  async detectAnomalies(transactionData: any): Promise<boolean> {
-    // TODO: Implement fraud detection algorithm - Issue #28
-    throw new Error('Not implemented yet - see issue #28');
+  private scorer = new RealTimeFraudScorer();
+
+  async initializeBaseline(transactions: Transaction[]): Promise<void> {
+    this.scorer.fitBaseline(transactions);
   }
 
-  async getRiskFactors(transactionData: any): Promise<string[]> {
-    // TODO: Implement risk factor analysis - Issue #28
-    throw new Error('Not implemented yet - see issue #28');
+  async detectAnomalies(transactionData: Transaction): Promise<boolean> {
+    const result = this.scorer.scoreTransaction(transactionData);
+    return result.riskScore >= 70; // high risk threshold
+  }
+
+  async getRiskFactors(transactionData: Transaction): Promise<string[]> {
+    const result = this.scorer.scoreTransaction(transactionData);
+    return result.reasons;
+  }
+
+  async score(transactionData: Transaction): Promise<RiskResult> {
+    return this.scorer.scoreTransaction(transactionData);
   }
 }
