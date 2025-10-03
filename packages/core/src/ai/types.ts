@@ -9,9 +9,3 @@ export interface CreditScoreResult {
   factors: string[];
   confidence: number;
 }
-
-export interface FraudDetectionResult {
-  isFraud: boolean;
-  riskScore: number;
-  factors: string[];
-}
