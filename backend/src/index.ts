@@ -9,6 +9,10 @@ import { requestLoggingMiddleware, errorLoggingMiddleware, loggingMiddlewares } 
 import healthRouter from './routes/health';
 import { metricsService, metricsMiddleware } from './services/metricsService';
 import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
 import { ensureRedisConnection } from './config/redis';
 import { cacheMiddleware } from './middleware/cache';
 import { CacheKeys } from './utils/cacheKeys';
