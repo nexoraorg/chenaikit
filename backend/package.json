@@ -22,10 +22,11 @@
     "@sentry/node": "^8.30.0",
     "@opentelemetry/sdk-node": "^0.54.0",
     "@opentelemetry/auto-instrumentations-node": "^0.64.1",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.54.0"
-    "ioredis": "^5.8.0"
+    "@opentelemetry/exporter-trace-otlp-http": "^0.54.0",
+    "ioredis": "^5.8.0",
     "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.27"
+  
   },
   "devDependencies": {
     "@types/cors": "^2.8.0",
