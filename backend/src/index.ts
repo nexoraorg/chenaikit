@@ -3,6 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { ensureRedisConnection } from './config/redis';
+import { cacheMiddleware } from './middleware/cache';
+import { CacheKeys } from './utils/cacheKeys';
 import accountRoutes from './routes/accounts';
 
 // Load environment variables
@@ -32,6 +35,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Placeholder endpoints - implementation pending
+app.get(
+  '/api/accounts/:id',
+  cacheMiddleware({ keyBuilder: (req) => CacheKeys.accountById(req.params.id), ttlSeconds: 60 }),
+  (req, res) => {
+    res.json({ 
+      message: 'Account endpoint - implementation pending - see backend-01-api-endpoints.md' 
+    });
+  }
+);
 // API Routes
 app.use('/api/accounts', accountRoutes);
 
@@ -48,6 +61,15 @@ app.post('/api/fraud/detect', (req, res) => {
   });
 });
 
+app.get(
+  '/api/accounts/:id/credit-score',
+  cacheMiddleware({ keyBuilder: (req) => CacheKeys.creditScoreByAccount(req.params.id), ttlSeconds: 300 }),
+  (req, res) => {
+    res.json({ 
+      message: 'Credit scoring endpoint - implementation pending - see backend-01-api-endpoints.md' 
+    });
+  }
+);
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
@@ -75,10 +97,16 @@ app.use((error: Error, req: express.Request, res: express.Response, next: expres
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
+  try {
+    await ensureRedisConnection();
+    console.log('🧠 Redis cache ready');
+  } catch (err) {
+    console.warn('⚠️  Redis not available. Continuing without cache.');
+  }
 });
 
 export default app;
