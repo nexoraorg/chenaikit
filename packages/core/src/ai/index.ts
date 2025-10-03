@@ -1,6 +1,11 @@
-export * from './service';
-export * from './credit-scorer';
-export * from './fraud-detector';
+// Core exports
+export * from './stellar';
+export * from './ai';
+export * from './utils';
 export * from './types';
-export * from './predictions';
-export * from './fraud';
+
+// Main classes
+export { StellarConnector } from './stellar/connector';
+export { AIService } from './ai/service';
+export { CreditScorer } from './ai/credit-scorer';
+export { FraudDetector } from './ai/fraud-detector';

@@ -16,4 +16,14 @@ export class StellarConnector {
     // TODO: Implement transaction submission - Issue #24
     throw new Error('Not implemented yet - see issue #24');
   }
+
+  async getFee(): Promise<any> {
+    // TODO: Implement Stellar fee retrieval
+    throw new Error('Not implemented yet - see issue #24');
+  }
+
+  async getNetworkPassphrase(): Promise<any> {
+    // TODO: Implement Stellar network passphrase retrieval
+    throw new Error('Not implemented yet - see issue #24');
+  }
 }
