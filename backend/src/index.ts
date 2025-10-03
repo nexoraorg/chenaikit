@@ -9,6 +9,8 @@ import { requestLoggingMiddleware, errorLoggingMiddleware, loggingMiddlewares } 
 import healthRouter from './routes/health';
 import { metricsService, metricsMiddleware } from './services/metricsService';
 import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
+import accountRoutes from './routes/accounts';
+
 
 // Load environment variables
 dotenv.config();
@@ -40,7 +42,13 @@ initializeMonitoring().finally(() => {
 // Middleware
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
 
 // Add metrics middleware before request logging
 app.use(metricsMiddleware);
@@ -84,6 +92,55 @@ app.get('/api/accounts/:id/credit-score', (req: Request, res: Response) => {
 app.post('/api/fraud/detect', (req: Request, res: Response) => {
   res.json({
     message: 'Fraud detection endpoint - implementation pending - see backend-01-api-endpoints.md'
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    service: 'chenaikit-backend',
+    version: '1.0.0'
+  });
+});
+
+// API Routes
+app.use('/api/accounts', accountRoutes);
+
+// Placeholder endpoints for future implementation
+app.get('/api/accounts/:id/credit-score', (req, res) => {
+  res.json({
+    message: 'Credit scoring endpoint - implementation pending'
+  });
+});
+
+app.post('/api/fraud/detect', (req, res) => {
+  res.json({
+    message: 'Fraud detection endpoint - implementation pending'
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: {
+      code: 'ENDPOINT_NOT_FOUND',
+      message: `Endpoint ${req.method} ${req.originalUrl} not found`,
+      timestamp: new Date().toISOString()
+    }
+  });
+});
+
+// Global error handler
+app.use((error: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Unhandled error:', error);
+
+  res.status(500).json({
+    success: false,
+    error: {
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'An unexpected error occurred',
+      timestamp: new Date().toISOString()
+    }
   });
 });
 
