@@ -1,0 +1,72 @@
+name: Server CI Pipeline
+
+on:
+    push: 
+        branches: [main, develop]
+    pull_request: 
+        branches: [main, develop]
+
+jobs:
+    build-test:
+        strategy:
+            matrix:
+                os: [windows-latest]
+        
+        runs-on: ${{matrix.os}}
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v3
+              with: 
+                version: 8
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with: 
+                node-version: 20
+                cache: 'pnpm'
+
+            - name: Install dependencies
+              run: pnpm install
+
+            - name: Run Lint
+              run: pnpm lint
+
+            - name: Type Check
+              run: pnpm type-check
+
+            - name: Run Tests
+              run: pnpm test
+
+            - name: Build project
+              run: pnpm build
+
+            - name: Setup Rust
+              uses: actions-rs/toolchain@v1
+              with:
+                toolchain: stable
+                profile: minimal
+                override: true
+
+            - name: Build Contracts
+              run: |
+                cargo build --release --manifest-path ./contracts/credit-score/Cargo.toml
+                cargo build --release --manifest-path ./contracts/fraud-detect/Cargo.toml
+                cargo build --release --manifest-path ./contracts/common-utils/contract/Cargo.toml
+
+            - name: Test Contracts
+              run: |
+                cargo test --manifest-path ./contracts/credit-score/Cargo.toml
+                cargo test --manifest-path ./contracts/fraud-detect/Cargo.toml
+                cargo test --manifest-path ./contracts/common-utils/contract/Cargo.toml
+
+            - name: Upload Contract Artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                name: contracts-build
+                path: |
+                    contracts/**/target/release/*.rlib
+                    contracts/**/target/wasm32-unknown-unknown/release/*.wasm

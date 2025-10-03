@@ -1,0 +1,247 @@
+/* Form Validation Styles */
+.form-field {
+  margin-bottom: 20px;
+}
+
+.form-field__label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.form-field__required {
+  color: #e74c3c;
+  margin-left: 4px;
+}
+
+.form-field__input-wrapper {
+  position: relative;
+}
+
+.form-field__input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background-color: #fff;
+}
+
+.form-field__input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-field__input--error {
+  border-color: #e74c3c;
+}
+
+.form-field__input--error:focus {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.form-field__input--disabled {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.form-field__textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-field__select {
+  cursor: pointer;
+}
+
+.form-field__loading {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #007bff;
+}
+
+.form-field__loading-spinner {
+  animation: spin 1s linear infinite;
+  font-size: 16px;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.form-field--error .form-field__label {
+  color: #e74c3c;
+}
+
+.form-field--disabled .form-field__label {
+  color: #6c757d;
+}
+
+/* Form Error Styles */
+.form-error {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #fdf2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  color: #e74c3c;
+  font-size: 14px;
+  animation: slideDown 0.2s ease;
+}
+
+.form-error__icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.form-error__message {
+  flex: 1;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Form Actions */
+.form__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.form__submit-button,
+.form__reset-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.form__submit-button {
+  background-color: #007bff;
+  color: white;
+}
+
+.form__submit-button:hover:not(:disabled) {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.form__submit-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.form__reset-button {
+  background-color: #6c757d;
+  color: white;
+}
+
+.form__reset-button:hover {
+  background-color: #545b62;
+  transform: translateY(-1px);
+}
+
+/* Form Status */
+.form__status {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+}
+
+.form__status p {
+  margin: 0 0 10px 0;
+  font-weight: 500;
+  color: #495057;
+}
+
+.form__status ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #6c757d;
+}
+
+.form__status li {
+  margin-bottom: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .form-field__input {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .form__actions {
+    flex-direction: column;
+  }
+  
+  .form__submit-button,
+  .form__reset-button {
+    width: 100%;
+  }
+}
+
+/* Accessibility Improvements */
+.form-field__input:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.form-error[role="alert"] {
+  /* Screen reader announcement */
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .form-field__input {
+    border-width: 3px;
+  }
+  
+  .form-error {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .form-field__input,
+  .form-error,
+  .form__submit-button,
+  .form__reset-button {
+    transition: none;
+  }
+  
+  .form-error {
+    animation: none;
+  }
+  
+  .form-field__loading-spinner {
+    animation: none;
+  }
+}
