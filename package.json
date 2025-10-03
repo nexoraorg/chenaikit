@@ -17,8 +17,8 @@
     "type-check": "pnpm -r type-check",
     "backend:build": "cd packages/core && pnpm build && cd ../cli && pnpm build && cd ../../backend && pnpm build",
     "backend:test": "echo 'Tests commented out - see issue templates for test implementation'",
-    "blockchain:build": "cd contracts/credit-score && cargo build && cd ../fraud-detect && cargo build && cd ../common-utils && cargo build",
-    "blockchain:test": "echo 'Blockchain tests commented out - Soroban SDK compatibility issues'",
+    "blockchain:build": "cd contracts/credit-score && cargo build && cd ../fraud-detect && cargo build && cd ../common-utils && cargo build && cd ../governance && cargo build",
+    "blockchain:test": "cd contracts/governance && cargo test --lib",
     "frontend:build": "cd examples/credit-scoring-app && pnpm build && cd ../wallet-chatbot && pnpm build && cd ../fraud-detection-service && pnpm build && cd ../../frontend && pnpm build",
     "frontend:test": "echo 'Tests commented out - see issue templates for test implementation'"
   },
@@ -55,6 +55,6 @@
   "bugs": {
     "url": "https://github.com/nexoraorg/chenaikit/issues"
   },
-  "homepage": "https://github.com/nexoraorg/chenaikit#readme"
+  "homepage": "https://github.com/nexoraorg/chenaikit#readme",
+  "packageManager": "pnpm@10.17.1+sha512.17c560fca4867ae9473a3899ad84a88334914f379be46d455cbf92e5cf4b39d34985d452d2583baf19967fa76cb5c17bc9e245529d0b98745721aa7200ecaf7a"
 }
-

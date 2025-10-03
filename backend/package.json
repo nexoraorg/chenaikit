@@ -17,6 +17,8 @@
     "express": "^4.18.0",
     "helmet": "^7.0.0",
     "ioredis": "^5.8.0"
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.27"
   },
   "devDependencies": {
     "@types/cors": "^2.8.0",

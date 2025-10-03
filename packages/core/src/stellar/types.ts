@@ -16,3 +16,19 @@ export interface TransactionResult {
   success: boolean;
   error?: string;
 }
+
+export interface MultiSigOptions {
+  low: number;
+  medium: number;
+  high: number;
+}
+
+export interface Signer {
+  publicKey: string;
+  weight: number;
+}
+
+export interface AssetData {
+  code: string;
+  issuer: string;
+}
