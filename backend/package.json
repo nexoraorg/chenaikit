@@ -7,7 +7,7 @@
     "start": "ts-node src/index.ts",
     "dev": "ts-node --watch src/index.ts",
     "build": "tsc",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "lint": "eslint src/**/*.ts"
   },
   "dependencies": {
