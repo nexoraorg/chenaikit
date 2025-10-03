@@ -13,3 +13,9 @@ export { FraudDetector } from './ai/fraud-detector';
 // Form validation utilities
 export { ValidationRules, validateField, validateFields } from './utils/validation';
 export * from './types/form';
+
+// Data visualization utilities
+export * from './types/visualization';
+export * from './utils/chart-helpers';
+export * from './utils/export-utils';
+export * from './utils/accessibility';
