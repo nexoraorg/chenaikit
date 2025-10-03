@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 name: Blockchain CI
 
 on:
@@ -65,4 +63,3 @@ jobs:
           contracts/**/target/release/*.rlib
           contracts/**/target/wasm32-unknown-unknown/release/*.wasm
 
->>>>>>> 3950e5c (workflow)
