@@ -95,9 +95,9 @@ export const ValidationRules = {
   }),
 
   phone: (message = 'Please enter a valid phone number'): ValidationRule => ({
-    pattern: /^[\+]?[1-9][\d]{0,15}$/,
+    pattern: /^\+?[1-9]\d{0,15}$/,
     custom: (value) => {
-      if (value && !/^[\+]?[1-9][\d]{0,15}$/.test(value.replace(/[\s\-\(\)]/g, ''))) {
+      if (value && !/^\+?[1-9]\d{0,15}$/.test(value.replace(/[\s()-]/g, ''))) {
         return message;
       }
       return null;
