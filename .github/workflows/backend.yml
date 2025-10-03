@@ -70,4 +70,3 @@ jobs:
                 path: |
                     contracts/**/target/release/*.rlib
                     contracts/**/target/wasm32-unknown-unknown/release/*.wasm
-
