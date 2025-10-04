@@ -21,7 +21,10 @@
     "express-rate-limit": "^8.1.0",
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.2",
-    "zod": "^4.1.11"
+    "zod": "^4.1.11",
+    "ioredis": "^5.8.0",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.27"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
