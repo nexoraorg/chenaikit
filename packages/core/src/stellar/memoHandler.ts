@@ -1,5 +1,5 @@
 
-import { Transaction, Memo } from 'stellar-sdk';
+import { Memo, MemoType, Transaction } from '@stellar/stellar-sdk';
 
 /**
  * Creates a transaction with a memo.

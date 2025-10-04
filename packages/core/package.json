@@ -28,11 +28,15 @@
   "devDependencies": {
     "@types/jest": "^29.0.0",
     "@types/node": "^20.0.0",
+    "@types/react": "^18.3.24",
+    "@types/stellar-sdk": "^0.15.1",
     "@types/urijs": "^1.19.25",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
     "jest": "^29.0.0",
+    "lucide-react": "^0.544.0",
+    "react": "^18.3.1",
     "typescript": "^5.0.0"
   },
   "files": [
@@ -41,5 +45,9 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "peerDependencies": {
+    "lucide-react": "^0.544.0",
+    "react": "^18.3.1"
   }
 }
