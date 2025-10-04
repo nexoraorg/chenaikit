@@ -21,5 +21,11 @@ export { MonitoringDashboard } from './blockchain/monitoring/dashboard';
 export { ValidationRules, validateField, validateFields } from './utils/validation';
 export * from './types/form';
 
+// Data visualization utilities
+export * from './types/visualization';
+export * from './utils/chart-helpers';
+export * from './utils/export-utils';
+export * from './utils/accessibility';
+
 // Monitoring types
 export type { MonitoringConfig, TransactionEvent, Alert } from './blockchain/monitoring/types';
