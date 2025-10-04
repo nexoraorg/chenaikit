@@ -1,0 +1,57 @@
+name: Blockchain CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'contracts/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'contracts/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Run cargo check for common-utils
+        run: cd contracts/common-utils/contract && cargo check
+
+      - name: Run cargo test for common-utils
+        run: cd contracts/common-utils/contract && cargo test
+
+      - name: Run cargo check for credit-score
+        run: cd contracts/credit-score && cargo check
+
+      - name: Run cargo test for credit-score
+        run: cd contracts/credit-score && cargo test
+
+      - name: Run cargo check for fraud-detect
+        run: cd contracts/fraud-detect && cargo check
+
+      - name: Run cargo test for fraud-detect
+        run: cd contracts/fraud-detect && cargo test
+
+      - name: Run cargo check for governance
+        run: cd contracts/governance && cargo check
+
+      - name: Run cargo test for governance
+        run: cd contracts/governance && cargo test
+
+      - name: Build blockchain contracts
+        run: pnpm blockchain:build
