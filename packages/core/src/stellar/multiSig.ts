@@ -1,5 +1,5 @@
 
-import { Transaction, Keypair, Operation, TransactionBuilder } from 'stellar-sdk';
+import StellarSdk, { Transaction, Keypair, Operation, TransactionBuilder } from '@stellar/stellar-sdk';
 import { StellarConnector } from './connector';
 import { MultiSigOptions, Signer } from './types';
 
