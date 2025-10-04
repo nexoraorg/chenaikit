@@ -1,5 +1,5 @@
 
-import { Asset, Operation, TransactionBuilder, Keypair } from 'stellar-sdk';
+import StellarSdk, { Asset, Operation, TransactionBuilder, Keypair } from '@stellar/stellar-sdk';
 import { StellarConnector } from './connector';
 
 /**
