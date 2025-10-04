@@ -5,12 +5,13 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import authRoutes from './routes/auth';
 
 // Load environment variables
 dotenv.config();
 
 const app: express.Application = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(helmet());
@@ -52,11 +53,14 @@ app.post('/api/fraud/detect', (req, res) => {
   });
 });
 
+
+app.use('/api/auth', authRoutes);
+
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
+  console.log(`ChenAIKit Backend running on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`See .github/ISSUE_TEMPLATE/ for backend development tasks`);
 });
 
 export default app;
