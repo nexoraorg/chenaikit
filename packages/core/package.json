@@ -23,12 +23,18 @@
   "license": "MIT",
   "dependencies": {
     "@stellar/stellar-sdk": "^11.3.0",
-    "axios": "^1.12.2"
+    "axios": "^1.12.2",
+    "ws": "^8.14.2",
+    "eventemitter3": "^5.0.1",
+    "node-cache": "^5.1.2",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@types/jest": "^29.0.0",
     "@types/node": "^20.0.0",
     "@types/urijs": "^1.19.25",
+    "@types/ws": "^8.5.5",
+    "@types/lodash": "^4.14.199",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
