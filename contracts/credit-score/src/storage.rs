@@ -10,7 +10,7 @@ pub fn get_score(env: &Env, user: &Address) -> i128 {
 }
 
 pub fn set_score(env: &Env, user: &Address, score: &i128) {
-    user.require_auth();  // Secure: only owner can set
+    // Note: Authorization should be handled by the caller (public contract functions)
 
     let mut scores: Map<Address, i128> = env.storage().persistent().get(&SCORE_KEY)
         .unwrap_or_else(|| Map::new(env));

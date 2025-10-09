@@ -1,5 +1,5 @@
 
-import { FeeBumpTransaction, Transaction, Keypair, TransactionBuilder } from 'stellar-sdk';
+import StellarSdk, { FeeBumpTransaction, Transaction, Keypair, TransactionBuilder } from '@stellar/stellar-sdk';
 import { StellarConnector } from './connector';
 
 /**
