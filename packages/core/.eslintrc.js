@@ -1,4 +1,10 @@
 module.exports = {
+
+  extends: ['../../.eslintrc.js'],
+  rules: {
+    // Core package specific rules
+    'no-unused-vars': 'off', // Allow unused vars for blockchain types
+
   root: true,
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint'],
@@ -8,5 +14,6 @@ module.exports = {
   ],
   env: {
     node: true,
+
   },
 };

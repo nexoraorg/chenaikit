@@ -13,6 +13,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import authRoutes from './routes/auth';
 import { ensureRedisConnection } from './config/redis';
 import { cacheMiddleware } from './middleware/cache';
 import { CacheKeys } from './utils/cacheKeys';
@@ -26,7 +27,7 @@ dotenv.config();
 validateEnvironment();
 
 const app: express.Application = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Initialize monitoring
 initializeMonitoring().finally(() => {
@@ -169,6 +170,9 @@ app.use((error: Error, req: express.Request, res: express.Response, next: expres
     }
   });
 });
+
+
+app.use('/api/auth', authRoutes);
 
 // Start server
 app.listen(PORT, async () => {
