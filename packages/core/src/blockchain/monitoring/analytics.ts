@@ -231,7 +231,7 @@ export class TransactionAnalytics extends EventEmitter {
     };
     insights: string[];
   }> {
-    return new Promise(async (resolve) => {
+    return (async () => {
       try {
         const summary = await this.getMetrics(startTime, endTime);
         const topAccounts = this.getAccountActivity(10);
@@ -245,25 +245,25 @@ export class TransactionAnalytics extends EventEmitter {
         
         const insights = this.generateInsights(summary, topAccounts, topAssets);
         
-        resolve({
+        return {
           summary,
           topAccounts,
           topAssets,
           trends,
           insights
-        });
+        };
         
       } catch (error) {
         console.error('Error generating analytics report:', error);
-        resolve({
+        return {
           summary: this.createEmptyMetrics(),
           topAccounts: [],
           topAssets: [],
           trends: { volume: [], count: [] },
           insights: ['Error generating report']
-        });
+        };
       }
-    });
+    })();
   }
 
   /**
