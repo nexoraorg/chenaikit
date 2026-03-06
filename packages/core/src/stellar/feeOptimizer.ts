@@ -1,5 +1,5 @@
 
-import StellarSdk, { FeeBumpTransaction, Transaction, Keypair, TransactionBuilder } from '@stellar/stellar-sdk';
+import { FeeBumpTransaction, Transaction, Keypair, TransactionBuilder } from '@stellar/stellar-sdk';
 import { StellarConnector } from './connector';
 
 /**
@@ -31,7 +31,7 @@ export async function createFeeBumpTransaction(
     feeSourceKeypair.publicKey(),
     await stellarConnector.getFee(),
     transaction,
-    stellarConnector.getNetworkPassphrase()
+    await stellarConnector.getNetworkPassphrase()
   );
 
   feeBumpTransaction.sign(feeSourceKeypair);

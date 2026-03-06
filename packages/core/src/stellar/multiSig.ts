@@ -1,5 +1,5 @@
 
-import StellarSdk, { Transaction, Keypair, Operation, TransactionBuilder } from '@stellar/stellar-sdk';
+import { Transaction, Keypair, Operation, TransactionBuilder } from '@stellar/stellar-sdk';
 import { StellarConnector } from './connector';
 import { MultiSigOptions, Signer } from './types';
 
@@ -21,7 +21,7 @@ export async function addSigner(
 
   const transaction = new TransactionBuilder(sourceAccount, {
     fee: await stellarConnector.getFee(),
-    networkPassphrase: stellarConnector.getNetworkPassphrase(),
+    networkPassphrase: await stellarConnector.getNetworkPassphrase(),
   })
     .addOperation(
       Operation.setOptions({
@@ -56,7 +56,7 @@ export async function removeSigner(
 
   const transaction = new TransactionBuilder(sourceAccount, {
     fee: await stellarConnector.getFee(),
-    networkPassphrase: stellarConnector.getNetworkPassphrase(),
+    networkPassphrase: await stellarConnector.getNetworkPassphrase(),
   })
     .addOperation(
       Operation.setOptions({
@@ -91,7 +91,7 @@ export async function setThresholds(
 
   const transaction = new TransactionBuilder(sourceAccount, {
     fee: await stellarConnector.getFee(),
-    networkPassphrase: stellarConnector.getNetworkPassphrase(),
+    networkPassphrase: await stellarConnector.getNetworkPassphrase(),
   })
     .addOperation(
       Operation.setOptions({

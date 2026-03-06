@@ -129,7 +129,7 @@ export async function exportDataAsPDF(
       
       // Headers
       pdf.setFontSize(12);
-      pdf.setFont(undefined, 'bold');
+      pdf.setFont('helvetica', 'bold');
       headers.forEach((header, index) => {
         const x = 20 + (index * (maxWidth / headers.length));
         pdf.text(header, x, y);
@@ -138,7 +138,7 @@ export async function exportDataAsPDF(
       y += lineHeight;
       
       // Data rows
-      pdf.setFont(undefined, 'normal');
+      pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(10);
       
       data.slice(0, 20).forEach((row, rowIndex) => { // Limit to 20 rows
