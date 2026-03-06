@@ -14,7 +14,28 @@ import {
   CHART_COLORS
 } from '@chenaikit/core';
 
-interface NetworkTopologyViewProps extends ChartProps {
+// Extend D3 types to include our custom properties
+interface NetworkNodeExtended extends NetworkNode, d3.SimulationNodeDatum {
+  x?: number;
+  y?: number;
+  fx?: number | null;
+  fy?: number | null;
+}
+
+interface NetworkLinkExtended extends d3.SimulationLinkDatum<NetworkNodeExtended> {
+  id: string;
+  source: NetworkNodeExtended;
+  target: NetworkNodeExtended;
+  value: number;
+  weight: number;
+  type: 'transaction' | 'trust' | 'offer';
+  timestamp: Date;
+  width?: number;
+  color?: string;
+  opacity?: number;
+}
+
+interface NetworkTopologyViewProps extends Omit<ChartProps, 'data'> {
   nodes: NetworkNode[];
   links: NetworkLink[];
   layout?: 'force' | 'hierarchical' | 'circular' | 'grid';
@@ -58,25 +79,50 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedLink, setSelectedLink] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string } | null>(null);
-  const [simulation, setSimulation] = useState<d3.Simulation<NetworkNode, NetworkLink> | null>(null);
+  const [simulation, setSimulation] = useState<d3.Simulation<NetworkNodeExtended, NetworkLinkExtended> | null>(null);
 
   const chartConfig = { ...DEFAULT_CHART_CONFIG, ...config };
 
   // Process nodes and links
   const processedData = React.useMemo(() => {
-    const processedNodes = nodes.map(node => ({
+    const processedNodes: NetworkNodeExtended[] = nodes.map(node => ({
       ...node,
       size: typeof nodeSize === 'function' ? nodeSize(node) : nodeSize,
       color: getNodeColor(node),
       opacity: 1
     }));
 
-    const processedLinks = links.map(link => ({
-      ...link,
-      width: typeof linkWidth === 'function' ? linkWidth(link) : linkWidth,
-      color: getLinkColor(link),
-      opacity: 1
-    }));
+    // Create a map for quick node lookup
+    const nodeMap = new Map<string, NetworkNodeExtended>();
+    processedNodes.forEach(node => nodeMap.set(node.id, node));
+
+    const processedLinks: NetworkLinkExtended[] = links.map(link => {
+      const sourceNode = nodeMap.get(link.source);
+      const targetNode = nodeMap.get(link.target);
+      
+      if (!sourceNode || !targetNode) {
+        throw new Error(`Invalid link: source or target node not found`);
+      }
+
+      return {
+        id: (link as any).id || `${link.source}-${link.target}`,
+        source: sourceNode,
+        target: targetNode,
+        value: link.weight || 1,
+        weight: link.weight,
+        type: link.type as 'transaction' | 'trust' | 'offer',
+        timestamp: (link as any).timestamp || new Date(),
+        width: typeof linkWidth === 'function' ? linkWidth(link) : linkWidth,
+        color: getLinkColor({
+          source: sourceNode,
+          target: targetNode,
+          weight: link.weight,
+          type: link.type as 'transaction' | 'trust' | 'offer',
+          timestamp: (link as any).timestamp || new Date()
+        }),
+        opacity: 1
+      };
+    });
 
     return { nodes: processedNodes, links: processedLinks };
   }, [nodes, links, nodeSize, linkWidth]);
@@ -96,7 +142,13 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
   };
 
   // Get link color based on type and weight
-  const getLinkColor = (link: NetworkLink): string => {
+  const getLinkColor = (link: {
+    source: NetworkNodeExtended;
+    target: NetworkNodeExtended;
+    weight: number;
+    type: 'transaction' | 'trust' | 'offer';
+    timestamp?: Date;
+  }): string => {
     switch (link.type) {
       case 'transaction':
         return link.weight > 0.5 ? '#3B82F6' : '#93C5FD';
@@ -166,11 +218,11 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
     }
 
     // Create force simulation
-    const forceSimulation = d3.forceSimulation(processedData.nodes)
-      .force('link', d3.forceLink(processedData.links).id((d: any) => d.id).distance(100))
-      .force('charge', d3.forceManyBody().strength(-300))
-      .force('center', d3.forceCenter(innerWidth / 2, innerHeight / 2))
-      .force('collision', d3.forceCollide().radius((d: any) => d.size + 5));
+    const forceSimulation = d3.forceSimulation<NetworkNodeExtended, NetworkLinkExtended>(processedData.nodes)
+      .force('link', d3.forceLink<NetworkNodeExtended, NetworkLinkExtended>(processedData.links).id((d: any) => d.id).distance(100))
+      .force('charge', d3.forceManyBody<NetworkNodeExtended>().strength(-300))
+      .force('center', d3.forceCenter<NetworkNodeExtended>(innerWidth / 2, innerHeight / 2))
+      .force('collision', d3.forceCollide<NetworkNodeExtended>().radius((d: any) => d.size + 5));
 
     setSimulation(forceSimulation);
 
@@ -187,14 +239,24 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
       .style('cursor', 'pointer')
       .on('click', (event, d) => {
         event.stopPropagation();
-        setSelectedLink(selectedLink === `${d.source.id}-${d.target.id}` ? null : `${d.source.id}-${d.target.id}`);
-        onLinkClick?.(d);
-        onDataPointClick?.(d);
+        setSelectedLink(selectedLink === `${d.source}-${d.target}` ? null : `${d.source}-${d.target}`);
+        // Convert back to original NetworkLink format for callback
+        const originalLink: NetworkLink = {
+          source: typeof d.source === 'string' ? d.source : d.source.id,
+          target: typeof d.target === 'string' ? d.target : d.target.id,
+          weight: d.weight,
+          type: d.type,
+          timestamp: d.timestamp
+        };
+        onLinkClick?.(originalLink);
+        onDataPointClick?.(originalLink);
       })
       .on('mouseover', (event, d) => {
+        const sourceId = typeof d.source === 'string' ? d.source : d.source.id;
+        const targetId = typeof d.target === 'string' ? d.target : d.target.id;
         const tooltipContent = generateTooltipContent([
-          { label: 'Source', value: d.source.id, color: '#3B82F6' },
-          { label: 'Target', value: d.target.id, color: '#10B981' },
+          { label: 'Source', value: sourceId, color: '#3B82F6' },
+          { label: 'Target', value: targetId, color: '#10B981' },
           { label: 'Weight', value: formatNumber(d.weight, 3), color: '#F59E0B' },
           { label: 'Type', value: d.type, color: '#8B5CF6' },
           { label: 'Time', value: formatDateTime(d.timestamp), color: '#6B7280' }
@@ -266,7 +328,7 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
 
     // Add drag behavior
     if (enableDrag) {
-      const drag = d3.drag<SVGCircleElement, NetworkNode>()
+      const drag = d3.drag<SVGCircleElement, NetworkNodeExtended>()
         .on('start', (event, d) => {
           if (!event.active) forceSimulation.alphaTarget(0.3).restart();
           d.fx = d.x;
@@ -282,7 +344,7 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
           d.fy = null;
         });
 
-      node.call(drag);
+      node.call(drag as any);
     }
 
     // Add labels
@@ -323,25 +385,37 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
     // Update positions on simulation tick
     forceSimulation.on('tick', () => {
       link
-        .attr('x1', (d: any) => d.source.x)
-        .attr('y1', (d: any) => d.source.y)
-        .attr('x2', (d: any) => d.target.x)
-        .attr('y2', (d: any) => d.target.y);
+        .attr('x1', (d: any) => {
+          const source = typeof d.source === 'string' ? processedData.nodes.find(n => n.id === d.source) : d.source;
+          return source?.x || 0;
+        })
+        .attr('y1', (d: any) => {
+          const source = typeof d.source === 'string' ? processedData.nodes.find(n => n.id === d.source) : d.source;
+          return source?.y || 0;
+        })
+        .attr('x2', (d: any) => {
+          const target = typeof d.target === 'string' ? processedData.nodes.find(n => n.id === d.target) : d.target;
+          return target?.x || 0;
+        })
+        .attr('y2', (d: any) => {
+          const target = typeof d.target === 'string' ? processedData.nodes.find(n => n.id === d.target) : d.target;
+          return target?.y || 0;
+        });
 
       node
-        .attr('cx', (d: any) => d.x)
-        .attr('cy', (d: any) => d.y);
+        .attr('cx', (d: any) => d.x || 0)
+        .attr('cy', (d: any) => d.y || 0);
 
       if (showLabels) {
         g.selectAll('.labels text')
-          .attr('x', (d: any) => d.x)
-          .attr('y', (d: any) => d.y);
+          .attr('x', (d: any) => d.x || 0)
+          .attr('y', (d: any) => d.y || 0);
       }
 
       if (showNodeValues) {
         g.selectAll('.node-values text')
-          .attr('x', (d: any) => d.x)
-          .attr('y', (d: any) => d.y);
+          .attr('x', (d: any) => d.x || 0)
+          .attr('y', (d: any) => d.y || 0);
       }
     });
 
