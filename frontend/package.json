@@ -14,6 +14,7 @@
     "@chenaikit/core": "workspace:*",
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^7.3.9",
     "@mui/material": "^5.15.0",
     "axios": "^1.6.0",
     "react": "^18.2.0",
@@ -32,6 +33,11 @@
     "eslint": "^8.0.0",
     "react-scripts": "5.0.1",
     "typescript": "^5.0.0"
+  },
+  "jest": {
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@chenaikit|axios|@stellar)/)"
+    ]
   },
   "browserslist": {
     "production": [

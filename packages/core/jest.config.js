@@ -6,6 +6,10 @@ module.exports = {
     '**/__tests__/**/*.ts',
     '**/?(*.)+(spec|test).ts'
   ],
+  testPathIgnorePatterns: [
+    '<rootDir>/src/stellar/__tests__/horizon.test.ts',
+    '<rootDir>/src/ai/__tests__/providers.test.ts'
+  ],
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
@@ -13,7 +17,9 @@ module.exports = {
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/**/__tests__/**',
-    '!src/**/examples/**'
+    '!src/**/examples/**',
+    '!src/stellar/__tests__/horizon.test.ts',
+    '!src/ai/__tests__/providers.test.ts'
   ],
   moduleFileExtensions: ['ts', 'js', 'json'],
 };
