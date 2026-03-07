@@ -2,6 +2,7 @@
   "name": "@chenaikit/frontend",
   "version": "0.1.0",
   "description": "Frontend applications for ChenAIKit",
+  "homepage": ".",
   "main": "src/index.tsx",
   "scripts": {
     "start": "react-scripts start",
