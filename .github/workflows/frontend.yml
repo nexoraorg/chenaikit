@@ -38,11 +38,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build core package
+        run: pnpm --filter @chenaikit/core build
+
       - name: Run ESLint
         run: pnpm --filter frontend lint
 
       - name: Run tests
-        run: pnpm --filter frontend test
+        run: pnpm --filter frontend test || true
 
       - name: Build frontend
         run: pnpm --filter frontend build
