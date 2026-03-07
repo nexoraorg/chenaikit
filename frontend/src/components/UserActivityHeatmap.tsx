@@ -119,12 +119,12 @@ export const UserActivityHeatmap: React.FC<UserActivityHeatmapProps> = ({
 
   // Get unique categories and times
   const categories = React.useMemo(() => {
-    const uniqueCategories = [...new Set(processedData.cells.map(cell => cell.category))];
+    const uniqueCategories = Array.from(new Set(processedData.cells.map(cell => cell.category)));
     return uniqueCategories.sort();
   }, [processedData.cells]);
 
   const times = React.useMemo(() => {
-    const uniqueTimes = [...new Set(processedData.cells.map(cell => cell.time))];
+    const uniqueTimes = Array.from(new Set(processedData.cells.map(cell => cell.time)));
     return uniqueTimes.sort();
   }, [processedData.cells]);
 

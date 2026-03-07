@@ -241,7 +241,7 @@ export class TransactionMonitor extends SimpleEventEmitter {
   private async analyzeTransaction(transaction: TransactionEvent): Promise<TransactionAnalysis> {
     try {
       let category = TransactionCategory.NORMAL;
-      let riskScore = Math.random() * 100; // Random risk score for demo
+      const riskScore = Math.random() * 100; // Random risk score for demo
       const flags: string[] = [];
 
       if (riskScore > 80) {

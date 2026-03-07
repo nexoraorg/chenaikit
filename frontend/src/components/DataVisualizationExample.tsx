@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { Typography } from '@mui/material';
 import { TransactionData, PerformanceMetrics, UserActivity, NetworkNode, NetworkLink } from '@chenaikit/core';
 import { 
   exportVisualization, 

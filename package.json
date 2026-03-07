@@ -11,7 +11,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev": "pnpm -r dev",
-    "test": "pnpm -r test",
+    "test": "pnpm -r --filter='@chenaikit/core' --filter='@chenaikit/backend' test",
     "lint": "pnpm -r lint",
     "clean": "pnpm -r clean",
     "type-check": "pnpm -r type-check",

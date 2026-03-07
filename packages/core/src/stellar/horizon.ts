@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { EventEmitter } from 'events';
 
 // TypeScript interfaces for Stellar Horizon API responses

@@ -224,6 +224,7 @@ export const ScoreHistoryChart: React.FC<ScoreHistoryChartProps> = ({
                 </Typography>
                 <Typography
                   variant="body2"
+                  data-testid={`${stat.label.toLowerCase()}-score`}
                   sx={{
                     fontWeight: 700,
                     color: stat.color,

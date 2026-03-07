@@ -51,7 +51,7 @@ export class TimeSeriesForecaster {
     const confidenceLevel = options.confidenceLevel ?? 0.95;
     const z = zValueFor(confidenceLevel);
 
-    let m = options.seasonalityPeriod ?? detectSeasonalityPeriod(values) ?? 0;
+    const m = options.seasonalityPeriod ?? detectSeasonalityPeriod(values) ?? 0;
     const alpha = options.adaptivity ?? 0.3;
     const beta = Math.min(0.2 + alpha / 2, 0.5);
     const gamma = Math.min(0.1 + alpha / 3, 0.5);

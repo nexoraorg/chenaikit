@@ -8,16 +8,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  user
-  admin
-}
-
 model User {
   id            String          @id @default(cuid())
   email         String          @unique
   password      String
-  role          Role            @default(user)
+  role          String          @default("user")
   createdAt     DateTime        @default(now())
   refreshTokens RefreshToken[]
 }

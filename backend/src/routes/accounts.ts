@@ -1,9 +1,10 @@
 import { Router } from 'express';
+import type { Router as ExpressRouter } from 'express';
 import { AccountController } from '../controllers/accountController';
 import { ValidationMiddleware } from '../middleware/validation';
 import { generalRateLimit, createAccountRateLimit } from '../middleware/rateLimiter';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 // Apply general rate limiting to all account routes
 router.use(generalRateLimit.middleware());

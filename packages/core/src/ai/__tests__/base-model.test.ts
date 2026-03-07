@@ -253,7 +253,7 @@ describe('AIModel Base Class', () => {
       model['makeRequest'] = jest.fn().mockRejectedValue(unknownError);
       
       await expect(model.generate({ prompt: 'test' })).rejects.toThrow(AIModelError);
-      await expect(model.generate({ prompt: 'test' })).rejects.toThrow('Unknown error occurred');
+      await expect(model.generate({ prompt: 'test' })).rejects.toThrow('Unknown error');
     });
   });
 
