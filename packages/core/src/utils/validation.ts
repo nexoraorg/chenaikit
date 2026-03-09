@@ -85,7 +85,10 @@ export const ValidationRules = {
     custom: (value) => {
       if (value) {
         try {
-          new URL(value);
+          const url = new URL(value);
+          if (!['http:', 'https:'].includes(url.protocol)) {
+            return message;
+          }
         } catch {
           return message;
         }
