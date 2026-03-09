@@ -1,0 +1,272 @@
+# Crowdin configuration file for ChenAIKit
+# https://crowdin.com/project/chenaikit
+
+# Project information
+project_identifier: chenaikit
+api_token_env: CROWDIN_API_TOKEN
+base_path: .
+base_url: 'https://api.crowdin.com'
+
+# File structure
+files:
+  # Translation files
+  - source: '/src/locales/en.json'
+    translation: '/src/locales/%two_letters_code%.json'
+    type: 'json'
+    update_option: 'update_as_unapproved'
+    export_patterns: ['/src/locales/%two_letters_code%.json']
+    
+  # Documentation files
+  - source: '/docs/**/*.md'
+    translation: '/docs/%two_letters_code%/**/%original_file_name%'
+    type: 'markdown'
+    update_option: 'update_as_unapproved'
+    export_patterns: ['/docs/%two_letters_code%/**/%original_file_name%']
+
+# Languages
+languages:
+  # Currently supported languages
+  - language_code: 'es'
+    name: 'Spanish'
+    two_letters_code: 'es'
+    
+  - language_code: 'zh-CN'
+    name: 'Chinese Simplified'
+    two_letters_code: 'zh'
+    
+  - language_code: 'ar'
+    name: 'Arabic'
+    two_letters_code: 'ar'
+    rtl: true
+
+# Target languages (for future expansion)
+target_languages:
+  - language_code: 'fr'
+    name: 'French'
+    two_letters_code: 'fr'
+    
+  - language_code: 'de'
+    name: 'German'
+    two_letters_code: 'de'
+    
+  - language_code: 'it'
+    name: 'Italian'
+    two_letters_code: 'it'
+    
+  - language_code: 'pt-BR'
+    name: 'Portuguese, Brazilian'
+    two_letters_code: 'pt'
+    
+  - language_code: 'ja'
+    name: 'Japanese'
+    two_letters_code: 'ja'
+    
+  - language_code: 'ko'
+    name: 'Korean'
+    two_letters_code: 'ko'
+    
+  - language_code: 'ru'
+    name: 'Russian'
+    two_letters_code: 'ru'
+    
+  - language_code: 'hi'
+    name: 'Hindi'
+    two_letters_code: 'hi'
+    
+  - language_code: 'he'
+    name: 'Hebrew'
+    two_letters_code: 'he'
+    rtl: true
+
+# Settings
+preserve_hierarchy: true
+files_appended: true
+skip_untranslated_files: false
+export_approved_only: false
+import_translations: true
+import_duplicates: true
+export_translations: true
+
+# Quality assurance
+qa_checks:
+  - 'empty_strings'
+  - '不一致的占位符'
+  - '不一致的标签'
+  - '不一致的换行符'
+  - '不一致的空格'
+  - '拼写错误'
+  - '语法错误'
+
+# Machine translation
+mt:
+  - engine: 'google'
+    lang: 'es'
+  - engine: 'google'
+    lang: 'zh-CN'
+  - engine: 'google'
+    lang: 'ar'
+
+# Context and screenshots
+screenshot_files:
+  - '/screenshots/*.png'
+  - '/screenshots/*.jpg'
+
+# Glossary
+glossary_file: '/glossary/terms.csv'
+
+# Translation memory
+tm:
+  import: true
+  export: true
+
+# Auto-translation
+auto_approve:
+  - 'es'
+  - 'zh-CN'
+  - 'ar'
+
+# Webhooks
+webhooks:
+  - url: 'https://api.chenaikit.dev/webhooks/crowdin'
+    events:
+      - 'project.translated'
+      - 'project.approved'
+      - 'project.updated'
+
+# Branches
+branches:
+  - name: 'main'
+    translation_mode: 'default'
+  - name: 'develop'
+    translation_mode: 'default'
+  - name: 'feature/*'
+    translation_mode: 'default'
+
+# Tasks
+tasks:
+  - name: 'UI Translations'
+    type: 'translate'
+    files:
+      - '/src/locales/en.json'
+    languages:
+      - 'es'
+      - 'zh-CN'
+      - 'ar'
+    priority: 'high'
+    
+  - name: 'Documentation Translation'
+    type: 'translate'
+    files:
+      - '/docs/**/*.md'
+    languages:
+      - 'es'
+      - 'zh-CN'
+      - 'ar'
+    priority: 'medium'
+
+# Reports
+reports:
+  - name: 'Translation Progress'
+    type: 'translation_progress'
+    config:
+      format: 'json'
+      
+  - name: 'Cost Estimate'
+    type: 'cost_estimate'
+    config:
+      currency: 'USD'
+      
+  - name: 'Quality Report'
+    type: 'quality_assurance'
+    config:
+      format: 'html'
+
+# Settings for different file types
+settings:
+  json:
+    escape_special_characters: true
+    preserve_quotes: true
+    indent_size: 2
+    
+  markdown:
+    preserve_markdown: true
+    escape_html: false
+
+# Custom segmentation
+segmentation:
+  - '/src/locales/en.json':
+    - 'app.*'
+    - 'dashboard.*'
+    - 'transactions.*'
+    - 'alerts.*'
+    - 'analytics.*'
+    - 'settings.*'
+    - 'websocket.*'
+    - 'creditScoring.*'
+    - 'errors.*'
+    - 'forms.*'
+    - 'time.*'
+    - 'numbers.*'
+    - 'units.*'
+    - 'common.*'
+
+# Translation memory settings
+tm_settings:
+  min_similarity: 75
+  max_candidates: 5
+  auto_apply: true
+
+# Glossary settings
+glossary_settings:
+  case_sensitive: false
+  exact_match: true
+
+# Workflow
+workflow:
+  steps:
+    - 'translate'
+    - 'proofread'
+    - 'approve'
+    
+  permissions:
+    translators:
+      - 'translate'
+      - 'suggest'
+    proofreaders:
+      - 'translate'
+      - 'proofread'
+      - 'suggest'
+    managers:
+      - 'translate'
+      - 'proofread'
+      - 'approve'
+      - 'manage'
+
+# Notifications
+notifications:
+  email:
+    enabled: true
+    events:
+      - 'assignment'
+      - 'mention'
+      - 'comment'
+      - 'approval'
+      
+  in_app:
+    enabled: true
+    events:
+      - 'assignment'
+      - 'mention'
+      - 'comment'
+
+# API settings
+api:
+  rate_limit: 1000
+  timeout: 30
+  retries: 3
+
+# Development settings
+development:
+  dry_run: false
+  verbose: false
+  debug: false
