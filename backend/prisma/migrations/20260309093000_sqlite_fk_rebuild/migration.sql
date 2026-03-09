@@ -12,7 +12,9 @@ CREATE TABLE "RefreshToken_new" (
 );
 
 INSERT INTO "RefreshToken_new" ("id","tokenHash","userId","createdAt","updatedAt","expiresAt")
-SELECT "id","tokenHash","userId","createdAt","updatedAt","expiresAt" FROM "RefreshToken";
+SELECT "id","tokenHash","userId","createdAt","updatedAt","expiresAt"
+FROM "RefreshToken"
+WHERE EXISTS (SELECT 1 FROM "User" u WHERE u."id" = "RefreshToken"."userId");
 
 DROP TABLE "RefreshToken";
 ALTER TABLE "RefreshToken_new" RENAME TO "RefreshToken";
@@ -43,7 +45,9 @@ INSERT INTO "api_keys_new" (
   "id","keyHash","name","tier","userId","isActive","allowedIps","allowedPaths",
   "createdAt","updatedAt","expiresAt","lastUsedAt","usageQuota","currentUsage","usageResetAt","deletedAt"
 ) SELECT
-  "id","keyHash","name","tier","userId","isActive","allowedIps","allowedPaths",
+  "id","keyHash","name","tier",
+  CASE WHEN EXISTS (SELECT 1 FROM "User" u WHERE u."id" = "api_keys"."userId") THEN "userId" ELSE NULL END,
+  "isActive","allowedIps","allowedPaths",
   "createdAt","updatedAt","expiresAt","lastUsedAt","usageQuota","currentUsage","usageResetAt","deletedAt"
 FROM "api_keys";
 
@@ -83,7 +87,8 @@ INSERT INTO "api_usage_new" (
 ) SELECT
   "id","apiKeyId","endpoint","method","statusCode","responseTime",
   "requestSize","responseSize","ip","userAgent","timestamp","updatedAt","deletedAt"
-FROM "api_usage";
+FROM "api_usage"
+WHERE EXISTS (SELECT 1 FROM "api_keys" ak WHERE ak."id" = "api_usage"."apiKeyId");
 
 DROP TABLE "api_usage";
 ALTER TABLE "api_usage_new" RENAME TO "api_usage";

@@ -10,7 +10,7 @@ datasource db {
 
 model User {
   id            String          @id @default(cuid())
-  email         String          @unique
+  email         String
   password      String
   role          String          @default("user")
   createdAt     DateTime        @default(now())
@@ -84,5 +84,6 @@ model ApiUsage {
   @@index([endpoint, timestamp])
   @@index([statusCode, timestamp])
   @@index([ip, timestamp])
+  @@index([timestamp])
 }
 
