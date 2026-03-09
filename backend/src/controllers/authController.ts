@@ -6,6 +6,34 @@ import { UserPayload } from '../types/auth';
 import crypto from 'crypto';
 import { z } from 'zod';
 
+const durationToMs = (input: string): number => {
+  const trimmed = input.trim();
+  const match = /^([0-9]+)\s*(ms|s|m|h|d)$/i.exec(trimmed);
+  if (!match) {
+    const numeric = Number(trimmed);
+    if (Number.isFinite(numeric) && numeric > 0) return numeric;
+    throw new Error('Invalid REFRESH_TOKEN_EXPIRATION format');
+  }
+
+  const value = Number(match[1]);
+  const unit = match[2].toLowerCase();
+
+  const multipliers: Record<string, number> = {
+    ms: 1,
+    s: 1000,
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+  };
+
+  return value * multipliers[unit];
+};
+
+const getRefreshTokenTtlMs = (): number => {
+  const exp = process.env.REFRESH_TOKEN_EXPIRATION || '7d';
+  return durationToMs(exp);
+};
+
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
@@ -15,6 +43,10 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+});
+
+const refreshSchema = z.object({
+  token: z.string().min(1),
 });
 
 export class AuthController {
@@ -50,11 +82,11 @@ export class AuthController {
       const refreshTokenRaw = crypto.randomBytes(64).toString('hex');
       const refreshTokenHash = await hashPassword(refreshTokenRaw);
 
-      await prisma.refreshToken.create({
+      const stored = await prisma.refreshToken.create({
         data: {
           tokenHash: refreshTokenHash,
           userId: user.id,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          expiresAt: new Date(Date.now() + getRefreshTokenTtlMs()),
         },
       });
 
@@ -67,25 +99,37 @@ export class AuthController {
 
   async refreshToken(req: Request, res: Response) {
     try {
-      const { token } = req.body;
-      if (!token) return res.status(401).json({ message: 'Refresh token missing' });
+      const { token } = refreshSchema.parse(req.body);
+      const [idPart, tokenPart] = token.split('.', 2);
 
-      const tokens = await prisma.refreshToken.findMany({ include: { user: true } });
-      let matched = null;
-      for (const t of tokens) {
-        if (await comparePassword(token, t.tokenHash)) {
-          matched = t;
-          break;
-        }
+      const id = Number(idPart);
+      if (!Number.isFinite(id) || !tokenPart) {
+        return res.status(403).json({ message: 'Invalid refresh token' });
       }
 
-      if (!matched) return res.status(403).json({ message: 'Invalid refresh token' });
-      if (matched.expiresAt < new Date()) return res.status(403).json({ message: 'Refresh token expired' });
+      const stored = await prisma.refreshToken.findUnique({ where: { id }, include: { user: true } });
+      if (!stored) return res.status(403).json({ message: 'Invalid refresh token' });
+      if (stored.expiresAt < new Date()) return res.status(403).json({ message: 'Refresh token expired' });
+
+      const matches = await comparePassword(tokenPart, stored.tokenHash);
+      if (!matches) return res.status(403).json({ message: 'Invalid refresh token' });
+
+      // Rotate refresh token on successful use
+      const newRefreshTokenRaw = crypto.randomBytes(64).toString('hex');
+      const newRefreshTokenHash = await hashPassword(newRefreshTokenRaw);
+
+      await prisma.refreshToken.update({
+        where: { id: stored.id },
+        data: {
+          tokenHash: newRefreshTokenHash,
+          expiresAt: new Date(Date.now() + getRefreshTokenTtlMs()),
+        },
+      });
 
       const payload: UserPayload = {
-        id: matched.user.id,
-        email: matched.user.email,
-        role: matched.user.role,
+        id: stored.user.id,
+        email: stored.user.email,
+        role: stored.user.role,
       };
       const accessToken = generateAccessToken(payload);
       res.json({ accessToken });

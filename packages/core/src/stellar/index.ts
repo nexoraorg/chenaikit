@@ -5,3 +5,5 @@ export * from './errorHandler';
 export * from './feeOptimizer';
 export * from './memoHandler';
 export * from './multiSig';
+export * from './dex';
+export * from './dex-analytics';

@@ -5,6 +5,7 @@ mod events;
 mod patterns;
 mod risk_scorer;
 mod storage;
+mod upgrade;
 
 use crate::events::{
     create_fraud_alert, emit_anomaly_detected, emit_blacklist_updated, emit_config_updated,
@@ -41,6 +42,9 @@ impl FraudDetectContract {
         env.storage()
             .instance()
             .set(&soroban_sdk::symbol_short!("init"), &true);
+
+        // Initialize upgrade system
+        upgrade::init_upgrade_system(&env);
 
         let default_config = FraudConfig::default();
         set_config(&env, &default_config);
@@ -331,7 +335,32 @@ impl FraudDetectContract {
 
     pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) {
         Self::require_admin(&env, &admin);
-        env.deployer().update_current_contract_wasm(new_wasm_hash);
+        
+        let migration_notes = String::from_str(&env, "Standard upgrade");
+        upgrade::perform_upgrade(&env, &admin, new_wasm_hash, migration_notes);
+    }
+
+    pub fn upgrade_with_migration(
+        env: Env,
+        admin: Address,
+        new_wasm_hash: BytesN<32>,
+        migration_notes: String,
+    ) {
+        Self::require_admin(&env, &admin);
+        upgrade::perform_upgrade(&env, &admin, new_wasm_hash, migration_notes);
+    }
+
+    pub fn rollback(env: Env, admin: Address) {
+        Self::require_admin(&env, &admin);
+        upgrade::rollback_upgrade(&env, &admin);
+    }
+
+    pub fn get_version(env: Env) -> u32 {
+        upgrade::get_version(&env)
+    }
+
+    pub fn get_upgrade_history(env: Env) -> Vec<upgrade::UpgradeRecord> {
+        upgrade::get_upgrade_history(&env)
     }
 
     fn require_admin(env: &Env, admin: &Address) {

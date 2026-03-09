@@ -1,8 +1,6 @@
 // ChenAIKit Backend Server
 import 'reflect-metadata';
 import express, { Request, Response } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { log } from './utils/logger';
 import { requestLoggingMiddleware } from './middleware/logging';
@@ -19,77 +17,16 @@ import { UsageTrackingService } from './services/usageTrackingService';
 import { ApiGateway } from './middleware/apiGateway';
 import { createTieredRateLimiter } from './middleware/advancedRateLimiter';
 import Redis from 'ioredis';
-import { DataSource } from 'typeorm';
-import { createAnalyticsRouter } from './routes/analytics';
-import { User } from './models/User';
-import { Account } from './models/Account';
-import { Transaction } from './models/Transaction';
-import { CreditScore } from './models/CreditScore';
-import { FraudAlert } from './models/FraudAlert';
-
-// Load environment variables
-dotenv.config();
-
-// Validate environment configuration
-validateEnvironment();
-
-// Initialize services
-const prisma = new PrismaClient();
-
-// In test mode, use a mock Redis to avoid connection hangs
-const redis = process.env.NODE_ENV === 'test'
-  ? new Redis({ lazyConnect: true, maxRetriesPerRequest: 0, enableOfflineQueue: false })
-  : new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-
-const apiKeyService = new ApiKeyService(prisma);
-const usageTrackingService = new UsageTrackingService(prisma);
-const rateLimiter = createTieredRateLimiter(redis);
-
-const typeorm = new DataSource({
-  type: 'sqljs',
-  location: process.env.NODE_ENV === 'test' ? undefined : (process.env.SQLITE_DB_PATH || 'database.sqlite'),
-  autoSave: process.env.NODE_ENV !== 'test',
-  entities: [User, Account, Transaction, CreditScore, FraudAlert],
-  synchronize: true, // Always synchronize in test or development
-  logging: false,
-});
-
-const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
+import { applySecurityMiddleware } from './middleware/security';
+import { loadVaultSecrets } from './config/secrets';
 
 const app: express.Application = express();
-const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(helmet());
-app.use(cors());
+applySecurityMiddleware(app);
 app.use(express.json({ limit: '10mb' }));
-
-// Add metrics middleware before request logging
 app.use(metricsMiddleware);
-
-// Add logging middlewares
 app.use(requestLoggingMiddleware);
-
-// Health routes
 app.use('/api', healthRouter);
-
-// API Gateway protected routes
-const gatewayMiddleware = apiGateway.gateway({
-  enableAuth: true,
-  enableRateLimit: true,
-  enableUsageTracking: true,
-  transform: {
-    responseHeaders: {
-      'X-API-Version': '1.0.0',
-      'X-Gateway': 'ChenAIKit-API-Gateway',
-    },
-  },
-});
-
-// Protected API routes with gateway
-app.use('/api/v1', ...gatewayMiddleware);
-
-// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
@@ -104,150 +41,149 @@ app.use('/api/v1/credit-score', (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     },
   });
-});
 
-app.use('/api/v1/fraud/detect', (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    data: {
-      riskScore: Math.floor(Math.random() * 100),
-      riskLevel: 'low',
-      factors: ['transaction_amount', 'location', 'device'],
-      timestamp: new Date().toISOString(),
-    },
-  });
-});
+  // Protected API routes with gateway
+  app.use('/api/v1', ...gatewayMiddleware);
 
-// API Key management endpoints
-app.post('/api/v1/keys', async (req: Request, res: Response) => {
-  try {
-    const { name, tier = 'FREE', allowedIps, allowedPaths, usageQuota } = req.body;
-    const user = req.user as UserPayload | undefined;
-    
-    const { apiKey, plainKey } = await apiKeyService.createApiKey({
-      name,
-      tier,
-      userId: user?.id || undefined,
-      allowedIps,
-      allowedPaths,
-      usageQuota,
-    });
-
-    res.status(201).json({
+  // Gateway-protected endpoints
+  app.use('/api/v1/credit-score', ...gatewayMiddleware, (_req: Request, res: Response) => {
+    res.json({
       success: true,
       data: {
-        apiKey: {
-          id: apiKey.id,
-          name: apiKey.name,
-          tier: apiKey.tier,
-          key: plainKey, // Only shown once
-          createdAt: apiKey.createdAt,
-        },
-      },
-    });
-  } catch (err) {
-    const error = err as Error;
-    log.error('API key creation failed', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'API_KEY_CREATION_FAILED',
-        message: 'Failed to create API key',
+        score: Math.floor(Math.random() * 850) + 150,
+        factors: ['payment_history', 'credit_utilization', 'account_age'],
         timestamp: new Date().toISOString(),
       },
     });
-  }
-});
+  });
 
-app.get('/api/v1/keys', async (req: Request, res: Response) => {
-  try {
-    const user = req.user as UserPayload | undefined;
-    if (!user?.id) {
-      return res.status(401).json({
+  app.use('/api/v1/fraud/detect', ...gatewayMiddleware, (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      data: {
+        riskScore: Math.floor(Math.random() * 100),
+        riskLevel: 'low',
+        factors: ['transaction_amount', 'location', 'device'],
+        timestamp: new Date().toISOString(),
+      },
+    });
+  });
+
+  // API Key management endpoints
+  app.post('/api/v1/keys', ...gatewayMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { name, tier = 'FREE', allowedIps, allowedPaths, usageQuota } = req.body;
+      const user = (req as any).user; // Assuming auth middleware adds user
+
+      const { apiKey, plainKey } = await apiKeyService.createApiKey({
+        name,
+        tier,
+        userId: user?.id,
+        allowedIps,
+        allowedPaths,
+        usageQuota,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: {
+          apiKey: {
+            id: apiKey.id,
+            name: apiKey.name,
+            tier: apiKey.tier,
+            key: plainKey, // Only shown once
+            createdAt: apiKey.createdAt,
+          },
+        },
+      });
+    } catch (_error) {
+      res.status(500).json({
         success: false,
         error: {
-          code: 'UNAUTHORIZED',
-          message: 'User authentication required',
+          code: 'API_KEY_CREATION_FAILED',
+          message: 'Failed to create API key',
           timestamp: new Date().toISOString(),
         },
       });
     }
-    const apiKeys = await apiKeyService.getApiKeysByUserId(user.id);
-    
-    res.json({
-      success: true,
-      data: {
-        apiKeys: apiKeys.map(key => ({
-          id: key.id,
-          name: key.name,
-          tier: key.tier,
-          isActive: key.isActive,
-          createdAt: key.createdAt,
-          lastUsedAt: key.lastUsedAt,
-          currentUsage: key.currentUsage,
-          usageQuota: key.usageQuota,
-        })),
-      },
-    });
-  } catch (err) {
-    const error = err as Error;
-    log.error('API keys fetch failed', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'API_KEYS_FETCH_FAILED',
-        message: 'Failed to fetch API keys',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-});
+  });
 
-app.get('/api/v1/analytics', async (req: Request, res: Response) => {
-  try {
-    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
-    
-    const analytics = await usageTrackingService.getAnalytics(startDate, endDate);
-    
-    res.json({
-      success: true,
-      data: analytics,
-    });
-  } catch (err) {
-    const error = err as Error;
-    log.error('Analytics fetch failed', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'ANALYTICS_FETCH_FAILED',
-        message: 'Failed to fetch analytics',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-});
+  app.get('/api/v1/keys', ...gatewayMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const apiKeys = await apiKeyService.getApiKeysByUserId(user?.id);
 
-app.get('/api/v1/gateway/health', async (req: Request, res: Response) => {
-  try {
-    const health = await apiGateway.healthCheck();
-    res.json({
-      success: true,
-      data: health,
-    });
-  } catch (err) {
-    const error = err as Error;
-    log.error('Gateway health check failed', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'GATEWAY_HEALTH_CHECK_FAILED',
-        message: 'Failed to get gateway health',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-});
+      res.json({
+        success: true,
+        data: {
+          apiKeys: apiKeys.map(key => ({
+            id: key.id,
+            name: key.name,
+            tier: key.tier,
+            isActive: key.isActive,
+            createdAt: key.createdAt,
+            lastUsedAt: key.lastUsedAt,
+            currentUsage: key.currentUsage,
+            usageQuota: key.usageQuota,
+          })),
+        },
+      });
+    } catch (_error) {
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'API_KEYS_FETCH_FAILED',
+          message: 'Failed to fetch API keys',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  });
+
+  app.get('/api/v1/analytics', ...gatewayMiddleware, async (req: Request, res: Response) => {
+    try {
+      const startDate = req.query.startDate
+        ? new Date(req.query.startDate as string)
+        : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
+
+      const analytics = await usageTrackingService.getAnalytics(startDate, endDate);
+
+      res.json({
+        success: true,
+        data: analytics,
+      });
+    } catch (_error) {
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'ANALYTICS_FETCH_FAILED',
+          message: 'Failed to fetch analytics',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  });
+
+  app.get('/api/v1/gateway/health', async (_req: Request, res: Response) => {
+    try {
+      const health = await gateway.healthCheck();
+      res.json({
+        success: true,
+        data: health,
+      });
+    } catch (_error) {
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'GATEWAY_HEALTH_CHECK_FAILED',
+          message: 'Failed to get gateway health',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  });
+};
 
 // Prometheus metrics endpoint
 app.get('/metrics', async (_req: Request, res: Response) => {
@@ -287,41 +223,49 @@ app.use((error: Error, req: express.Request, res: express.Response, _next: expre
   });
 });
 
-// Initialize services and start server
-const startServer = async () => {
-  try {
-    validateEnvironment();
-    await initializeMonitoring();
-    
-    await typeorm.initialize();
-    console.log('📦 TypeORM initialized');
+export const startServer = async (): Promise<void> => {
+  // Load environment variables
+  dotenv.config();
+
+  // Optional: load secrets from Vault before validating environment
+  await loadVaultSecrets();
+
+  // Validate environment configuration
+  validateEnvironment();
+
+  const prisma = new PrismaClient();
+  const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+  const apiKeyService = new ApiKeyService(prisma);
+  const usageTrackingService = new UsageTrackingService(prisma);
+  const rateLimiter = createTieredRateLimiter(redis);
+  const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
+
+  registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
+
+  const PORT = process.env.PORT || 5000;
+
+  await initializeMonitoring();
+
+  const server = app.listen(PORT, async () => {
+    console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
+    console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
 
     try {
       await ensureRedisConnection();
       console.log('🧠 Redis cache ready');
-    } catch (err) {
+    } catch (_err) {
       console.warn('⚠️  Redis not available. Continuing without cache.');
     }
 
-    if (process.env.NODE_ENV !== 'test') {
-      const server = app.listen(PORT, () => {
-        console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
-        console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-        console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
-      });
-
-      const shutdown = async () => {
-        try { 
-          await shutdownMonitoring(); 
-          await redis.quit();
-          await prisma.$disconnect();
-          await typeorm.destroy();
-        } catch { /* noop */ }
-        server.close(() => process.exit(0));
-      };
-
-      process.on('SIGINT', shutdown);
-      process.on('SIGTERM', shutdown);
+  const shutdown = async () => {
+    try {
+      await shutdownMonitoring();
+      await redis.quit();
+      await prisma.$disconnect();
+    } catch {
+      /* noop */
     }
   } catch (err) {
     console.error('❌ Failed to start server:', err);
@@ -331,6 +275,15 @@ const startServer = async () => {
   }
 };
 
-startServer();
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+};
+
+if (require.main === module) {
+  startServer().catch((error) => {
+    console.error('Failed to start server', error);
+    process.exit(1);
+  });
+}
 
 export default app;
