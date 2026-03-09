@@ -1,8 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   TransactionEvent, 
   TransactionAnalysis, 
@@ -46,22 +42,22 @@ const LiveTransactionFeed: React.FC<LiveTransactionFeedProps> = ({
   } = useWebSocket({
     onTransaction: (transaction: TransactionEvent, analysis: TransactionAnalysis) => {
       if (!isPaused) {
-        setTransactions(prev => [
+        setTransactions((prev: any[]) => [
           { transaction, analysis, timestamp: new Date() },
           ...prev.slice(0, maxItems - 1)
         ]);
       }
     },
     onAlert: (alert: Alert) => {
-      setAlerts(prev => [alert, ...prev.slice(0, 9)]);
+      setAlerts((prev: Alert[]) => [alert, ...prev.slice(0, 9)]);
     }
   });
 
   // Update transactions when recent transactions change
   useEffect(() => {
     if (!isPaused) {
-      setTransactions(prev => {
-        const newTransactions = recentTransactions.slice(0, maxItems - prev.length).map(tx => ({
+      setTransactions((prev: any[]) => {
+        const newTransactions = recentTransactions.slice(0, maxItems - prev.length).map((tx: any) => ({
           transaction: tx,
           analysis: {
             transactionId: tx.id,
@@ -124,145 +120,131 @@ const LiveTransactionFeed: React.FC<LiveTransactionFeedProps> = ({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Connection Status */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Live Transaction Feed</CardTitle>
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Live Transaction Feed</h2>
+          <div className="flex items-center space-x-2">
             <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${
-                  isConnected ? 'bg-green-500' : 'bg-red-500'
-                }`} />
-                <span className="text-sm text-gray-600">
-                  {isConnected ? 'Connected' : isReconnecting ? `Reconnecting (${reconnectAttempts})` : 'Disconnected'}
-                </span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsPaused(!isPaused)}
-              >
-                {isPaused ? 'Resume' : 'Pause'}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={isConnected ? disconnect : connect}
-              >
-                {isConnected ? 'Disconnect' : 'Connect'}
-              </Button>
+              <div className={`w-2 h-2 rounded-full ${
+                isConnected ? 'bg-green-500' : 'bg-red-500'
+              }`} />
+              <span className="text-sm text-gray-600">
+                {isConnected ? 'Connected' : isReconnecting ? `Reconnecting (${reconnectAttempts})` : 'Disconnected'}
+              </span>
             </div>
+            <button
+              className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+              onClick={() => setIsPaused(!isPaused)}
+            >
+              {isPaused ? 'Resume' : 'Pause'}
+            </button>
+            <button
+              className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+              onClick={isConnected ? disconnect : connect}
+            >
+              {isConnected ? 'Disconnect' : 'Connect'}
+            </button>
           </div>
-        </CardHeader>
-      </Card>
+        </div>
+      </div>
 
       {/* Alerts */}
       {alerts.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg text-red-600">Recent Alerts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {alerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className="flex items-center justify-between p-2 bg-red-50 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{alert.title}</div>
-                    <div className="text-xs text-gray-600">{alert.message}</div>
-                  </div>
-                  <Badge variant="destructive" className="text-xs">
-                    {alert.severity.toUpperCase()}
-                  </Badge>
+        <div className="bg-white rounded-lg shadow p-4">
+          <h3 className="text-lg font-semibold text-red-600 mb-3">Recent Alerts</h3>
+          <div className="space-y-2">
+            {alerts.map((alert: Alert) => (
+              <div
+                key={alert.id}
+                className="flex items-center justify-between p-2 bg-red-50 rounded-lg"
+              >
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{alert.title}</div>
+                  <div className="text-xs text-gray-600">{alert.message}</div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <span className="text-xs px-2 py-1 bg-red-600 text-white rounded">
+                  {alert.severity.toUpperCase()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Transaction Feed */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Recent Transactions</CardTitle>
-          <div className="text-sm text-gray-600">
-            Showing {transactions.length} recent transactions
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[600px]">
-            <div className="space-y-2">
-              {transactions.map(({ transaction, analysis, timestamp }, index) => (
-                <div
-                  key={`${transaction.id}-${index}`}
-                  className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => onTransactionClick?.(transaction, analysis)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <Badge className={getCategoryColor(analysis.category)}>
-                        {analysis.category.replace('_', ' ').toUpperCase()}
-                      </Badge>
-                      <span className="text-xs text-gray-500">
-                        {formatTime(timestamp)}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`text-sm font-medium ${getRiskScoreColor(analysis.riskScore)}`}>
-                        Risk: {analysis.riskScore.toFixed(1)}
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        {formatAmount(transaction.fee)} XLM
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-gray-500">Hash:</span>
-                      <span className="ml-1 font-mono truncate">
-                        {transaction.hash.substring(0, 10)}...
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">From:</span>
-                      <span className="ml-1 font-mono truncate">
-                        {transaction.sourceAccount.substring(0, 8)}...
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Ledger:</span>
-                      <span className="ml-1">{transaction.ledger}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Operations:</span>
-                      <span className="ml-1">{transaction.operationCount}</span>
-                    </div>
-                  </div>
-
-                  {showAnalysis && analysis.flags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {analysis.flags.map((flag, flagIndex) => (
-                        <Badge key={flagIndex} variant="outline" className="text-xs">
-                          {flag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+      <div className="bg-white rounded-lg shadow p-4">
+        <h3 className="text-lg font-semibold mb-3">Recent Transactions</h3>
+        <div className="text-sm text-gray-600 mb-4">
+          Showing {transactions.length} recent transactions
+        </div>
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {transactions.map(({ transaction, analysis, timestamp }, index: number) => (
+            <div
+              key={`${transaction.id}-${index}`}
+              className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              onClick={() => onTransactionClick?.(transaction, analysis)}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <span className={`text-xs px-2 py-1 rounded ${getCategoryColor(analysis.category)}`}>
+                    {analysis.category.replace('_', ' ').toUpperCase()}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {formatTime(timestamp)}
+                  </span>
                 </div>
-              ))}
+                <div className="flex items-center space-x-2">
+                  <span className={`text-sm font-medium ${getRiskScoreColor(analysis.riskScore)}`}>
+                    Risk: {analysis.riskScore.toFixed(1)}
+                  </span>
+                  <span className="text-sm text-gray-600">
+                    {formatAmount(transaction.fee)} XLM
+                  </span>
+                </div>
+              </div>
               
-              {transactions.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  {isConnected ? 'Waiting for transactions...' : 'Connect to start monitoring'}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-gray-500">Hash:</span>
+                  <span className="ml-1 font-mono truncate">
+                    {transaction.hash.substring(0, 10)}...
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500">From:</span>
+                  <span className="ml-1 font-mono truncate">
+                    {transaction.sourceAccount.substring(0, 8)}...
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Ledger:</span>
+                  <span className="ml-1">{transaction.ledger}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Operations:</span>
+                  <span className="ml-1">{transaction.operationCount}</span>
+                </div>
+              </div>
+
+              {showAnalysis && analysis.flags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {analysis.flags.map((flag: string, flagIndex: number) => (
+                    <span key={flagIndex} className="text-xs px-2 py-1 bg-gray-100 rounded">
+                      {flag}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+          ))}
+          
+          {transactions.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              {isConnected ? 'Waiting for transactions...' : 'Connect to start monitoring'}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
