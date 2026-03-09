@@ -121,4 +121,16 @@ END;
 INSERT INTO api_usage_fts(rowid, endpoint, userAgent, ip)
 SELECT rowid, endpoint, userAgent, ip FROM api_usage;
 
+CREATE TEMP TABLE IF NOT EXISTS fk_guard(x INTEGER);
+DROP TRIGGER IF EXISTS fk_guard_violation;
+CREATE TRIGGER fk_guard_violation
+BEFORE INSERT ON fk_guard
+WHEN (SELECT count(*) FROM pragma_foreign_key_check) > 0
+BEGIN
+  SELECT RAISE(ABORT, 'foreign key violations exist');
+END;
+INSERT INTO fk_guard VALUES (1);
+DROP TRIGGER fk_guard_violation;
+DROP TABLE fk_guard;
+
 PRAGMA foreign_keys=ON;

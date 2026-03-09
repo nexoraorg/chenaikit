@@ -38,7 +38,7 @@ export class AuthController {
   async login(req: Request, res: Response) {
     try {
       const { email, password } = loginSchema.parse(req.body);
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
       if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
       const valid = await comparePassword(password, user.password);
@@ -79,6 +79,7 @@ export class AuthController {
 
       if (!matched) return res.status(403).json({ message: 'Invalid refresh token' });
       if (matched.expiresAt < new Date()) return res.status(403).json({ message: 'Refresh token expired' });
+      if ((matched.user as any)?.deletedAt) return res.status(403).json({ message: 'Account disabled' });
 
       const payload: UserPayload = {
         id: matched.user.id,

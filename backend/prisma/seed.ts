@@ -38,7 +38,11 @@ async function main() {
 
   const apiKey = await prisma.apiKey.upsert({
     where: { keyHash: createHash('sha256').update(plainApiKey).digest('hex') },
-    update: {},
+    update: {
+      userId: user.id,
+      isActive: true,
+      deletedAt: null
+    },
     create: {
       keyHash: createHash('sha256').update(plainApiKey).digest('hex'),
       name: 'Default Admin Key',
