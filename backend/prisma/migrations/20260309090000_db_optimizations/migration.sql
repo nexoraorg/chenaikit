@@ -52,3 +52,6 @@ CREATE TRIGGER IF NOT EXISTS api_usage_au AFTER UPDATE ON api_usage BEGIN
   INSERT INTO api_usage_fts(rowid, endpoint, userAgent, ip)
   VALUES (new.rowid, new.endpoint, new.userAgent, new.ip);
 END;
+
+-- Backfill FTS from existing rows
+INSERT INTO api_usage_fts(api_usage_fts) VALUES('rebuild');
