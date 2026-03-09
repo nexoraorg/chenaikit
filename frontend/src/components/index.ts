@@ -10,4 +10,5 @@ export { default as FormValidationExample } from './FormValidationExample';
 export { default as CreditScoring } from './CreditScoring';
 export { default as Dashboard } from './Dashboard';
 export { default as FraudDetection } from './FraudDetection';
+export { default as ChatInterface } from './ChatInterface';
 export { default as WalletInterface } from './WalletInterface';
