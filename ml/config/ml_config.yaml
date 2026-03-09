@@ -1,0 +1,102 @@
+# ML Configuration for Chenaikit
+
+# Data Configuration
+data:
+  synthetic:
+    num_transactions: 100000
+    fraud_ratio: 0.02
+    credit_score_range: [300, 850]
+    transaction_amount_range: [0.01, 100000]
+    date_range_days: 365
+  features:
+    transaction_features:
+      - amount
+      - timestamp
+      - sender_balance
+      - receiver_balance
+      - gas_used
+      - gas_price
+      - block_number
+      - transaction_hash
+    credit_features:
+      - transaction_frequency
+      - avg_transaction_amount
+      - account_age_days
+      - total_transactions
+      - unique_counterparties
+      - max_single_transaction
+      - volatility_score
+    fraud_features:
+      - amount_zscore
+      - time_since_last_transaction
+      - unusual_counterparty
+      - gas_anomaly_score
+      - rapid_transaction_count
+      - balance_change_ratio
+
+# Model Configuration
+models:
+  credit_scoring:
+    type: "gradient_boosting"
+    hyperparameters:
+      n_estimators: 200
+      max_depth: 8
+      learning_rate: 0.1
+      random_state: 42
+    validation_split: 0.2
+    cross_validation_folds: 5
+  
+  fraud_detection:
+    type: "random_forest"
+    hyperparameters:
+      n_estimators: 100
+      max_depth: 10
+      min_samples_split: 5
+      random_state: 42
+    validation_split: 0.2
+    cross_validation_folds: 5
+
+# Training Configuration
+training:
+  batch_size: 1024
+  epochs: 100
+  early_stopping_patience: 10
+  random_state: 42
+  test_size: 0.2
+
+# Evaluation Configuration
+evaluation:
+  credit_scoring_metrics:
+    - "mse"
+    - "mae"
+    - "r2_score"
+    - "explained_variance"
+  fraud_detection_metrics:
+    - "precision"
+    - "recall"
+    - "f1_score"
+    - "roc_auc"
+    - "confusion_matrix"
+  threshold: 0.5
+
+# Deployment Configuration
+deployment:
+  model_format: "onnx"
+  api_host: "0.0.0.0"
+  api_port: 8000
+  model_registry: "s3://chenaikit-models/"
+  monitoring:
+    drift_detection: true
+    performance_tracking: true
+
+# Experiment Tracking
+experiment_tracking:
+  backend: "mlflow"
+  tracking_uri: "http://localhost:5000"
+  experiment_name: "chenaikit-ml"
+
+# Data Validation
+data_validation:
+  great_expectations:
+    suite_name: "blockchain_transactions"
+    expectation_level: "strict"
