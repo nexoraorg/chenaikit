@@ -32,7 +32,7 @@ const corsMiddleware = (): RequestHandler => {
 const helmetMiddleware = (): RequestHandler => {
   const isProd = process.env.NODE_ENV === 'production';
 
-  const cspDirectives: NonNullable<helmet.ContentSecurityPolicyOptions['directives']> = {
+  const cspDirectives: Record<string, string[]> = {
     "default-src": ["'none'"],
     "base-uri": ["'none'"],
     "frame-ancestors": ["'none'"],
@@ -52,7 +52,7 @@ const helmetMiddleware = (): RequestHandler => {
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
-        ...cspDirectives,
+        ...(cspDirectives as any),
       },
     },
     crossOriginEmbedderPolicy: false,
