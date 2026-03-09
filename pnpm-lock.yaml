@@ -160,6 +160,9 @@ importers:
       supertest:
         specifier: ^7.2.2
         version: 7.2.2
+      ts-jest:
+        specifier: ^29.4.6
+        version: 29.4.6(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0))(typescript@5.9.3)
       ts-node:
         specifier: ^10.9.0
         version: 10.9.2(@types/node@20.19.37)(typescript@5.9.3)
@@ -341,16 +344,28 @@ importers:
       '@chenaikit/core':
         specifier: workspace:*
         version: link:../core
+      '@stellar/stellar-sdk':
+        specifier: ^12.1.0
+        version: 12.3.0
       chalk:
         specifier: ^4.1.2
         version: 4.1.2
+      cli-progress:
+        specifier: ^3.12.0
+        version: 3.12.0
       commander:
         specifier: ^11.0.0
         version: 11.1.0
       inquirer:
         specifier: ^8.2.0
         version: 8.2.7(@types/node@20.19.37)
+      ora:
+        specifier: ^5.4.1
+        version: 5.4.1
     devDependencies:
+      '@types/cli-progress':
+        specifier: ^3.11.5
+        version: 3.11.6
       '@types/inquirer':
         specifier: ^8.2.0
         version: 8.2.12
@@ -424,6 +439,9 @@ importers:
       jest:
         specifier: ^29.0.0
         version: 29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@20.19.37)(typescript@5.9.3))
+      ts-jest:
+        specifier: ^29.4.6
+        version: 29.4.6(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0))(typescript@5.9.3)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -442,7 +460,7 @@ importers:
         version: 29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@20.19.37)(typescript@5.9.3))
       ts-jest:
         specifier: ^29.0.0
-        version: 29.4.6(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@20.19.37)(typescript@5.9.3)))(typescript@5.9.3)
+        version: 29.4.6(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0))(typescript@5.9.3)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -461,7 +479,7 @@ importers:
         version: 29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@20.19.37)(typescript@5.9.3))
       ts-jest:
         specifier: ^29.0.0
-        version: 29.4.6(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@20.19.37)(typescript@5.9.3)))(typescript@5.9.3)
+        version: 29.4.6(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0))(typescript@5.9.3)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -2872,8 +2890,14 @@ packages:
   '@stellar/stellar-base@11.0.1':
     resolution: {integrity: sha512-VQh+1KEtFjegD6spx08+lENt8tQOkQQQZoLtqExjpRXyWlqDhEe+bXMlBTYKDc5MIynHyD42RPEib27UG17trA==}
 
+  '@stellar/stellar-base@12.1.1':
+    resolution: {integrity: sha512-gOBSOFDepihslcInlqnxKZdIW9dMUO1tpOm3AtJR33K2OvpXG6SaVHCzAmCFArcCqI9zXTEiSoh70T48TmiHJA==}
+
   '@stellar/stellar-sdk@11.3.0':
     resolution: {integrity: sha512-i+heopibJNRA7iM8rEPz0AXphBPYvy2HDo8rxbDwWpozwCfw8kglP9cLkkhgJe8YicgLrdExz/iQZaLpqLC+6w==}
+
+  '@stellar/stellar-sdk@12.3.0':
+    resolution: {integrity: sha512-F2DYFop/M5ffXF0lvV5Ezjk+VWNKg0QDX8gNhwehVU3y5LYA3WAY6VcCarMGPaG9Wdgoeh1IXXzOautpqpsltw==}
 
   '@surma/rollup-plugin-off-main-thread@2.2.3':
     resolution: {integrity: sha512-lR8q/9W7hZpMWweNiAKU7NQerBnzQQLvi8qnTDU/fxItPhtZVMbPV3lbCwjhIlNBe9Bbr5V+KHshvWmVSG9cxQ==}
@@ -2994,6 +3018,9 @@ packages:
 
   '@types/bunyan@1.8.11':
     resolution: {integrity: sha512-758fRH7umIMk5qt5ELmRMff4mLDlN+xyYzC+dkPTdKwbSkJFvz6xwyScrytPU0QIBbRRwbiE8/BIg8bpajerNQ==}
+
+  '@types/cli-progress@3.11.6':
+    resolution: {integrity: sha512-cE3+jb9WRlu+uOSAugewNpITJDt1VF8dHOopPO4IABFc3SXYL5WE/+PTz/FCdZRRfIujiWW3n3aMbv1eIGVRWA==}
 
   '@types/connect-history-api-fallback@1.5.4':
     resolution: {integrity: sha512-n6Cr2xS1h4uAulPRdlw6Jl6s1oG8KrVilPN2yUITEs+K48EzMJJ3W1xy8K5eWuFvjp3R74AOIGSmp2UfBJ8HFw==}
@@ -4081,6 +4108,10 @@ packages:
   cli-cursor@3.1.0:
     resolution: {integrity: sha512-I/zHAwsKf9FqGoXM4WWRACob9+SNukZTd94DWF57E4toouRulbCxcUh6RKUEOQlYTHJnzkPMySvPNaaSLNfLZw==}
     engines: {node: '>=8'}
+
+  cli-progress@3.12.0:
+    resolution: {integrity: sha512-tRkV3HJ1ASwm19THiiLIXLO7Im7wlTuKnvkYaTkyoAPefqjNg7W7DHKUlGRxy9vxDvbyCYQkQozvptuMkGCg8A==}
+    engines: {node: '>=4'}
 
   cli-spinners@2.9.2:
     resolution: {integrity: sha512-ywqV+5MmyL4E7ybXgKys4DugZbX0FC6LnwrhjuykIjnK9k8OQacQ7axGKnjDXWNhns0xot3bZI5h55H8yo9cJg==}
@@ -12346,9 +12377,35 @@ snapshots:
     transitivePeerDependencies:
       - bare-url
 
+  '@stellar/stellar-base@12.1.1':
+    dependencies:
+      '@stellar/js-xdr': 3.1.2
+      base32.js: 0.1.0
+      bignumber.js: 9.3.1
+      buffer: 6.0.3
+      sha.js: 2.4.12
+      tweetnacl: 1.0.3
+    optionalDependencies:
+      sodium-native: 4.3.3
+    transitivePeerDependencies:
+      - bare-url
+
   '@stellar/stellar-sdk@11.3.0':
     dependencies:
       '@stellar/stellar-base': 11.0.1
+      axios: 1.13.6
+      bignumber.js: 9.3.1
+      eventsource: 2.0.2
+      randombytes: 2.1.0
+      toml: 3.0.0
+      urijs: 1.19.11
+    transitivePeerDependencies:
+      - bare-url
+      - debug
+
+  '@stellar/stellar-sdk@12.3.0':
+    dependencies:
+      '@stellar/stellar-base': 12.1.1
       axios: 1.13.6
       bignumber.js: 9.3.1
       eventsource: 2.0.2
@@ -12515,6 +12572,10 @@ snapshots:
       '@types/node': 20.19.37
 
   '@types/bunyan@1.8.11':
+    dependencies:
+      '@types/node': 20.19.37
+
+  '@types/cli-progress@3.11.6':
     dependencies:
       '@types/node': 20.19.37
 
@@ -13849,6 +13910,10 @@ snapshots:
   cli-cursor@3.1.0:
     dependencies:
       restore-cursor: 3.1.0
+
+  cli-progress@3.12.0:
+    dependencies:
+      string-width: 4.2.3
 
   cli-spinners@2.9.2: {}
 
@@ -19332,7 +19397,7 @@ snapshots:
 
   ts-interface-checker@0.1.13: {}
 
-  ts-jest@29.4.6(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@20.19.37)(typescript@5.9.3)))(typescript@5.9.3):
+  ts-jest@29.4.6(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0))(typescript@5.9.3):
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0

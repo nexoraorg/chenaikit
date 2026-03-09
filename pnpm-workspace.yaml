@@ -1,6 +1,14 @@
 packages:
-  - 'packages/*'
-  - 'examples/*'
-  - 'tests/*'
-  - 'backend'
-  - 'frontend'
+  - packages/*
+  - examples/*
+  - tests/*
+  - backend
+  - frontend
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - bcrypt
+  - core-js-pure
+  - prisma
+  - protobufjs
