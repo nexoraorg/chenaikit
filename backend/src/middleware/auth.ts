@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../utils/jwt';
 import { UserPayload } from '../types/auth';
+import { ApiKey } from '../models/ApiKey';
 
 declare global {
   namespace Express {
     interface Request {
       user?: UserPayload;
+      apiKey?: ApiKey;
     }
   }
 }

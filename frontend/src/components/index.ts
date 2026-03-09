@@ -11,3 +11,4 @@ export { default as CreditScoring } from './CreditScoring';
 export { default as Dashboard } from './Dashboard';
 export { default as FraudDetection } from './FraudDetection';
 export { default as WalletInterface } from './WalletInterface';
+export { AnalyticsDashboard } from './AnalyticsDashboard';

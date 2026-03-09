@@ -1,5 +1,5 @@
-import { PrismaClient } from '../generated/prisma';
-import { ApiKey, ApiKeyCreateInput, ApiKeyUpdateInput, ApiTier } from '../models/ApiKey';
+import { PrismaClient } from '@prisma/client';
+import { ApiKey, ApiKeyCreateInput, ApiKeyUpdateInput } from '../models/ApiKey';
 import { createHash, randomBytes } from 'crypto';
 import { log } from '../utils/logger';
 
@@ -45,7 +45,7 @@ export class ApiKeyService {
       });
 
       return { apiKey, plainKey: key };
-    } catch (error: any) {
+    } catch (error) {
       log.error('Failed to create API key', error as Error);
       throw new Error('Failed to create API key');
     }
@@ -81,7 +81,7 @@ export class ApiKeyService {
       await this.updateLastUsed(apiKey.id);
 
       return apiKey;
-    } catch (error: any) {
+    } catch (error) {
       log.error('Failed to validate API key', error as Error);
       return null;
     }
@@ -97,7 +97,7 @@ export class ApiKeyService {
       });
 
       return prismaApiKey ? ApiKey.fromPrisma(prismaApiKey) : null;
-    } catch (error: any) {
+    } catch (error) {
       log.error('Failed to get API key by ID', error as Error);
       throw new Error('Failed to get API key');
     }
@@ -114,7 +114,7 @@ export class ApiKeyService {
       });
 
       return prismaApiKeys.map(ApiKey.fromPrisma);
-    } catch (error: any) {
+    } catch (error) {
       log.error('Failed to get API keys for user', error as Error);
       throw new Error('Failed to get API keys');
     }
@@ -146,7 +146,7 @@ export class ApiKeyService {
       });
 
       return apiKey;
-    } catch (error: any) {
+    } catch (error) {
       log.error('Failed to update API key', error as Error);
       throw new Error('Failed to update API key');
     }
@@ -163,7 +163,7 @@ export class ApiKeyService {
       });
 
       log.info('API key deactivated', { apiKeyId: id });
-    } catch (error: any) {
+    } catch (error) {
       log.error('Failed to deactivate API key', error as Error);
       throw new Error('Failed to deactivate API key');
     }
@@ -179,7 +179,7 @@ export class ApiKeyService {
       });
 
       log.info('API key deleted', { apiKeyId: id });
-    } catch (error: any) {
+    } catch (error) {
       log.error('Failed to delete API key', error as Error);
       throw new Error('Failed to delete API key');
     }
@@ -194,7 +194,7 @@ export class ApiKeyService {
         where: { id },
         data: { lastUsedAt: new Date() },
       });
-    } catch (error: any) {
+    } catch (error) {
       // Don't throw here as this is not critical
       log.warn('Failed to update last used timestamp', error as Error);
     }
@@ -214,7 +214,7 @@ export class ApiKeyService {
       });
 
       log.info('API key usage reset', { apiKeyId: id });
-    } catch (error: any) {
+    } catch (error) {
       log.error('Failed to reset API key usage', error as Error);
       throw new Error('Failed to reset API key usage');
     }
@@ -242,7 +242,7 @@ export class ApiKeyService {
           },
         },
       });
-    } catch (error: any) {
+    } catch (error) {
       log.error('Failed to increment API key usage', error as Error);
       throw new Error('Failed to increment API key usage');
     }
@@ -260,7 +260,7 @@ export class ApiKeyService {
     dailyUsage: Array<{ date: string; requests: number }>;
   }> {
     try {
-      const whereClause: any = { apiKeyId: id };
+      const whereClause: Record<string, any> = { apiKeyId: id };
       
       if (startDate || endDate) {
         whereClause.timestamp = {};
@@ -284,7 +284,7 @@ export class ApiKeyService {
           orderBy: { _count: { endpoint: 'desc' } },
           take: 10,
         }),
-        this.prisma.$queryRaw`
+        this.prisma.$queryRaw<Array<{ date: string; requests: bigint }>>`
           SELECT 
             DATE(timestamp) as date,
             COUNT(*) as requests
@@ -320,12 +320,12 @@ export class ApiKeyService {
           endpoint: item.endpoint,
           count: item._count,
         })),
-        dailyUsage: (dailyCounts as any[]).map(item => ({
+        dailyUsage: dailyCounts.map(item => ({
           date: item.date,
           requests: Number(item.requests),
         })),
       };
-    } catch (error: any) {
+    } catch (error) {
       log.error('Failed to get API key usage', error as Error);
       throw new Error('Failed to get API key usage');
     }
@@ -350,7 +350,7 @@ export class ApiKeyService {
 
       log.info('Cleaned up expired API keys', { count: result.count });
       return result.count;
-    } catch (error: any) {
+    } catch (error) {
       log.error('Failed to cleanup expired API keys', error as Error);
       throw new Error('Failed to cleanup expired API keys');
     }

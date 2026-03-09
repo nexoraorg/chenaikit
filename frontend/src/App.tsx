@@ -1,27 +1,44 @@
 import React, { useState } from 'react';
 import FormValidationExample from './components/FormValidationExample';
 import DataVisualizationExample from './components/DataVisualizationExample';
+import { AnalyticsDashboard } from './components';
 import './components/FormValidation.css';
 
 const App: React.FC = () => {
-  const [activeDemo, setActiveDemo] = useState<'forms' | 'visualization'>('forms');
+  const [activeDemo, setActiveDemo] = useState<'forms' | 'visualization' | 'analytics'>('analytics');
 
   return (
     <div className="App">
       <header style={{ 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+        background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', 
         color: 'white', 
         padding: '40px 20px', 
         textAlign: 'center' 
       }}>
         <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>
-          ChenaiKit - AI-Powered Blockchain Solutions
+          ChenaiKit - BI & Analytics Dashboard
         </h1>
         <p style={{ fontSize: '18px', opacity: 0.9, marginBottom: '30px' }}>
-          Comprehensive form validation and data visualization systems
+          Advanced AI Insights & Blockchain Monitoring
         </p>
         
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <button
+            onClick={() => setActiveDemo('analytics')}
+            style={{
+              padding: '12px 24px',
+              background: activeDemo === 'analytics' ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            📈 Analytics Dashboard
+          </button>
           <button
             onClick={() => setActiveDemo('forms')}
             style={{
@@ -36,7 +53,7 @@ const App: React.FC = () => {
               transition: 'all 0.3s ease'
             }}
           >
-            📝 Form Validation
+            📝 Forms
           </button>
           <button
             onClick={() => setActiveDemo('visualization')}
@@ -52,12 +69,13 @@ const App: React.FC = () => {
               transition: 'all 0.3s ease'
             }}
           >
-            📊 Data Visualization
+            📊 Sandbox
           </button>
         </div>
       </header>
       
       <main style={{ minHeight: 'calc(100vh - 200px)' }}>
+        {activeDemo === 'analytics' && <AnalyticsDashboard />}
         {activeDemo === 'forms' && <FormValidationExample />}
         {activeDemo === 'visualization' && <DataVisualizationExample />}
       </main>

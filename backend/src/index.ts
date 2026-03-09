@@ -1,21 +1,31 @@
 // ChenAIKit Backend Server
+import 'reflect-metadata';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { log } from './utils/logger';
 import { requestLoggingMiddleware } from './middleware/logging';
 import healthRouter from './routes/health';
 import { metricsService, metricsMiddleware } from './services/metricsService';
 import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
 import authRoutes from './routes/auth';
+import { UserPayload } from './types/auth';
 import { ensureRedisConnection } from './config/redis';
 import accountRoutes from './routes/accounts';
-import { PrismaClient } from './generated/prisma';
+import { PrismaClient } from '@prisma/client';
 import { ApiKeyService } from './services/apiKeyService';
 import { UsageTrackingService } from './services/usageTrackingService';
 import { ApiGateway } from './middleware/apiGateway';
 import { createTieredRateLimiter } from './middleware/advancedRateLimiter';
 import Redis from 'ioredis';
+import { DataSource } from 'typeorm';
+import { createAnalyticsRouter } from './routes/analytics';
+import { User } from './models/User';
+import { Account } from './models/Account';
+import { Transaction } from './models/Transaction';
+import { CreditScore } from './models/CreditScore';
+import { FraudAlert } from './models/FraudAlert';
 
 // Load environment variables
 dotenv.config();
@@ -25,10 +35,25 @@ validateEnvironment();
 
 // Initialize services
 const prisma = new PrismaClient();
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+
+// In test mode, use a mock Redis to avoid connection hangs
+const redis = process.env.NODE_ENV === 'test'
+  ? new Redis({ lazyConnect: true, maxRetriesPerRequest: 0, enableOfflineQueue: false })
+  : new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+
 const apiKeyService = new ApiKeyService(prisma);
 const usageTrackingService = new UsageTrackingService(prisma);
 const rateLimiter = createTieredRateLimiter(redis);
+
+const typeorm = new DataSource({
+  type: 'sqljs',
+  location: process.env.NODE_ENV === 'test' ? undefined : (process.env.SQLITE_DB_PATH || 'database.sqlite'),
+  autoSave: process.env.NODE_ENV !== 'test',
+  entities: [User, Account, Transaction, CreditScore, FraudAlert],
+  synchronize: true, // Always synchronize in test or development
+  logging: false,
+});
+
 const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
 
 const app: express.Application = express();
@@ -67,9 +92,10 @@ app.use('/api/v1', ...gatewayMiddleware);
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', accountRoutes);
+app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
 
 // Gateway-protected endpoints
-app.use('/api/v1/credit-score', ...gatewayMiddleware, (req: Request, res: Response) => {
+app.use('/api/v1/credit-score', (req: Request, res: Response) => {
   res.json({
     success: true,
     data: {
@@ -80,7 +106,7 @@ app.use('/api/v1/credit-score', ...gatewayMiddleware, (req: Request, res: Respon
   });
 });
 
-app.use('/api/v1/fraud/detect', ...gatewayMiddleware, (req: Request, res: Response) => {
+app.use('/api/v1/fraud/detect', (req: Request, res: Response) => {
   res.json({
     success: true,
     data: {
@@ -93,15 +119,15 @@ app.use('/api/v1/fraud/detect', ...gatewayMiddleware, (req: Request, res: Respon
 });
 
 // API Key management endpoints
-app.post('/api/v1/keys', ...gatewayMiddleware, async (req: Request, res: Response) => {
+app.post('/api/v1/keys', async (req: Request, res: Response) => {
   try {
     const { name, tier = 'FREE', allowedIps, allowedPaths, usageQuota } = req.body;
-    const user = (req as any).user; // Assuming auth middleware adds user
+    const user = req.user as UserPayload | undefined;
     
     const { apiKey, plainKey } = await apiKeyService.createApiKey({
       name,
       tier,
-      userId: user?.id,
+      userId: user?.id || undefined,
       allowedIps,
       allowedPaths,
       usageQuota,
@@ -119,7 +145,9 @@ app.post('/api/v1/keys', ...gatewayMiddleware, async (req: Request, res: Respons
         },
       },
     });
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
+    log.error('API key creation failed', error);
     res.status(500).json({
       success: false,
       error: {
@@ -131,10 +159,20 @@ app.post('/api/v1/keys', ...gatewayMiddleware, async (req: Request, res: Respons
   }
 });
 
-app.get('/api/v1/keys', ...gatewayMiddleware, async (req: Request, res: Response) => {
+app.get('/api/v1/keys', async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user;
-    const apiKeys = await apiKeyService.getApiKeysByUserId(user?.id);
+    const user = req.user as UserPayload | undefined;
+    if (!user?.id) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'User authentication required',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+    const apiKeys = await apiKeyService.getApiKeysByUserId(user.id);
     
     res.json({
       success: true,
@@ -151,7 +189,9 @@ app.get('/api/v1/keys', ...gatewayMiddleware, async (req: Request, res: Response
         })),
       },
     });
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
+    log.error('API keys fetch failed', error);
     res.status(500).json({
       success: false,
       error: {
@@ -163,7 +203,7 @@ app.get('/api/v1/keys', ...gatewayMiddleware, async (req: Request, res: Response
   }
 });
 
-app.get('/api/v1/analytics', ...gatewayMiddleware, async (req: Request, res: Response) => {
+app.get('/api/v1/analytics', async (req: Request, res: Response) => {
   try {
     const startDate = req.query.startDate ? new Date(req.query.startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
@@ -174,7 +214,9 @@ app.get('/api/v1/analytics', ...gatewayMiddleware, async (req: Request, res: Res
       success: true,
       data: analytics,
     });
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
+    log.error('Analytics fetch failed', error);
     res.status(500).json({
       success: false,
       error: {
@@ -193,7 +235,9 @@ app.get('/api/v1/gateway/health', async (req: Request, res: Response) => {
       success: true,
       data: health,
     });
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
+    log.error('Gateway health check failed', error);
     res.status(500).json({
       success: false,
       error: {
@@ -211,8 +255,9 @@ app.get('/metrics', async (_req: Request, res: Response) => {
     const metrics = await metricsService.getMetrics();
     res.set('Content-Type', 'text/plain');
     res.send(metrics);
-  } catch (e: any) {
-    res.status(500).send(e?.message || 'metrics error');
+  } catch (e: unknown) {
+    const error = e as Error;
+    res.status(500).send(error?.message || 'metrics error');
   }
 });
 
@@ -242,35 +287,50 @@ app.use((error: Error, req: express.Request, res: express.Response, _next: expre
   });
 });
 
-// Initialize monitoring and start server
-initializeMonitoring().finally(() => {
-  const server = app.listen(PORT, async () => {
-    console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
-    console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
+// Initialize services and start server
+const startServer = async () => {
+  try {
+    validateEnvironment();
+    await initializeMonitoring();
     
+    await typeorm.initialize();
+    console.log('📦 TypeORM initialized');
+
     try {
       await ensureRedisConnection();
       console.log('🧠 Redis cache ready');
     } catch (err) {
       console.warn('⚠️  Redis not available. Continuing without cache.');
     }
-  });
 
-  const shutdown = async () => {
-    try { 
-      await shutdownMonitoring(); 
-      await redis.quit();
-      await prisma.$disconnect();
-    } catch { 
-      /* noop */ 
+    if (process.env.NODE_ENV !== 'test') {
+      const server = app.listen(PORT, () => {
+        console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
+        console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+        console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
+      });
+
+      const shutdown = async () => {
+        try { 
+          await shutdownMonitoring(); 
+          await redis.quit();
+          await prisma.$disconnect();
+          await typeorm.destroy();
+        } catch { /* noop */ }
+        server.close(() => process.exit(0));
+      };
+
+      process.on('SIGINT', shutdown);
+      process.on('SIGTERM', shutdown);
     }
-    server.close(() => process.exit(0));
-  };
+  } catch (err) {
+    console.error('❌ Failed to start server:', err);
+    if (process.env.NODE_ENV !== 'test') {
+      process.exit(1);
+    }
+  }
+};
 
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
-});
+startServer();
 
 export default app;

@@ -30,8 +30,9 @@ export class AuthController {
       });
 
       res.status(201).json({ message: 'User registered', userId: user.id });
-    } catch (err: any) {
-      res.status(400).json({ message: err.message || 'Registration failed' });
+    } catch (err) {
+      const error = err as Error;
+      res.status(400).json({ message: error.message || 'Registration failed' });
     }
   }
 
@@ -58,8 +59,9 @@ export class AuthController {
       });
 
       res.json({ accessToken, refreshToken: refreshTokenRaw });
-    } catch (err: any) {
-      res.status(400).json({ message: err.message || 'Login failed' });
+    } catch (err) {
+      const error = err as Error;
+      res.status(400).json({ message: error.message || 'Login failed' });
     }
   }
 
@@ -87,8 +89,9 @@ export class AuthController {
       };
       const accessToken = generateAccessToken(payload);
       res.json({ accessToken });
-    } catch (err: any) {
-      res.status(400).json({ message: err.message || 'Token refresh failed' });
+    } catch (err) {
+      const error = err as Error;
+      res.status(400).json({ message: error.message || 'Token refresh failed' });
     }
   }
 }
