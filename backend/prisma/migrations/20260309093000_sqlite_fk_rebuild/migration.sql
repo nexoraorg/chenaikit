@@ -11,8 +11,8 @@ CREATE TABLE "RefreshToken_new" (
   CONSTRAINT "RefreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-INSERT INTO "RefreshToken_new" ("id","tokenHash","userId","createdAt","expiresAt")
-SELECT "id","tokenHash","userId","createdAt","expiresAt" FROM "RefreshToken";
+INSERT INTO "RefreshToken_new" ("id","tokenHash","userId","createdAt","updatedAt","expiresAt")
+SELECT "id","tokenHash","userId","createdAt","updatedAt","expiresAt" FROM "RefreshToken";
 
 DROP TABLE "RefreshToken";
 ALTER TABLE "RefreshToken_new" RENAME TO "RefreshToken";
@@ -41,10 +41,10 @@ CREATE TABLE "api_keys_new" (
 
 INSERT INTO "api_keys_new" (
   "id","keyHash","name","tier","userId","isActive","allowedIps","allowedPaths",
-  "createdAt","expiresAt","lastUsedAt","usageQuota","currentUsage","usageResetAt"
+  "createdAt","updatedAt","expiresAt","lastUsedAt","usageQuota","currentUsage","usageResetAt","deletedAt"
 ) SELECT
   "id","keyHash","name","tier","userId","isActive","allowedIps","allowedPaths",
-  "createdAt","expiresAt","lastUsedAt","usageQuota","currentUsage","usageResetAt"
+  "createdAt","updatedAt","expiresAt","lastUsedAt","usageQuota","currentUsage","usageResetAt","deletedAt"
 FROM "api_keys";
 
 DROP TABLE "api_keys";
@@ -79,10 +79,10 @@ CREATE TABLE "api_usage_new" (
 
 INSERT INTO "api_usage_new" (
   "id","apiKeyId","endpoint","method","statusCode","responseTime",
-  "requestSize","responseSize","ip","userAgent","timestamp"
+  "requestSize","responseSize","ip","userAgent","timestamp","updatedAt","deletedAt"
 ) SELECT
   "id","apiKeyId","endpoint","method","statusCode","responseTime",
-  "requestSize","responseSize","ip","userAgent","timestamp"
+  "requestSize","responseSize","ip","userAgent","timestamp","updatedAt","deletedAt"
 FROM "api_usage";
 
 DROP TABLE "api_usage";

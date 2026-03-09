@@ -27,7 +27,7 @@ async function main() {
   const passwordHash = await bcrypt.hash(plainPassword, 12)
 
   const user = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
+    where: { email },
     update: {},
     create: {
       email,
@@ -89,8 +89,8 @@ async function main() {
     }
   })
 
-  if (!isProd) {
-    console.warn('[seed] Admin seeded for local development only.')
+  if (process.env.SEED_LOG_SECRETS_LOCAL === 'true') {
+    console.warn('[seed] Local-only secret output enabled.')
     console.warn(`[seed] Email: ${email}`)
     console.warn(`[seed] Temporary Password: ${plainPassword}`)
     console.warn(`[seed] Admin API Key (store securely, shown once): ${plainApiKey}`)
