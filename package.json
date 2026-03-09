@@ -67,11 +67,20 @@
   "packageManager": "pnpm@10.17.1+sha512.17c560fca4867ae9473a3899ad84a88334914f379be46d455cbf92e5cf4b39d34985d452d2583baf19967fa76cb5c17bc9e245529d0b98745721aa7200ecaf7a",
   "dependencies": {
     "@types/d3": "^7.4.3",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
     "d3": "^7.9.0",
     "framer-motion": "^12.23.22",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
     "react-spring": "^10.0.3",
-    "recharts": "^3.2.1"
+    "recharts": "^3.2.1",
+    "sqlite3": "^5.1.7"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "bcrypt"
+    ]
   }
 }

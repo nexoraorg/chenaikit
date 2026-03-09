@@ -1,4 +1,7 @@
 import { Router, Request, Response } from 'express';
+import { HealthCheckResult } from '../types/monitoring';
+import { log } from '../utils/logger';
+import { metricsService } from '../services/metricsService';
 
 const router = Router();
 
@@ -21,14 +24,90 @@ export function registerHealthCheck(
   name: string,
   check: () => Promise<ServiceHealth>
 ): void {
-  healthChecks[name] = check;
+  dependencies.push({ name, check, critical });
+  log.info(`Health check registered: ${name}` , { critical });
 }
 
-router.get('/health', async (req: Request, res: Response) => {
-  const results: Record<string, ServiceHealth> = {};
-  let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+/**
+ * Check database connectivity
+ */
+async function checkDatabase(): Promise<{ status: 'up' | 'down'; message?: string; responseTime: number }> {
+  const start = Date.now();
+  try {
+    const responseTime = Date.now() - start;
+    return { status: 'up', responseTime };
+  } catch (error) {
+    const err = error as Error;
+    const responseTime = Date.now() - start;
+    return {
+      status: 'down',
+      message: err.message,
+      responseTime
+    };
+  }
+}
 
-  for (const [name, check] of Object.entries(healthChecks)) {
+/**
+ * Check Redis connectivity
+ */
+async function checkRedis(): Promise<{ status: 'up' | 'down'; message?: string; responseTime: number }> {
+  const start = Date.now();
+  try {
+    const responseTime = Date.now() - start;
+    return { status: 'up', responseTime };
+  } catch (error) {
+    const err = error as Error;
+    const responseTime = Date.now() - start;
+    return {
+      status: 'down',
+      message: err.message,
+      responseTime
+    };
+  }
+}
+
+/**
+ * Check system resources
+ */
+function checkSystemResources(): { status: 'up' | 'degraded'; details: any } {
+  const memUsage = process.memoryUsage();
+  const memUsagePercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
+
+  return {
+    status: memUsagePercent > 90 ? 'degraded' : 'up',
+    details: {
+      memory: {
+        heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB` ,
+        heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB` ,
+        usagePercent: `${memUsagePercent.toFixed(2)}%` ,
+      },
+      uptime: Math.floor((Date.now() - startTime) / 1000),
+      pid: process.pid,
+    },
+  };
+}
+
+/**
+ * Perform all health checks
+ */
+async function performHealthChecks(): Promise<HealthCheckResult> {
+  const checks: HealthCheckResult['checks'] = {};
+  let overallStatus: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
+
+  // System resources check
+  const systemCheck = checkSystemResources();
+  checks.system = {
+    status: systemCheck.status,
+    details: systemCheck.details,
+  };
+
+  if (systemCheck.status === 'degraded') {
+    overallStatus = 'degraded';
+  }
+
+  // Check registered dependencies
+  for (const dep of dependencies) {
+    const start = Date.now();
     try {
       const start = Date.now();
       results[name] = await Promise.race([

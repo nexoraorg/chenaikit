@@ -53,7 +53,7 @@ export class AuthController {
   async register(req: Request, res: Response) {
     try {
       const { email, password, role } = registerSchema.parse(req.body);
-      const existing = await prisma.user.findUnique({ where: { email } });
+      const existing = await prisma.user.findFirst({ where: { email, deletedAt: null } });
       if (existing) return res.status(400).json({ message: 'Email already registered' });
 
       const hashed = await hashPassword(password);
@@ -62,15 +62,16 @@ export class AuthController {
       });
 
       res.status(201).json({ message: 'User registered', userId: user.id });
-    } catch (err: any) {
-      res.status(400).json({ message: err.message || 'Registration failed' });
+    } catch (err) {
+      const error = err as Error;
+      res.status(400).json({ message: error.message || 'Registration failed' });
     }
   }
 
   async login(req: Request, res: Response) {
     try {
       const { email, password } = loginSchema.parse(req.body);
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
       if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
       const valid = await comparePassword(password, user.password);
@@ -89,9 +90,10 @@ export class AuthController {
         },
       });
 
-      res.json({ accessToken, refreshToken: `${stored.id}.${refreshTokenRaw}` });
-    } catch (err: any) {
-      res.status(400).json({ message: err.message || 'Login failed' });
+      res.json({ accessToken, refreshToken: refreshTokenRaw });
+    } catch (err) {
+      const error = err as Error;
+      res.status(400).json({ message: error.message || 'Login failed' });
     }
   }
 
@@ -103,6 +105,14 @@ export class AuthController {
       const id = Number(idPart);
       if (!Number.isFinite(id) || !tokenPart) {
         return res.status(403).json({ message: 'Invalid refresh token' });
+      }
+
+
+      if (!matched) return res.status(403).json({ message: 'Invalid refresh token' });
+      if (matched.expiresAt < new Date()) return res.status(403).json({ message: 'Refresh token expired' });
+      if (matched.user?.deletedAt) {
+        await prisma.refreshToken.deleteMany({ where: { userId: matched.user.id } });
+        return res.status(403).json({ message: 'Account disabled' });
       }
 
       const stored = await prisma.refreshToken.findUnique({ where: { id }, include: { user: true } });
@@ -124,15 +134,17 @@ export class AuthController {
         },
       });
 
+
       const payload: UserPayload = {
         id: stored.user.id,
         email: stored.user.email,
         role: stored.user.role,
       };
       const accessToken = generateAccessToken(payload);
-      res.json({ accessToken, refreshToken: `${stored.id}.${newRefreshTokenRaw}` });
-    } catch (err: any) {
-      res.status(400).json({ message: err.message || 'Token refresh failed' });
+      res.json({ accessToken });
+    } catch (err) {
+      const error = err as Error;
+      res.status(400).json({ message: error.message || 'Token refresh failed' });
     }
   }
 }
