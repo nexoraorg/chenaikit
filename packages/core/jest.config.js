@@ -22,4 +22,14 @@ module.exports = {
     '!src/ai/__tests__/providers.test.ts'
   ],
   moduleFileExtensions: ['ts', 'js', 'json'],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 80,
+      statements: 80,
+    },
+  },
 };
