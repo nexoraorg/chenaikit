@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TransactionMonitor } from '@chenaikit/core';
 import { 
   TransactionEvent, 
@@ -48,6 +49,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   onConnectionChange,
   onError
 }) => {
+  const { t } = useTranslation();
   const [state, setState] = useState({
     isConnected: false,
     isReconnecting: false,
@@ -123,7 +125,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     } catch (error) {
       setState(prev => ({
         ...prev,
-        lastError: error instanceof Error ? error.message : 'Connection failed'
+        lastError: error instanceof Error ? error.message : t('errors.connectionError')
       }));
       throw error;
     }
@@ -152,12 +154,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   // Send data through WebSocket (for future WebSocket implementation)
   const send = useCallback((data: any) => {
     if (!state.isConnected || !monitorRef.current) {
-      throw new Error('WebSocket is not connected');
+      throw new Error(t('websocket.disconnected'));
     }
     
     // For now, this is a placeholder for future WebSocket implementation
     console.log('Sending data:', data);
-  }, [state.isConnected]);
+  }, [state.isConnected, t]);
 
   // Update metrics periodically
   useEffect(() => {
