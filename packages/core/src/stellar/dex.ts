@@ -26,14 +26,15 @@ function assetToParams(asset: Asset): Record<string, string> {
   if (!asset.issuer) {
     return { asset_type: 'native' };
   }
+  const assetType = asset.code.length > 4 ? 'credit_alphanum12' : 'credit_alphanum4';
   return {
-    asset_type: asset.code === 'native' ? 'native' : 'credit_alphanum4',
+    asset_type: assetType,
     asset_code: asset.code,
     asset_issuer: asset.issuer,
   };
 }
 
-async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   let lastError: Error = new Error('Unknown error');
   for (let i = 0; i < retries; i++) {
     try {
@@ -106,6 +107,9 @@ export class DexConnector {
   /**
    * Cancel an existing DEX offer.
    *
+   * NOTE: Requires `@stellar/stellar-sdk` transaction signing (same as placeOrder).
+   * This method will throw until placeOrder is implemented.
+   *
    * @param sourceAccount - Account that owns the offer
    * @param sourceSecret - Secret key for signing
    * @param offerId - ID of the offer to cancel
@@ -140,7 +144,7 @@ export class DexConnector {
 
       return {
         id: data.id,
-        fee: data.fee_bp / 10000,
+        fee: (data.fee_bp ?? 0) / 10000,
         assetA: this.parseAsset(reserveA.asset),
         assetB: this.parseAsset(reserveB.asset),
         reserveA: reserveA.amount ?? '0',

@@ -3,7 +3,7 @@
  */
 
 import { DexConfig, Asset, DexStats, DexTrade, OrderBook } from '../types/dex';
-import { DexConnector } from './dex';
+import { DexConnector, withRetry } from './dex';
 
 export class DexAnalytics {
   private connector: DexConnector;
@@ -26,32 +26,37 @@ export class DexAnalytics {
    * @param limit - Number of trades to return (default 50)
    */
   async getRecentTrades(base: Asset, counter: Asset, limit = 50): Promise<DexTrade[]> {
-    const params = new URLSearchParams({
-      base_asset_type: base.issuer ? 'credit_alphanum4' : 'native',
-      ...(base.issuer ? { base_asset_code: base.code, base_asset_issuer: base.issuer } : {}),
-      counter_asset_type: counter.issuer ? 'credit_alphanum4' : 'native',
-      ...(counter.issuer ? { counter_asset_code: counter.code, counter_asset_issuer: counter.issuer } : {}),
-      limit: String(limit),
-      order: 'desc',
-    });
+    const getAssetType = (a: Asset) =>
+      !a.issuer ? 'native' : a.code.length > 4 ? 'credit_alphanum12' : 'credit_alphanum4';
 
-    const res = await fetch(`${this.horizonUrl}/trades?${params}`);
-    if (!res.ok) throw new Error(`Horizon error: ${res.status}`);
+    return withRetry(async () => {
+      const params = new URLSearchParams({
+        base_asset_type: getAssetType(base),
+        ...(base.issuer ? { base_asset_code: base.code, base_asset_issuer: base.issuer } : {}),
+        counter_asset_type: getAssetType(counter),
+        ...(counter.issuer ? { counter_asset_code: counter.code, counter_asset_issuer: counter.issuer } : {}),
+        limit: String(limit),
+        order: 'desc',
+      });
 
-    const data = await res.json();
-    return (data._embedded?.records ?? []).map((t: any) => ({
-      id: t.id,
-      offerId: t.offer_id ?? '',
-      baseAccount: t.base_account ?? '',
-      baseAmount: t.base_amount,
-      baseAsset: base,
-      counterAmount: t.counter_amount,
-      counterAsset: counter,
-      price: t.price?.n && t.price?.d
-        ? String(t.price.n / t.price.d)
-        : '0',
-      timestamp: t.ledger_close_time,
-    }));
+      const res = await fetch(`${this.horizonUrl}/trades?${params}`);
+      if (!res.ok) throw new Error(`Horizon error: ${res.status}`);
+
+      const data = await res.json();
+      return (data._embedded?.records ?? []).map((t: any) => ({
+        id: t.id,
+        offerId: t.offer_id ?? '',
+        baseAccount: t.base_account ?? '',
+        baseAmount: t.base_amount,
+        baseAsset: base,
+        counterAmount: t.counter_amount,
+        counterAsset: counter,
+        price: t.price?.n && t.price?.d
+          ? String(t.price.n / t.price.d)
+          : '0',
+        timestamp: t.ledger_close_time,
+      }));
+    }, 3);
   }
 
   /**
