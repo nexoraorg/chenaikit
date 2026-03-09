@@ -8,6 +8,10 @@ type VaultClientOptions = {
   kvVersion: VaultKvVersion;
 };
 
+const isEnvUnset = (value: string | undefined): boolean => {
+  return value === undefined || value.trim().length === 0;
+};
+
 const getVaultOptions = (): VaultClientOptions | null => {
   const enabled = process.env.VAULT_ENABLED === 'true';
   if (!enabled) return null;
@@ -50,12 +54,17 @@ export const loadVaultSecrets = async (): Promise<void> => {
   if (!opts) return;
 
   const url = buildVaultReadUrl(opts);
+  const timeoutMs = Number(process.env.VAULT_TIMEOUT_MS || '5000');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
   const response = await fetch(url, {
     method: 'GET',
     headers: {
       'X-Vault-Token': opts.token,
     },
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
 
   if (!response.ok) {
     const body = await response.text().catch(() => '');
@@ -66,7 +75,7 @@ export const loadVaultSecrets = async (): Promise<void> => {
   const secrets = extractSecretData(opts.kvVersion, json);
 
   for (const [key, value] of Object.entries(secrets)) {
-    if (process.env[key] === undefined && typeof value === 'string') {
+    if (typeof value === 'string' && isEnvUnset(process.env[key])) {
       process.env[key] = value;
     }
   }

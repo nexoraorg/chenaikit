@@ -6,6 +6,34 @@ import { UserPayload } from '../types/auth';
 import crypto from 'crypto';
 import { z } from 'zod';
 
+const durationToMs = (input: string): number => {
+  const trimmed = input.trim();
+  const match = /^([0-9]+)\s*(ms|s|m|h|d)$/i.exec(trimmed);
+  if (!match) {
+    const numeric = Number(trimmed);
+    if (Number.isFinite(numeric) && numeric > 0) return numeric;
+    throw new Error('Invalid REFRESH_TOKEN_EXPIRATION format');
+  }
+
+  const value = Number(match[1]);
+  const unit = match[2].toLowerCase();
+
+  const multipliers: Record<string, number> = {
+    ms: 1,
+    s: 1000,
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+  };
+
+  return value * multipliers[unit];
+};
+
+const getRefreshTokenTtlMs = (): number => {
+  const exp = process.env.REFRESH_TOKEN_EXPIRATION || '7d';
+  return durationToMs(exp);
+};
+
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
@@ -57,7 +85,7 @@ export class AuthController {
         data: {
           tokenHash: refreshTokenHash,
           userId: user.id,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          expiresAt: new Date(Date.now() + getRefreshTokenTtlMs()),
         },
       });
 
@@ -84,13 +112,25 @@ export class AuthController {
       const matches = await comparePassword(tokenPart, stored.tokenHash);
       if (!matches) return res.status(403).json({ message: 'Invalid refresh token' });
 
+      // Rotate refresh token on successful use
+      const newRefreshTokenRaw = crypto.randomBytes(64).toString('hex');
+      const newRefreshTokenHash = await hashPassword(newRefreshTokenRaw);
+
+      await prisma.refreshToken.update({
+        where: { id: stored.id },
+        data: {
+          tokenHash: newRefreshTokenHash,
+          expiresAt: new Date(Date.now() + getRefreshTokenTtlMs()),
+        },
+      });
+
       const payload: UserPayload = {
         id: stored.user.id,
         email: stored.user.email,
         role: stored.user.role,
       };
       const accessToken = generateAccessToken(payload);
-      res.json({ accessToken });
+      res.json({ accessToken, refreshToken: `${stored.id}.${newRefreshTokenRaw}` });
     } catch (err: any) {
       res.status(400).json({ message: err.message || 'Token refresh failed' });
     }

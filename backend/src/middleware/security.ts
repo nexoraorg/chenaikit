@@ -12,7 +12,9 @@ const parseOrigins = (origins: string | undefined): string[] => {
 
 const corsMiddleware = (): RequestHandler => {
   const origins = parseOrigins(process.env.CORS_ORIGINS);
-  const allowAll = process.env.CORS_ALLOW_ALL === 'true';
+  const allowAll =
+    process.env.CORS_ALLOW_ALL === 'true' &&
+    (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test');
 
   return cors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
