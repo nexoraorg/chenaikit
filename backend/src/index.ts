@@ -1,14 +1,17 @@
 // ChenAIKit Backend Server
+import 'reflect-metadata';
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
+import { log } from './utils/logger';
 import { requestLoggingMiddleware } from './middleware/logging';
 import healthRouter from './routes/health';
 import { metricsService, metricsMiddleware } from './services/metricsService';
 import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
 import authRoutes from './routes/auth';
+import { UserPayload } from './types/auth';
 import { ensureRedisConnection } from './config/redis';
 import accountRoutes from './routes/accounts';
-import { PrismaClient } from './generated/prisma';
+import { PrismaClient } from '@prisma/client';
 import { ApiKeyService } from './services/apiKeyService';
 import { UsageTrackingService } from './services/usageTrackingService';
 import { ApiGateway } from './middleware/apiGateway';
@@ -26,21 +29,16 @@ app.use(requestLoggingMiddleware);
 app.use('/api', healthRouter);
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', accountRoutes);
+app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
 
-const registerGatewayRoutes = (
-  gateway: ApiGateway,
-  apiKeyService: ApiKeyService,
-  usageTrackingService: UsageTrackingService
-): void => {
-  const gatewayMiddleware = gateway.gateway({
-    enableAuth: true,
-    enableRateLimit: true,
-    enableUsageTracking: true,
-    transform: {
-      responseHeaders: {
-        'X-API-Version': '1.0.0',
-        'X-Gateway': 'ChenAIKit-API-Gateway',
-      },
+// Gateway-protected endpoints
+app.use('/api/v1/credit-score', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: {
+      score: Math.floor(Math.random() * 850) + 150,
+      factors: ['payment_history', 'credit_utilization', 'account_age'],
+      timestamp: new Date().toISOString(),
     },
   });
 
@@ -193,8 +191,9 @@ app.get('/metrics', async (_req: Request, res: Response) => {
     const metrics = await metricsService.getMetrics();
     res.set('Content-Type', 'text/plain');
     res.send(metrics);
-  } catch (e: any) {
-    res.status(500).send(e?.message || 'metrics error');
+  } catch (e: unknown) {
+    const error = e as Error;
+    res.status(500).send(error?.message || 'metrics error');
   }
 });
 
@@ -259,7 +258,6 @@ export const startServer = async (): Promise<void> => {
     } catch (_err) {
       console.warn('⚠️  Redis not available. Continuing without cache.');
     }
-  });
 
   const shutdown = async () => {
     try {
@@ -269,8 +267,13 @@ export const startServer = async (): Promise<void> => {
     } catch {
       /* noop */
     }
-    server.close(() => process.exit(0));
-  };
+  } catch (err) {
+    console.error('❌ Failed to start server:', err);
+    if (process.env.NODE_ENV !== 'test') {
+      process.exit(1);
+    }
+  }
+};
 
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);

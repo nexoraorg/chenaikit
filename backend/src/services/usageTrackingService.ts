@@ -1,96 +1,64 @@
-import { PrismaClient } from '../generated/prisma';
-import { ApiUsage } from '../models/ApiKey';
+import { PrismaClient } from '@prisma/client';
 import { Request } from 'express';
-import { log } from '../utils/logger';
-
-export interface UsageRecord {
-  apiKeyId: string;
-  endpoint: string;
-  method: string;
-  statusCode: number;
-  responseTime: number;
-  requestSize: number;
-  responseSize: number;
-  ip: string;
-  userAgent?: string;
-}
-
-export interface UsageAnalytics {
-  totalRequests: number;
-  uniqueApiKeys: number;
-  averageResponseTime: number;
-  successRate: number;
-  errorRate: number;
-  topEndpoints: Array<{
-    endpoint: string;
-    count: number;
-    avgResponseTime: number;
-  }>;
-  hourlyStats: Array<{
-    hour: string;
-    requests: number;
-  }>;
-  statusDistribution: Record<string, number>;
-  tierDistribution: Record<string, number>;
-}
 
 export class UsageTrackingService {
   constructor(private prisma: PrismaClient) {}
 
-  /**
-   * Record API usage
-   */
-  async recordUsage(record: UsageRecord): Promise<void> {
-    try {
-      await this.prisma.apiUsage.create({
-        data: {
-          apiKeyId: record.apiKeyId,
-          endpoint: record.endpoint,
-          method: record.method,
-          statusCode: record.statusCode,
-          responseTime: record.responseTime,
-          requestSize: record.requestSize,
-          responseSize: record.responseSize,
-          ip: record.ip,
-          userAgent: record.userAgent,
-        },
-      });
-
-      log.debug('Usage recorded', {
-        apiKeyId: record.apiKeyId,
-        endpoint: record.endpoint,
-        statusCode: record.statusCode,
-        responseTime: record.responseTime,
-      });
-    } catch (error: any) {
-      log.error('Failed to record usage', error as Error);
-      // Don't throw here as usage tracking should not break API requests
-    }
+  async trackUsage(data: {
+    apiKeyId: string;
+    endpoint: string;
+    method: string;
+    statusCode: number;
+    responseTime: number;
+    requestSize: number;
+    responseSize: number;
+    ip: string;
+    userAgent?: string;
+  }) {
+    return this.prisma.apiUsage.create({
+      data: {
+        apiKeyId: data.apiKeyId,
+        endpoint: data.endpoint,
+        method: data.method,
+        statusCode: data.statusCode,
+        responseTime: data.responseTime,
+        requestSize: data.requestSize,
+        responseSize: data.responseSize,
+        ip: data.ip,
+        userAgent: data.userAgent,
+      }
+    });
   }
 
-  /**
-   * Extract usage information from Express request
-   */
-  extractUsageFromRequest(req: Request, apiKeyId: string, responseTime: number, statusCode: number, responseSize: number): UsageRecord {
+  // Alias for backward compatibility with apiGateway
+  async recordUsage(data: any) {
+    return this.trackUsage(data);
+  }
+
+  extractUsageFromRequest(
+    req: Request,
+    apiKeyId: string,
+    responseTime: number,
+    statusCode: number,
+    responseSize: number
+  ) {
     return {
       apiKeyId,
       endpoint: req.path,
       method: req.method,
       statusCode,
       responseTime,
-      requestSize: JSON.stringify(req.body).length || 0,
+      requestSize: parseInt(req.headers['content-length'] || '0'),
       responseSize,
-      ip: req.ip || req.connection.remoteAddress || 'unknown',
+      ip: req.ip || req.socket.remoteAddress || 'unknown',
       userAgent: req.headers['user-agent'],
     };
   }
 
-  /**
-   * Get usage analytics for a specific time period
-   */
-  async getAnalytics(startDate: Date, endDate: Date): Promise<UsageAnalytics> {
-    try {
-      const whereClause = {
+  async getAnalytics(startDate: Date, endDate: Date) {
+    const usage = await this.prisma.apiUsage.groupBy({
+      by: ['endpoint', 'method', 'statusCode'],
+      where: {
         timestamp: {
           gte: startDate,
           lte: endDate,

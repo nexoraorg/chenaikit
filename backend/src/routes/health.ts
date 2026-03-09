@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { HealthCheckResult } from '../types/monitoring';
-import { monitoringConfig } from '../config/monitoring';
 import { log } from '../utils/logger';
 import { metricsService } from '../services/metricsService';
 
@@ -38,11 +37,12 @@ async function checkDatabase(): Promise<{ status: 'up' | 'down'; message?: strin
   try {
     const responseTime = Date.now() - start;
     return { status: 'up', responseTime };
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as Error;
     const responseTime = Date.now() - start;
     return {
       status: 'down',
-      message: error.message,
+      message: err.message,
       responseTime
     };
   }
@@ -56,43 +56,14 @@ async function checkRedis(): Promise<{ status: 'up' | 'down'; message?: string; 
   try {
     const responseTime = Date.now() - start;
     return { status: 'up', responseTime };
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as Error;
     const responseTime = Date.now() - start;
     return {
       status: 'down',
-      message: error.message,
+      message: err.message,
       responseTime
     };
-  }
-}
-
-/**
- * Check external API connectivity
- */
-async function checkExternalAPI(name: string, url: string): Promise<{ status: 'up' | 'down' | 'degraded'; responseTime: number }> {
-  const start = Date.now();
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(url, {
-      method: 'HEAD',
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-    const responseTime = Date.now() - start;
-
-    if (response.ok) {
-      return { status: 'up', responseTime };
-    } else if (responseTime > 2000) {
-      return { status: 'degraded', responseTime };
-    } else {
-      return { status: 'down', responseTime };
-    }
-  } catch (error: any) {
-    const responseTime = Date.now() - start;
-    return { status: 'down', responseTime };
   }
 }
 

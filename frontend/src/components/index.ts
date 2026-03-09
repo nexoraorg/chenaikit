@@ -12,3 +12,4 @@ export { default as Dashboard } from './Dashboard';
 export { default as FraudDetection } from './FraudDetection';
 export { default as ChatInterface } from './ChatInterface';
 export { default as WalletInterface } from './WalletInterface';
+export { AnalyticsDashboard } from './AnalyticsDashboard';
