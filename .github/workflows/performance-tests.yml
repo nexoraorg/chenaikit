@@ -1,0 +1,404 @@
+name: Performance Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of performance test to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - api
+          - frontend
+          - database
+          - contracts
+
+env:
+  NODE_VERSION: '18'
+  RUST_VERSION: '1.70'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  api-performance:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'api' || github.event.inputs.test_type == ''
+    
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chenaikit_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd backend && npm ci
+
+      - name: Setup database
+        run: |
+          cd backend
+          npm run db:migrate
+          npm run db:seed
+
+      - name: Start backend server
+        run: |
+          cd backend
+          npm run start &
+          sleep 10
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run API load tests
+        run: |
+          k6 run tests/performance/api-load-test.js \
+            --out json=api-performance-results.json
+
+      - name: Upload API results
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-performance-results
+          path: api-performance-results.json
+          retention-days: 30
+
+      - name: Performance threshold check
+        run: |
+          node scripts/check-performance-thresholds.js api-performance-results.json
+
+  frontend-performance:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'frontend' || github.event.inputs.test_type == ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd frontend && npm ci
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Start frontend server
+        run: |
+          cd frontend
+          npm start &
+          sleep 10
+
+      - name: Install Lighthouse
+        run: npm install -g @lhci/cli@0.12.x
+
+      - name: Run Lighthouse CI
+        run: |
+          cd frontend
+          lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Run frontend performance tests
+        run: |
+          cd frontend
+          node ../tests/performance/frontend-metrics.js
+
+      - name: Upload frontend results
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-performance-results
+          path: |
+            frontend/.lighthouseci/
+            frontend/performance-report.json
+          retention-days: 30
+
+      - name: Bundle size analysis
+        run: |
+          cd frontend
+          npm run analyze:bundle
+          node scripts/check-bundle-size.js
+
+  database-performance:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'database' || github.event.inputs.test_type == ''
+    
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chenaikit_perf_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd backend && npm ci
+
+      - name: Setup database
+        run: |
+          cd backend
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/chenaikit_perf_test npm run db:migrate
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/chenaikit_perf_test npm run db:seed
+
+      - name: Run database performance tests
+        run: |
+          cd backend
+          PGPASSWORD=postgres psql -h localhost -U postgres -d chenaikit_perf_test -f ../tests/performance/database-performance-tests.sql
+
+      - name: Generate performance report
+        run: |
+          cd backend
+          node scripts/generate-db-performance-report.js
+
+      - name: Upload database results
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-performance-results
+          path: backend/db-performance-report.json
+          retention-days: 30
+
+  contract-performance:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'contracts' || github.event.inputs.test_type == ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Install Stellar CLI
+        run: |
+          curl -sSf https://raw.githubusercontent.com/stellar/stellar-sdk/v11.0.0/install.sh | sh
+          echo ~/.cargo/bin >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          cd contracts
+          cargo build --release
+
+      - name: Run contract benchmarks
+        run: |
+          cd contracts
+          cargo bench --all
+
+      - name: Run contract performance tests
+        run: |
+          cd contracts
+          cargo test --release --package contract-benchmarks
+
+      - name: Generate performance report
+        run: |
+          cd contracts
+          cargo run --package contract-benchmarks > ../contract-performance-results.txt
+
+      - name: Upload contract results
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-performance-results
+          path: |
+            contracts/target/criterion/
+            contract-performance-results.txt
+          retention-days: 30
+
+  performance-regression:
+    runs-on: ubuntu-latest
+    needs: [api-performance, frontend-performance, database-performance, contract-performance]
+    if: always() && (github.event.inputs.test_type == 'all' || github.event.inputs.test_type == '')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate performance regression report
+        run: |
+          node scripts/generate-performance-regression-report.js \
+            --api-results api-performance-results/api-performance-results.json \
+            --frontend-results frontend-performance-results/performance-report.json \
+            --database-results database-performance-results/db-performance-report.json \
+            --contract-results contract-performance-results/contract-performance-results.txt
+
+      - name: Upload regression report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-regression-report
+          path: performance-regression-report.json
+          retention-days: 90
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('performance-regression-report.json', 'utf8'));
+            
+            const comment = `
+            ## 🚀 Performance Test Results
+            
+            ### API Performance
+            - Response Time: ${report.api.avgResponseTime}ms (target: <200ms)
+            - Throughput: ${report.api.throughput} RPS (target: >1000 RPS)
+            - Error Rate: ${report.api.errorRate}% (target: <0.1%)
+            
+            ### Frontend Performance
+            - Lighthouse Score: ${report.frontend.lighthouseScore}/100
+            - Bundle Size: ${report.frontend.bundleSize}MB (target: <1MB)
+            - First Contentful Paint: ${report.frontend.fcp}ms (target: <1500ms)
+            
+            ### Database Performance
+            - Query Time: ${report.database.avgQueryTime}ms (target: <100ms)
+            - Index Usage: ${report.database.indexUsage}% (target: >95%)
+            
+            ### Contract Performance
+            - Gas Usage: ${report.contracts.avgGasUsage} (target: <50000)
+            - Execution Time: ${report.contracts.avgExecutionTime}ms
+            
+            ${report.regressions.length > 0 ? '⚠️ **Performance Regressions Detected**' : '✅ **No Performance Regressions**'}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  performance-dashboard:
+    runs-on: ubuntu-latest
+    needs: [performance-regression]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Download regression report
+        uses: actions/download-artifact@v4
+        with:
+          name: performance-regression-report
+
+      - name: Update performance dashboard
+        run: |
+          node scripts/update-performance-dashboard.js performance-regression-report.json
+
+      - name: Deploy dashboard
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Deploy to GitHub Pages or other hosting
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/performance-dashboard.json
+          git commit -m "Update performance dashboard [skip ci]" || exit 0
+          git push
+
+  notify-performance-alerts:
+    runs-on: ubuntu-latest
+    needs: [performance-regression]
+    if: failure() && (github.event.inputs.test_type == 'all' || github.event.inputs.test_type == '')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download regression report
+        uses: actions/download-artifact@v4
+        with:
+          name: performance-regression-report
+
+      - name: Send Slack notification
+        if: env.SLACK_WEBHOOK_URL != ''
+        run: |
+          node scripts/send-performance-alert.js performance-regression-report.json
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Send email notification
+        if: env.SMTP_HOST != ''
+        run: |
+          node scripts/send-performance-email.js performance-regression-report.json
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
