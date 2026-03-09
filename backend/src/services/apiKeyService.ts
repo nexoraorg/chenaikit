@@ -62,6 +62,7 @@ export class ApiKeyService {
         where: {
           keyHash: hash,
           isActive: true,
+          deletedAt: null,
         },
       });
 
@@ -109,7 +110,7 @@ export class ApiKeyService {
   async getApiKeysByUserId(userId: string): Promise<ApiKey[]> {
     try {
       const prismaApiKeys = await this.prisma.apiKey.findMany({
-        where: { userId },
+        where: { userId, deletedAt: null },
         orderBy: { createdAt: 'desc' },
       });
 
@@ -174,12 +175,16 @@ export class ApiKeyService {
    */
   async deleteApiKey(id: string): Promise<void> {
     try {
-      await this.prisma.apiKey.delete({
+      await this.prisma.apiKey.update({
         where: { id },
+        data: {
+          isActive: false,
+          deletedAt: new Date(),
+        },
       });
 
-      log.info('API key deleted', { apiKeyId: id });
-    } catch (error) {
+      log.info('API key soft-deleted', { apiKeyId: id });
+    } catch (error: any) {
       log.error('Failed to delete API key', error as Error);
       throw new Error('Failed to delete API key');
     }

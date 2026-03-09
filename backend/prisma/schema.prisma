@@ -9,12 +9,16 @@ datasource db {
 
 model User {
   id            String          @id @default(cuid())
-  email         String          @unique
+  email         String
   password      String
   role          String          @default("user")
   createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
+
+  @@index([createdAt])
 }
 
 
@@ -22,9 +26,12 @@ model RefreshToken {
   id         Int      @id @default(autoincrement())
   tokenHash  String   @unique
   userId     String
-  user       User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   expiresAt  DateTime
+
+  @@index([userId, expiresAt])
 }
 
 model ApiKey {
@@ -33,27 +40,32 @@ model ApiKey {
   name          String
   tier          String   @default("FREE") // FREE, PRO, ENTERPRISE
   userId        String?
-  user          User?    @relation(fields: [userId], references: [id])
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   isActive      Boolean  @default(true)
   allowedIps    String   @default("") // JSON string array of allowed IP addresses
   allowedPaths  String   @default("") // JSON string array of allowed path patterns
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   expiresAt     DateTime?
   lastUsedAt    DateTime @default(now())
   usageQuota    Int?     // Monthly quota if applicable
   currentUsage  Int      @default(0)
   usageResetAt  DateTime @default(now())
+  deletedAt     DateTime?
   
   // Relations
   usageLogs     ApiUsage[]
   
   @@map("api_keys")
+  @@index([userId, isActive])
+  @@index([expiresAt])
+  @@index([lastUsedAt])
 }
 
 model ApiUsage {
   id           String   @id @default(cuid())
   apiKeyId     String
-  apiKey       ApiKey   @relation(fields: [apiKeyId], references: [id])
+  apiKey       ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
   endpoint     String
   method       String
   statusCode   Int
@@ -63,7 +75,14 @@ model ApiUsage {
   ip           String
   userAgent    String?
   timestamp    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
   
   @@map("api_usage")
+  @@index([apiKeyId, timestamp])
+  @@index([endpoint, timestamp])
+  @@index([statusCode, timestamp])
+  @@index([ip, timestamp])
+  @@index([timestamp])
 }
 
