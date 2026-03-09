@@ -17,6 +17,10 @@ const loginSchema = z.object({
   password: z.string().min(8),
 });
 
+const refreshSchema = z.object({
+  token: z.string().min(1),
+});
+
 export class AuthController {
   async register(req: Request, res: Response) {
     try {
@@ -49,7 +53,7 @@ export class AuthController {
       const refreshTokenRaw = crypto.randomBytes(64).toString('hex');
       const refreshTokenHash = await hashPassword(refreshTokenRaw);
 
-      await prisma.refreshToken.create({
+      const stored = await prisma.refreshToken.create({
         data: {
           tokenHash: refreshTokenHash,
           userId: user.id,
@@ -57,7 +61,7 @@ export class AuthController {
         },
       });
 
-      res.json({ accessToken, refreshToken: refreshTokenRaw });
+      res.json({ accessToken, refreshToken: `${stored.id}.${refreshTokenRaw}` });
     } catch (err: any) {
       res.status(400).json({ message: err.message || 'Login failed' });
     }
@@ -65,25 +69,25 @@ export class AuthController {
 
   async refreshToken(req: Request, res: Response) {
     try {
-      const { token } = req.body;
-      if (!token) return res.status(401).json({ message: 'Refresh token missing' });
+      const { token } = refreshSchema.parse(req.body);
+      const [idPart, tokenPart] = token.split('.', 2);
 
-      const tokens = await prisma.refreshToken.findMany({ include: { user: true } });
-      let matched = null;
-      for (const t of tokens) {
-        if (await comparePassword(token, t.tokenHash)) {
-          matched = t;
-          break;
-        }
+      const id = Number(idPart);
+      if (!Number.isFinite(id) || !tokenPart) {
+        return res.status(403).json({ message: 'Invalid refresh token' });
       }
 
-      if (!matched) return res.status(403).json({ message: 'Invalid refresh token' });
-      if (matched.expiresAt < new Date()) return res.status(403).json({ message: 'Refresh token expired' });
+      const stored = await prisma.refreshToken.findUnique({ where: { id }, include: { user: true } });
+      if (!stored) return res.status(403).json({ message: 'Invalid refresh token' });
+      if (stored.expiresAt < new Date()) return res.status(403).json({ message: 'Refresh token expired' });
+
+      const matches = await comparePassword(tokenPart, stored.tokenHash);
+      if (!matches) return res.status(403).json({ message: 'Invalid refresh token' });
 
       const payload: UserPayload = {
-        id: matched.user.id,
-        email: matched.user.email,
-        role: matched.user.role,
+        id: stored.user.id,
+        email: stored.user.email,
+        role: stored.user.role,
       };
       const accessToken = generateAccessToken(payload);
       res.json({ accessToken });

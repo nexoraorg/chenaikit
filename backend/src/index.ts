@@ -1,7 +1,5 @@
 // ChenAIKit Backend Server
 import express, { Request, Response } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { requestLoggingMiddleware } from './middleware/logging';
 import healthRouter from './routes/health';
@@ -16,37 +14,42 @@ import { UsageTrackingService } from './services/usageTrackingService';
 import { ApiGateway } from './middleware/apiGateway';
 import { createTieredRateLimiter } from './middleware/advancedRateLimiter';
 import Redis from 'ioredis';
+import { applySecurityMiddleware } from './middleware/security';
+import { loadVaultSecrets } from './config/secrets';
 
-// Load environment variables
-dotenv.config();
+const start = async (): Promise<express.Application> => {
+  // Load environment variables
+  dotenv.config();
 
-// Validate environment configuration
-validateEnvironment();
+  // Optional: load secrets from Vault before validating environment
+  await loadVaultSecrets();
 
-// Initialize services
-const prisma = new PrismaClient();
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-const apiKeyService = new ApiKeyService(prisma);
-const usageTrackingService = new UsageTrackingService(prisma);
-const rateLimiter = createTieredRateLimiter(redis);
-const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
+  // Validate environment configuration
+  validateEnvironment();
 
-const app: express.Application = express();
-const PORT = process.env.PORT || 5000;
+  // Initialize services
+  const prisma = new PrismaClient();
+  const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+  const apiKeyService = new ApiKeyService(prisma);
+  const usageTrackingService = new UsageTrackingService(prisma);
+  const rateLimiter = createTieredRateLimiter(redis);
+  const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
 
-// Middleware
-app.use(helmet());
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+  const app: express.Application = express();
+  const PORT = process.env.PORT || 5000;
 
-// Add metrics middleware before request logging
-app.use(metricsMiddleware);
+  // Middleware
+  applySecurityMiddleware(app);
+  app.use(express.json({ limit: '10mb' }));
 
-// Add logging middlewares
-app.use(requestLoggingMiddleware);
+  // Add metrics middleware before request logging
+  app.use(metricsMiddleware);
 
-// Health routes
-app.use('/api', healthRouter);
+  // Add logging middlewares
+  app.use(requestLoggingMiddleware);
+
+  // Health routes
+  app.use('/api', healthRouter);
 
 // API Gateway protected routes
 const gatewayMiddleware = apiGateway.gateway({
@@ -242,8 +245,9 @@ app.use((error: Error, req: express.Request, res: express.Response, _next: expre
   });
 });
 
-// Initialize monitoring and start server
-initializeMonitoring().finally(() => {
+  // Initialize monitoring and start server
+  await initializeMonitoring();
+
   const server = app.listen(PORT, async () => {
     console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
@@ -271,6 +275,15 @@ initializeMonitoring().finally(() => {
 
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
-});
 
-export default app;
+  return app;
+};
+
+if (require.main === module) {
+  start().catch((error) => {
+    console.error('Failed to start server', error);
+    process.exit(1);
+  });
+}
+
+export default start;
