@@ -53,7 +53,7 @@ export class AuthController {
   async register(req: Request, res: Response) {
     try {
       const { email, password, role } = registerSchema.parse(req.body);
-      const existing = await prisma.user.findUnique({ where: { email } });
+      const existing = await prisma.user.findFirst({ where: { email, deletedAt: null } });
       if (existing) return res.status(400).json({ message: 'Email already registered' });
 
       const hashed = await hashPassword(password);
@@ -70,7 +70,7 @@ export class AuthController {
   async login(req: Request, res: Response) {
     try {
       const { email, password } = loginSchema.parse(req.body);
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
       if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
       const valid = await comparePassword(password, user.password);
@@ -105,6 +105,14 @@ export class AuthController {
         return res.status(403).json({ message: 'Invalid refresh token' });
       }
 
+
+      if (!matched) return res.status(403).json({ message: 'Invalid refresh token' });
+      if (matched.expiresAt < new Date()) return res.status(403).json({ message: 'Refresh token expired' });
+      if (matched.user?.deletedAt) {
+        await prisma.refreshToken.deleteMany({ where: { userId: matched.user.id } });
+        return res.status(403).json({ message: 'Account disabled' });
+      }
+
       const stored = await prisma.refreshToken.findUnique({ where: { id }, include: { user: true } });
       if (!stored) return res.status(403).json({ message: 'Invalid refresh token' });
       if (stored.expiresAt < new Date()) return res.status(403).json({ message: 'Refresh token expired' });
@@ -123,6 +131,7 @@ export class AuthController {
           expiresAt: new Date(Date.now() + getRefreshTokenTtlMs()),
         },
       });
+
 
       const payload: UserPayload = {
         id: stored.user.id,
