@@ -15,6 +15,7 @@ model User {
   role          String          @default("user")
   createdAt     DateTime        @default(now())
   refreshTokens RefreshToken[]
+  apiKeys       ApiKey[]
 }
 
 
@@ -25,5 +26,45 @@ model RefreshToken {
   user       User     @relation(fields: [userId], references: [id])
   createdAt  DateTime @default(now())
   expiresAt  DateTime
+}
+
+model ApiKey {
+  id            String   @id @default(cuid())
+  keyHash       String   @unique
+  name          String
+  tier          String   @default("FREE") // FREE, PRO, ENTERPRISE
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+  isActive      Boolean  @default(true)
+  allowedIps    String   @default("") // JSON string array of allowed IP addresses
+  allowedPaths  String   @default("") // JSON string array of allowed path patterns
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime?
+  lastUsedAt    DateTime @default(now())
+  usageQuota    Int?     // Monthly quota if applicable
+  currentUsage  Int      @default(0)
+  usageResetAt  DateTime @default(now())
+  
+  // Relations
+  usageLogs     ApiUsage[]
+  
+  @@map("api_keys")
+}
+
+model ApiUsage {
+  id           String   @id @default(cuid())
+  apiKeyId     String
+  apiKey       ApiKey   @relation(fields: [apiKeyId], references: [id])
+  endpoint     String
+  method       String
+  statusCode   Int
+  responseTime Int      // in milliseconds
+  requestSize  Int      // in bytes
+  responseSize Int      // in bytes
+  ip           String
+  userAgent    String?
+  timestamp    DateTime @default(now())
+  
+  @@map("api_usage")
 }
 
