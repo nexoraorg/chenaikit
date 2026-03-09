@@ -3,27 +3,26 @@ import { HealthCheckResult } from '../types/monitoring';
 import { log } from '../utils/logger';
 import { metricsService } from '../services/metricsService';
 
-const router: Router = Router();
+const router = Router();
 
-// Store application start time
-const startTime = Date.now();
-
-// Health check dependencies
-interface HealthCheckDependency {
-  name: string;
-  check: () => Promise<{ status: 'up' | 'down' | 'degraded'; message?: string; details?: any }>;
-  critical: boolean;
+interface HealthStatus {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  timestamp: string;
+  uptime: number;
+  services: Record<string, ServiceHealth>;
 }
 
-const dependencies: HealthCheckDependency[] = [];
+interface ServiceHealth {
+  status: 'up' | 'down';
+  responseTime?: number;
+  error?: string;
+}
 
-/**
- * Register a health check dependency
- */
+const healthChecks: Record<string, () => Promise<ServiceHealth>> = {};
+
 export function registerHealthCheck(
   name: string,
-  check: () => Promise<{ status: 'up' | 'down' | 'degraded'; message?: string; details?: any }>,
-  critical: boolean = true
+  check: () => Promise<ServiceHealth>
 ): void {
   dependencies.push({ name, check, critical });
   log.info(`Health check registered: ${name}` , { critical });
@@ -110,163 +109,59 @@ async function performHealthChecks(): Promise<HealthCheckResult> {
   for (const dep of dependencies) {
     const start = Date.now();
     try {
-      const result = await Promise.race([
-        dep.check(),
-        new Promise<{ status: 'down'; message: string }>((_, reject) =>
+      const start = Date.now();
+      results[name] = await Promise.race([
+        check(),
+        new Promise<ServiceHealth>((_, reject) =>
           setTimeout(() => reject(new Error('Health check timeout')), 5000)
-        ),
-      ]) as { status: 'up' | 'down' | 'degraded'; message?: string; details?: any };
-
-      const responseTime = Date.now() - start;
-      checks[dep.name] = {
-        status: result.status,
-        message: result.message,
-        responseTime,
-        ...(result.details && { details: result.details }),
-      };
-
-      // Update overall status
-      if (dep.critical && result.status === 'down') {
-        overallStatus = 'unhealthy';
-      } else if (result.status === 'degraded' && overallStatus !== 'unhealthy') {
-        overallStatus = 'degraded';
-      }
-    } catch (error: any) {
-      const responseTime = Date.now() - start;
-      checks[dep.name] = {
+        )
+      ]);
+      results[name].responseTime = Date.now() - start;
+    } catch (error) {
+      results[name] = {
         status: 'down',
-        message: error.message,
-        responseTime,
+        error: (error as Error).message
       };
-
-      if (dep.critical) {
-        overallStatus = 'unhealthy';
-      }
+      overallStatus = 'unhealthy';
     }
   }
 
-  return {
+  const downServices = Object.values(results).filter(s => s.status === 'down').length;
+  if (downServices > 0 && downServices < Object.keys(results).length) {
+    overallStatus = 'degraded';
+  }
+
+  const response: HealthStatus = {
     status: overallStatus,
     timestamp: new Date().toISOString(),
-    uptime: Math.floor((Date.now() - startTime) / 1000),
-    checks,
+    uptime: process.uptime(),
+    services: results
   };
-}
 
-/**
- * GET /health - Basic health check
- */
-router.get('/', async (req: Request, res: Response) => {
-  try {
-    const result = await performHealthChecks();
-    const statusCode = result.status === 'healthy' ? 200 : result.status === 'degraded' ? 200 : 503;
-
-    res.status(statusCode).json(result);
-  } catch (error: any) {
-    log.error('Health check failed', error);
-    res.status(503).json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      error: error.message,
-    });
-  }
+  const statusCode = overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 207 : 503;
+  res.status(statusCode).json(response);
 });
 
-/**
- * GET /health/live - Liveness probe (Kubernetes)
- */
-router.get('/live', (req: Request, res: Response) => {
-  res.status(200).json({
-    status: 'alive',
-    timestamp: new Date().toISOString(),
-    uptime: Math.floor((Date.now() - startTime) / 1000),
-  });
+router.get('/health/liveness', (req: Request, res: Response) => {
+  res.status(200).json({ status: 'alive' });
 });
 
-/**
- * GET /health/ready - Readiness probe (Kubernetes)
- */
-router.get('/ready', async (req: Request, res: Response) => {
-  try {
-    const result = await performHealthChecks();
-    if (result.status === 'unhealthy') {
-      return res.status(503).json({
-        status: 'not_ready',
-        timestamp: new Date().toISOString(),
-        checks: result.checks,
-      });
+router.get('/health/readiness', async (req: Request, res: Response) => {
+  const criticalServices = ['database', 'stellar'];
+  const results: Record<string, ServiceHealth> = {};
+
+  for (const name of criticalServices) {
+    if (healthChecks[name]) {
+      try {
+        results[name] = await healthChecks[name]();
+      } catch (error) {
+        return res.status(503).json({ status: 'not ready', error: (error as Error).message });
+      }
     }
-
-    res.status(200).json({
-      status: 'ready',
-      timestamp: new Date().toISOString(),
-      checks: result.checks,
-    });
-  } catch (error: any) {
-    log.error('Readiness check failed', error);
-    res.status(503).json({
-      status: 'not_ready',
-      timestamp: new Date().toISOString(),
-      error: error.message,
-    });
   }
+
+  const allUp = Object.values(results).every(s => s.status === 'up');
+  res.status(allUp ? 200 : 503).json({ status: allUp ? 'ready' : 'not ready', services: results });
 });
-
-/**
- * GET /health/metrics - Prometheus metrics endpoint
- */
-router.get('/metrics', async (req: Request, res: Response) => {
-  try {
-    const metrics = await metricsService.getMetrics();
-    res.set('Content-Type', 'text/plain');
-    res.send(metrics);
-  } catch (error: any) {
-    log.error('Failed to retrieve metrics', error);
-    res.status(500).json({ error: 'Failed to retrieve metrics' });
-  }
-});
-
-/**
- * GET /health/stats - Performance statistics
- */
-router.get('/stats', async (req: Request, res: Response) => {
-  try {
-    const operation = req.query.operation as string | undefined;
-    const stats = { message: 'Performance stats not yet implemented' };
-
-    res.json({
-      timestamp: new Date().toISOString(),
-      stats: stats || { message: 'No performance data available' },
-      operations: operation ? undefined : ['database', 'redis'],
-    });
-  } catch (error: any) {
-    log.error('Failed to retrieve stats', error);
-    res.status(500).json({ error: 'Failed to retrieve stats' });
-  }
-});
-
-/**
- * GET /health/info - Application information
- */
-router.get('/info', (req: Request, res: Response) => {
-  res.json({
-    application: {
-      name: 'chenaikit-backend',
-      version: '1.0.0',
-      environment: process.env.NODE_ENV || 'development',
-    },
-    system: {
-      nodeVersion: process.version,
-      platform: process.platform,
-      arch: process.arch,
-      uptime: Math.floor((Date.now() - startTime) / 1000),
-    },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// Register default health checks
-registerHealthCheck('database', checkDatabase, true);
-registerHealthCheck('redis', checkRedis, false);
 
 export default router;
