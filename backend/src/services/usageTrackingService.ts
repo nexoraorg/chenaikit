@@ -95,6 +95,7 @@ export class UsageTrackingService {
           gte: startDate,
           lte: endDate,
         },
+        deletedAt: null,
       };
 
       const [
@@ -134,6 +135,7 @@ export class UsageTrackingService {
           FROM api_usage 
           WHERE timestamp >= ${startDate}
             AND timestamp <= ${endDate}
+            AND deletedAt IS NULL
           GROUP BY strftime('%Y-%m-%d %H:00:00', timestamp)
           ORDER BY hour DESC
           LIMIT 24
@@ -191,6 +193,8 @@ export class UsageTrackingService {
         JOIN api_keys ak ON au.api_key_id = ak.id
         WHERE au.timestamp >= ${whereClause.timestamp.gte}
           AND au.timestamp <= ${whereClause.timestamp.lte}
+          AND au.deletedAt IS NULL
+          AND ak.deletedAt IS NULL
         GROUP BY ak.tier
       `;
 
@@ -222,7 +226,7 @@ export class UsageTrackingService {
     }>;
   }> {
     try {
-      const whereClause: any = { apiKeyId };
+      const whereClause: any = { apiKeyId, deletedAt: null };
       
       if (startDate || endDate) {
         whereClause.timestamp = {};
@@ -253,6 +257,7 @@ export class UsageTrackingService {
           FROM api_usage 
           WHERE api_key_id = ${apiKeyId}
             AND timestamp >= datetime('now', '-30 days')
+            AND deletedAt IS NULL
           GROUP BY DATE(timestamp)
           ORDER BY date DESC
         `,
@@ -304,16 +309,19 @@ export class UsageTrackingService {
         this.prisma.apiUsage.count({
           where: {
             timestamp: { gte: oneMinuteAgo },
+            deletedAt: null,
           },
         }),
         this.prisma.apiUsage.count({
           where: {
             timestamp: { gte: oneHourAgo },
+            deletedAt: null,
           },
         }),
         this.prisma.apiUsage.findMany({
           where: {
             timestamp: { gte: oneMinuteAgo },
+            deletedAt: null,
           },
           select: { apiKeyId: true },
           distinct: ['apiKeyId'],
@@ -321,6 +329,7 @@ export class UsageTrackingService {
         this.prisma.apiUsage.aggregate({
           where: {
             timestamp: { gte: oneMinuteAgo },
+            deletedAt: null,
           },
           _avg: { responseTime: true },
           _count: true,
@@ -331,6 +340,7 @@ export class UsageTrackingService {
         where: {
           timestamp: { gte: oneMinuteAgo },
           statusCode: { gte: 400 },
+          deletedAt: null,
         },
       });
 
@@ -404,6 +414,8 @@ export class UsageTrackingService {
         WHERE au.timestamp >= ${startDate}
           AND au.timestamp <= ${endDate}
           AND ak.is_active = true
+          AND au.deletedAt IS NULL
+          AND ak.deletedAt IS NULL
         GROUP BY au.api_key_id, ak.name, ak.tier
         ORDER BY totalRequests DESC
       `;

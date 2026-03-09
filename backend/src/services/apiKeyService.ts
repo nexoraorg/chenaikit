@@ -110,7 +110,7 @@ export class ApiKeyService {
   async getApiKeysByUserId(userId: string): Promise<ApiKey[]> {
     try {
       const prismaApiKeys = await this.prisma.apiKey.findMany({
-        where: { userId },
+        where: { userId, deletedAt: null },
         orderBy: { createdAt: 'desc' },
       });
 
