@@ -359,16 +359,28 @@ importers:
       '@chenaikit/core':
         specifier: workspace:*
         version: link:../core
+      '@stellar/stellar-sdk':
+        specifier: ^12.1.0
+        version: 12.3.0
       chalk:
         specifier: ^4.1.2
         version: 4.1.2
+      cli-progress:
+        specifier: ^3.12.0
+        version: 3.12.0
       commander:
         specifier: ^11.0.0
         version: 11.1.0
       inquirer:
         specifier: ^8.2.0
         version: 8.2.7(@types/node@20.19.37)
+      ora:
+        specifier: ^5.4.1
+        version: 5.4.1
     devDependencies:
+      '@types/cli-progress':
+        specifier: ^3.11.5
+        version: 3.11.6
       '@types/inquirer':
         specifier: ^8.2.0
         version: 8.2.12
@@ -442,6 +454,9 @@ importers:
       jest:
         specifier: ^29.0.0
         version: 29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@20.19.37)(typescript@5.9.3))
+      ts-jest:
+        specifier: ^29.4.6
+        version: 29.4.6(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@20.19.37)(babel-plugin-macros@3.1.0))(typescript@5.9.3)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -12107,9 +12122,35 @@ snapshots:
     transitivePeerDependencies:
       - bare-url
 
+  '@stellar/stellar-base@12.1.1':
+    dependencies:
+      '@stellar/js-xdr': 3.1.2
+      base32.js: 0.1.0
+      bignumber.js: 9.3.1
+      buffer: 6.0.3
+      sha.js: 2.4.12
+      tweetnacl: 1.0.3
+    optionalDependencies:
+      sodium-native: 4.3.3
+    transitivePeerDependencies:
+      - bare-url
+
   '@stellar/stellar-sdk@11.3.0':
     dependencies:
       '@stellar/stellar-base': 11.0.1
+      axios: 1.13.6
+      bignumber.js: 9.3.1
+      eventsource: 2.0.2
+      randombytes: 2.1.0
+      toml: 3.0.0
+      urijs: 1.19.11
+    transitivePeerDependencies:
+      - bare-url
+      - debug
+
+  '@stellar/stellar-sdk@12.3.0':
+    dependencies:
+      '@stellar/stellar-base': 12.1.1
       axios: 1.13.6
       bignumber.js: 9.3.1
       eventsource: 2.0.2
@@ -12274,6 +12315,10 @@ snapshots:
       bull: 4.16.5
     transitivePeerDependencies:
       - supports-color
+
+  '@types/cli-progress@3.11.6':
+    dependencies:
+      '@types/node': 20.19.37
 
   '@types/connect-history-api-fallback@1.5.4':
     dependencies:
@@ -13604,6 +13649,10 @@ snapshots:
   cli-cursor@3.1.0:
     dependencies:
       restore-cursor: 3.1.0
+
+  cli-progress@3.12.0:
+    dependencies:
+      string-width: 4.2.3
 
   cli-spinners@2.9.2: {}
 
