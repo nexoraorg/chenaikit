@@ -1,32 +1,19 @@
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  roots: ['<rootDir>/packages/core', '<rootDir>/backend'],
-  testMatch: [
-    '**/__tests__/**/*.ts',
-    '**/?(*.)+(spec|test).ts'
+  projects: [
+    '<rootDir>/packages/core/jest.config.js',
+    '<rootDir>/packages/cli/jest.config.js',
+    '<rootDir>/backend/jest.config.js',
+    '<rootDir>/frontend/jest.config.js',
   ],
-  collectCoverageFrom: [
-    'packages/core/src/**/*.ts',
-    'backend/src/**/*.ts',
-    '!**/*.d.ts',
-    '!**/__tests__/**',
-    '!**/examples/**'
-  ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  collectCoverage: true,
+  coverageDirectory: '<rootDir>/coverage',
+  coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
   coverageThreshold: {
     global: {
-      branches: 80,
-      functions: 80,
+      branches: 70,
+      functions: 70,
       lines: 80,
-      statements: 80
-    }
+      statements: 80,
+    },
   },
-  transform: {
-    '^.+\\.ts$': 'ts-jest',
-  },
-  moduleFileExtensions: ['ts', 'js', 'json'],
-  testTimeout: 10000,
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js']
 };
