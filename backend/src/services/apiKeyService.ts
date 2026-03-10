@@ -321,11 +321,12 @@ export class ApiKeyService {
         requestsThisMonth,
         averageResponseTime: avgResponseTime._avg.responseTime || 0,
         successRate,
-        topEndpoints: endpointCounts.map(item => ({
+        topEndpoints: endpointCounts.map((item: any) => ({
           endpoint: item.endpoint,
           count: item._count,
         })),
-        dailyUsage: dailyCounts.map(item => ({
+<<<<<<< HEAD
+        dailyUsage: (dailyCounts as any[]).map((item: any) => ({
           date: item.date,
           requests: Number(item.requests),
         })),
