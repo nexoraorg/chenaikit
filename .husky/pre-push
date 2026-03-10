@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run full test suite before push
+pnpm test:ci
+
+# Run integration tests
+pnpm test:integration

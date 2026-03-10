@@ -32,7 +32,7 @@
   "devDependencies": {
     "@types/jest": "^29.0.0",
     "@types/lodash": "^4.14.199",
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.9.5",
     "@types/urijs": "^1.19.25",
     "@types/ws": "^8.5.5",
     "@typescript-eslint/eslint-plugin": "^6.0.0",

@@ -91,6 +91,31 @@ impl CreditScoreContract {
         perform_upgrade(&env, admin, new_wasm_hash);
     }
 
+    /// Upgrade with custom migration notes
+    pub fn upgrade_with_migration(
+        env: Env,
+        admin: Address,
+        new_wasm_hash: BytesN<32>,
+        migration_notes: String,
+    ) {
+        upgrade::upgrade_with_migration(&env, admin, new_wasm_hash, migration_notes);
+    }
+
+    /// Rollback to previous version (emergency only)
+    pub fn rollback(env: Env, admin: Address) {
+        upgrade::rollback(&env, admin);
+    }
+
+    /// Get current contract version
+    pub fn get_version(env: Env) -> u32 {
+        upgrade::get_version(&env)
+    }
+
+    /// Get upgrade history
+    pub fn get_upgrade_history(env: Env) -> Vec<upgrade::UpgradeRecord> {
+        upgrade::get_upgrade_history(&env)
+    }
+
     /// Check if account has a score
     pub fn has_score(env: Env, account: Address) -> bool {
         has_score(&env, &account)

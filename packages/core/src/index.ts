@@ -34,3 +34,11 @@ export * from './utils/accessibility';
 
 // Monitoring types
 export type { MonitoringConfig, TransactionEvent, Alert } from './blockchain/monitoring/types';
+
+// Error recovery and resilience utilities
+export { retry, isRetryableError } from './utils/retry';
+export { CircuitBreaker, CircuitState } from './utils/circuit-breaker';
+export { AIServiceWithResilience } from './services/ai-resilient';
+export type { RetryOptions } from './utils/retry';
+export type { CircuitBreakerOptions } from './utils/circuit-breaker';
+export type { AIServiceConfig, CreditScoreResult } from './services/ai-resilient';
