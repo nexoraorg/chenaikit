@@ -127,16 +127,16 @@ export class UsageTrackingService {
         averageResponseTime: avgResponseTime._avg.responseTime || 0,
         successRate,
         errorRate,
-        topEndpoints: endpointStats.map(item => ({
+        topEndpoints: endpointStats.map((item: any) => ({
           endpoint: item.endpoint,
           count: item._count,
           avgResponseTime: item._avg.responseTime || 0,
         })),
-        hourlyStats: (hourlyStats as any[]).map(item => ({
+        hourlyStats: (hourlyStats as any[]).map((item: any) => ({
           hour: item.hour,
           requests: Number(item.requests),
         })),
-        statusDistribution: statusDistribution.reduce((acc, item) => {
+        statusDistribution: statusDistribution.reduce((acc: any, item: any) => {
           acc[item.statusCode.toString()] = item._count;
           return acc;
         }, {} as Record<string, number>),
@@ -237,12 +237,12 @@ export class UsageTrackingService {
         totalRequests,
         averageResponseTime: avgResponseTime._avg.responseTime || 0,
         successRate,
-        endpointBreakdown: endpointBreakdown.map(item => ({
+        endpointBreakdown: endpointBreakdown.map((item: any) => ({
           endpoint: item.endpoint,
           count: item._count,
           avgResponseTime: item._avg.responseTime || 0,
         })),
-        dailyUsage: (dailyUsage as any[]).map(item => ({
+        dailyUsage: (dailyUsage as any[]).map((item: any) => ({
           date: item.date,
           requests: Number(item.requests),
         })),
