@@ -3,7 +3,8 @@ import { HealthCheckResult } from '../types/monitoring';
 import { log } from '../utils/logger';
 import { metricsService } from '../services/metricsService';
 
-const router = Router();
+const router: Router = Router();
+const startTime = Date.now();
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -20,12 +21,21 @@ interface ServiceHealth {
 
 const healthChecks: Record<string, () => Promise<ServiceHealth>> = {};
 
+interface HealthCheckDependency {
+  name: string;
+  check: () => Promise<ServiceHealth>;
+  critical: boolean;
+}
+
+const dependencies: HealthCheckDependency[] = [];
+
 export function registerHealthCheck(
   name: string,
-  check: () => Promise<ServiceHealth>
+  check: () => Promise<ServiceHealth>,
+  critical: boolean = false
 ): void {
   dependencies.push({ name, check, critical });
-  log.info(`Health check registered: ${name}` , { critical });
+  log.info(`Health check registered: ${name}`, { critical });
 }
 
 /**
@@ -106,19 +116,19 @@ async function performHealthChecks(): Promise<HealthCheckResult> {
   }
 
   // Check registered dependencies
+  const results: Record<string, ServiceHealth> = {};
   for (const dep of dependencies) {
     const start = Date.now();
     try {
-      const start = Date.now();
-      results[name] = await Promise.race([
-        check(),
+      results[dep.name] = await Promise.race([
+        dep.check(),
         new Promise<ServiceHealth>((_, reject) =>
           setTimeout(() => reject(new Error('Health check timeout')), 5000)
         )
-      ]);
-      results[name].responseTime = Date.now() - start;
+      ]) as ServiceHealth;
+      results[dep.name].responseTime = Date.now() - start;
     } catch (error) {
-      results[name] = {
+      results[dep.name] = {
         status: 'down',
         error: (error as Error).message
       };
@@ -126,20 +136,27 @@ async function performHealthChecks(): Promise<HealthCheckResult> {
     }
   }
 
-  const downServices = Object.values(results).filter(s => s.status === 'down').length;
+  const downServices = Object.values(results).filter((s: ServiceHealth) => s.status === 'down').length;
   if (downServices > 0 && downServices < Object.keys(results).length) {
     overallStatus = 'degraded';
   }
 
-  const response: HealthStatus = {
+  return {
     status: overallStatus,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    services: results
+    checks: {
+      ...checks,
+      ...results
+    }
   };
+}
 
-  const statusCode = overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 207 : 503;
-  res.status(statusCode).json(response);
+// Health check endpoint
+router.get('/health', async (req: Request, res: Response) => {
+  const healthResult = await performHealthChecks();
+  const statusCode = healthResult.status === 'healthy' ? 200 : healthResult.status === 'degraded' ? 207 : 503;
+  res.status(statusCode).json(healthResult);
 });
 
 router.get('/health/liveness', (req: Request, res: Response) => {

@@ -325,7 +325,6 @@ export class ApiKeyService {
           endpoint: item.endpoint,
           count: item._count,
         })),
-<<<<<<< HEAD
         dailyUsage: (dailyCounts as any[]).map((item: any) => ({
           date: item.date,
           requests: Number(item.requests),

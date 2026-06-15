@@ -1,4 +1,4 @@
-import { ApiKey as PrismaApiKey, ApiUsage as PrismaApiUsage } from '../generated/prisma';
+import { ApiKey as PrismaApiKey, ApiUsage as PrismaApiUsage } from '@prisma/client';
 
 export type ApiTier = 'FREE' | 'PRO' | 'ENTERPRISE';
 

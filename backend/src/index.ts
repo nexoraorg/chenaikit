@@ -29,10 +29,10 @@ app.use(requestLoggingMiddleware);
 app.use('/api', healthRouter);
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', accountRoutes);
-app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
+// app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
 
 // Gateway-protected endpoints
-app.use('/api/v1/credit-score', (req: Request, res: Response) => {
+app.get('/api/v1/credit-score', (_req: Request, res: Response) => {
   res.json({
     success: true,
     data: {
@@ -41,149 +41,19 @@ app.use('/api/v1/credit-score', (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     },
   });
+});
 
-  // Protected API routes with gateway
-  app.use('/api/v1', ...gatewayMiddleware);
-
-  // Gateway-protected endpoints
-  app.use('/api/v1/credit-score', ...gatewayMiddleware, (_req: Request, res: Response) => {
-    res.json({
-      success: true,
-      data: {
-        score: Math.floor(Math.random() * 850) + 150,
-        factors: ['payment_history', 'credit_utilization', 'account_age'],
-        timestamp: new Date().toISOString(),
-      },
-    });
+app.get('/api/v1/fraud/detect', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: {
+      riskScore: Math.floor(Math.random() * 100),
+      riskLevel: 'low',
+      factors: ['transaction_amount', 'location', 'device'],
+      timestamp: new Date().toISOString(),
+    },
   });
-
-  app.use('/api/v1/fraud/detect', ...gatewayMiddleware, (_req: Request, res: Response) => {
-    res.json({
-      success: true,
-      data: {
-        riskScore: Math.floor(Math.random() * 100),
-        riskLevel: 'low',
-        factors: ['transaction_amount', 'location', 'device'],
-        timestamp: new Date().toISOString(),
-      },
-    });
-  });
-
-  // API Key management endpoints
-  app.post('/api/v1/keys', ...gatewayMiddleware, async (req: Request, res: Response) => {
-    try {
-      const { name, tier = 'FREE', allowedIps, allowedPaths, usageQuota } = req.body;
-      const user = (req as any).user; // Assuming auth middleware adds user
-
-      const { apiKey, plainKey } = await apiKeyService.createApiKey({
-        name,
-        tier,
-        userId: user?.id,
-        allowedIps,
-        allowedPaths,
-        usageQuota,
-      });
-
-      res.status(201).json({
-        success: true,
-        data: {
-          apiKey: {
-            id: apiKey.id,
-            name: apiKey.name,
-            tier: apiKey.tier,
-            key: plainKey, // Only shown once
-            createdAt: apiKey.createdAt,
-          },
-        },
-      });
-    } catch (_error) {
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'API_KEY_CREATION_FAILED',
-          message: 'Failed to create API key',
-          timestamp: new Date().toISOString(),
-        },
-      });
-    }
-  });
-
-  app.get('/api/v1/keys', ...gatewayMiddleware, async (req: Request, res: Response) => {
-    try {
-      const user = (req as any).user;
-      const apiKeys = await apiKeyService.getApiKeysByUserId(user?.id);
-
-      res.json({
-        success: true,
-        data: {
-          apiKeys: apiKeys.map(key => ({
-            id: key.id,
-            name: key.name,
-            tier: key.tier,
-            isActive: key.isActive,
-            createdAt: key.createdAt,
-            lastUsedAt: key.lastUsedAt,
-            currentUsage: key.currentUsage,
-            usageQuota: key.usageQuota,
-          })),
-        },
-      });
-    } catch (_error) {
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'API_KEYS_FETCH_FAILED',
-          message: 'Failed to fetch API keys',
-          timestamp: new Date().toISOString(),
-        },
-      });
-    }
-  });
-
-  app.get('/api/v1/analytics', ...gatewayMiddleware, async (req: Request, res: Response) => {
-    try {
-      const startDate = req.query.startDate
-        ? new Date(req.query.startDate as string)
-        : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
-
-      const analytics = await usageTrackingService.getAnalytics(startDate, endDate);
-
-      res.json({
-        success: true,
-        data: analytics,
-      });
-    } catch (_error) {
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'ANALYTICS_FETCH_FAILED',
-          message: 'Failed to fetch analytics',
-          timestamp: new Date().toISOString(),
-        },
-      });
-    }
-  });
-
-  app.get('/api/v1/gateway/health', async (_req: Request, res: Response) => {
-    try {
-      const health = await gateway.healthCheck();
-      res.json({
-        success: true,
-        data: health,
-      });
-    } catch (_error) {
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'GATEWAY_HEALTH_CHECK_FAILED',
-          message: 'Failed to get gateway health',
-          timestamp: new Date().toISOString(),
-        },
-      });
-    }
-  });
-};
+});
 
 // Prometheus metrics endpoint
 app.get('/metrics', async (_req: Request, res: Response) => {
@@ -240,11 +110,24 @@ export const startServer = async (): Promise<void> => {
   const rateLimiter = createTieredRateLimiter(redis);
   const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
 
-  registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
+  // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
 
   const PORT = process.env.PORT || 5000;
 
   await initializeMonitoring();
+
+  const shutdown = async () => {
+    try {
+      await shutdownMonitoring();
+      await redis.quit();
+      await prisma.$disconnect();
+    } catch {
+      /* noop */
+    }
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 
   const server = app.listen(PORT, async () => {
     console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
@@ -258,25 +141,7 @@ export const startServer = async (): Promise<void> => {
     } catch (_err) {
       console.warn('⚠️  Redis not available. Continuing without cache.');
     }
-
-  const shutdown = async () => {
-    try {
-      await shutdownMonitoring();
-      await redis.quit();
-      await prisma.$disconnect();
-    } catch {
-      /* noop */
-    }
-  } catch (err) {
-    console.error('❌ Failed to start server:', err);
-    if (process.env.NODE_ENV !== 'test') {
-      process.exit(1);
-    }
-  }
-};
-
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  });
 };
 
 if (require.main === module) {

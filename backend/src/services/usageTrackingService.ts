@@ -56,16 +56,15 @@ export class UsageTrackingService {
   }
 
   async getAnalytics(startDate: Date, endDate: Date) {
-    const usage = await this.prisma.apiUsage.groupBy({
-      by: ['endpoint', 'method', 'statusCode'],
-      where: {
-        timestamp: {
-          gte: startDate,
-          lte: endDate,
-        },
-        deletedAt: null,
-      };
+    const whereClause = {
+      timestamp: {
+        gte: startDate,
+        lte: endDate,
+      },
+      deletedAt: null,
+    };
 
+    try {
       const [
         totalRequests,
         uniqueApiKeys,
@@ -143,7 +142,7 @@ export class UsageTrackingService {
         tierDistribution,
       };
     } catch (error: any) {
-      log.error('Failed to get analytics', error as Error);
+      console.error('Failed to get analytics', error);
       throw new Error('Failed to get analytics');
     }
   }
@@ -171,7 +170,7 @@ export class UsageTrackingService {
         return acc;
       }, {} as Record<string, number>);
     } catch (error: any) {
-      log.error('Failed to get tier distribution', error as Error);
+      console.error('Failed to get tier distribution', error);
       return {};
     }
   }
@@ -248,7 +247,7 @@ export class UsageTrackingService {
         })),
       };
     } catch (error: any) {
-      log.error('Failed to get API key usage', error as Error);
+      console.error('Failed to get API key usage', error);
       throw new Error('Failed to get API key usage');
     }
   }
@@ -322,7 +321,7 @@ export class UsageTrackingService {
         errorRate,
       };
     } catch (error: any) {
-      log.error('Failed to get real-time metrics', error as Error);
+      console.error('Failed to get real-time metrics', error);
       throw new Error('Failed to get real-time metrics');
     }
   }
@@ -343,14 +342,14 @@ export class UsageTrackingService {
         },
       });
 
-      log.info('Cleaned up old usage records', {
+      console.info('Cleaned up old usage records', {
         count: result.count,
         cutoffDate,
       });
 
       return result.count;
     } catch (error: any) {
-      log.error('Failed to cleanup old usage records', error as Error);
+      console.error('Failed to cleanup old usage records', error);
       throw new Error('Failed to cleanup old usage records');
     }
   }
@@ -398,7 +397,7 @@ export class UsageTrackingService {
         periodEnd: new Date(item.periodEnd),
       }));
     } catch (error: any) {
-      log.error('Failed to export usage data', error as Error);
+      console.error('Failed to export usage data', error);
       throw new Error('Failed to export usage data');
     }
   }

@@ -9,7 +9,7 @@
 		"forceConsistentCasingInFileNames": true,
 		"skipLibCheck": true,
 		"resolveJsonModule": true,
-		"types": ["node"]
+		"types": ["node", "jest"]
 	},
 	"include": ["src/**/*"],
 	"exclude": ["dist", "node_modules"]

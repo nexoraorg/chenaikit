@@ -137,7 +137,7 @@ export default i18n;
 export const getCurrentLanguage = (): string => i18n.language;
 
 export const changeLanguage = (language: string): Promise<string> => {
-  return i18n.changeLanguage(language);
+  return i18n.changeLanguage(language) as unknown as Promise<string>;
 };
 
 export const isRTL = (language: string): boolean => {
@@ -207,7 +207,7 @@ export const formatRelativeTime = (date: Date | string, language?: string): stri
 // Pluralization utilities
 export const formatPlural = (count: number, key: string, options?: any, language?: string): string => {
   const lng = language || i18n.language;
-  return i18n.t(key, { count, ...options, lng });
+  return String(i18n.t(key, { count, ...options, lng }));
 };
 
 // Language detection and validation

@@ -180,7 +180,7 @@ export class ApiGateway {
         }
 
         // Attach API key to request
-        req.apiKey = keyData;
+        (req as any).apiKey = keyData;
         next();
       } catch (error) {
         log.error('API key authentication error', error as Error);
@@ -282,7 +282,7 @@ export class ApiGateway {
     const self = this;
     return (req: Request, res: Response, next: NextFunction): void => {
       const startTime = Date.now();
-      const apiKey = req.apiKey;
+      const apiKey = (req as any).apiKey;
 
       // Override res.send to track response
       const originalSend = res.send;

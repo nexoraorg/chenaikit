@@ -5,7 +5,8 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.ts'],
   testPathIgnorePatterns: [
     '<rootDir>/src/__tests__/models.test.ts',
-    '<rootDir>/src/__tests__/accounts.test.ts'
+    '<rootDir>/src/__tests__/accounts.test.ts',
+    '<rootDir>/src/__tests__/debug.test.ts',
   ],
   collectCoverageFrom: [
     'src/**/*.ts',

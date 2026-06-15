@@ -187,8 +187,6 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       return renderChipVariant();
     case 'avatar':
       return renderAvatarVariant();
-    case 'compact':
-      return renderCompactVariant();
     default:
       return renderSelectVariant();
   }

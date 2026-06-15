@@ -107,20 +107,17 @@ export class AuthController {
         return res.status(403).json({ message: 'Invalid refresh token' });
       }
 
-
-      if (!matched) return res.status(403).json({ message: 'Invalid refresh token' });
-      if (matched.expiresAt < new Date()) return res.status(403).json({ message: 'Refresh token expired' });
-      if (matched.user?.deletedAt) {
-        await prisma.refreshToken.deleteMany({ where: { userId: matched.user.id } });
-        return res.status(403).json({ message: 'Account disabled' });
-      }
-
       const stored = await prisma.refreshToken.findUnique({ where: { id }, include: { user: true } });
       if (!stored) return res.status(403).json({ message: 'Invalid refresh token' });
       if (stored.expiresAt < new Date()) return res.status(403).json({ message: 'Refresh token expired' });
 
       const matches = await comparePassword(tokenPart, stored.tokenHash);
       if (!matches) return res.status(403).json({ message: 'Invalid refresh token' });
+
+      if (stored.user?.deletedAt) {
+        await prisma.refreshToken.deleteMany({ where: { userId: stored.user.id } });
+        return res.status(403).json({ message: 'Account disabled' });
+      }
 
       // Rotate refresh token on successful use
       const newRefreshTokenRaw = crypto.randomBytes(64).toString('hex');
