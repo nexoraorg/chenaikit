@@ -1,7 +1,15 @@
 // ChenAIKit Backend Server
 import 'reflect-metadata';
-import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
+dotenv.config();
+
+// Initialize Sentry first
+import { initSentry, sentryErrorHandler } from './middleware/errorTracking';
+if (process.env.SENTRY_DSN) {
+  initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || 'development');
+}
+
+import express, { Request, Response } from 'express';
 import { log } from './utils/logger';
 import { requestLoggingMiddleware } from './middleware/logging';
 import healthRouter from './routes/health';
@@ -78,6 +86,11 @@ app.use('*', (req: Request, res: Response) => {
     }
   });
 });
+
+// Sentry error handler (must be before other error handlers)
+if (process.env.SENTRY_DSN) {
+  app.use(sentryErrorHandler());
+}
 
 // Global error handler
 app.use((error: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
