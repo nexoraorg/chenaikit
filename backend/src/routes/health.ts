@@ -152,17 +152,103 @@ async function performHealthChecks(): Promise<HealthCheckResult> {
   };
 }
 
-// Health check endpoint
+/**
+ * @openapi
+ * /api/health:
+ *   get:
+ *     summary: Full health check
+ *     description: Returns detailed health status including system resources and registered service dependencies.
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: All systems healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthCheckResult'
+ *       207:
+ *         description: Some services degraded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthCheckResult'
+ *       503:
+ *         description: Critical services unhealthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthCheckResult'
+ */
 router.get('/health', async (req: Request, res: Response) => {
   const healthResult = await performHealthChecks();
   const statusCode = healthResult.status === 'healthy' ? 200 : healthResult.status === 'degraded' ? 207 : 503;
   res.status(statusCode).json(healthResult);
 });
 
+/**
+ * @openapi
+ * /api/health/liveness:
+ *   get:
+ *     summary: Liveness probe
+ *     description: Lightweight liveness check for Kubernetes. Returns 200 if the process is running.
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Process is alive
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: alive
+ */
 router.get('/health/liveness', (req: Request, res: Response) => {
   res.status(200).json({ status: 'alive' });
 });
 
+/**
+ * @openapi
+ * /api/health/readiness:
+ *   get:
+ *     summary: Readiness probe
+ *     description: Checks critical services (database, stellar) are ready to serve traffic. Used by Kubernetes readiness probes.
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: All critical services are ready
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: ready
+ *                 services:
+ *                   type: object
+ *                   additionalProperties:
+ *                     type: object
+ *                     properties:
+ *                       status:
+ *                         type: string
+ *                         enum: [up, down]
+ *                       responseTime:
+ *                         type: number
+ *       503:
+ *         description: One or more critical services are not ready
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: not ready
+ *                 error:
+ *                   type: string
+ */
 router.get('/health/readiness', async (req: Request, res: Response) => {
   const criticalServices = ['database', 'stellar'];
   const results: Record<string, ServiceHealth> = {};
