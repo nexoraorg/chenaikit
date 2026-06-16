@@ -10,7 +10,7 @@ jobs:
     build-test:
         strategy:
             matrix:
-                os: [windows-latest]
+                os: [ubuntu-latest]
         
         runs-on: ${{matrix.os}}
 
