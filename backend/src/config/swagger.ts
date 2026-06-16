@@ -314,22 +314,9 @@ export const swaggerSpec = swaggerJsdoc(options);
 export const swaggerUiOptions: SwaggerUiOptions = {
   customSiteTitle: "ChenAIKit API Documentation",
   customCss: `
-    html, body, #swagger-ui {
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-    .swagger-ui .topbar {
-      position: absolute !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      width: 100% !important;
-      margin: 0 !important;
-      z-index: 9999 !important;
-    }
-    .swagger-ui {
-      padding-top: 60px !important;
-    }
+    .swagger-ui .topbar { display: none; }
+    .swagger-ui .wrapper { padding-top: 0; }
+    .swagger-ui .info .title { font-size: 2rem; }
   `,
   swaggerOptions: {
     persistAuthorization: true,
