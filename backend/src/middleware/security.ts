@@ -99,6 +99,9 @@ export const applySecurityMiddleware = (app: Application): void => {
     }),
   );
 
-  app.use(helmetMiddleware());
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/api-docs")) return next();
+    return helmetMiddleware()(req, res, next);
+  });
   app.use(corsMiddleware());
 };

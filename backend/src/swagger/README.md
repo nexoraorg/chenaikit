@@ -20,4 +20,4 @@ These are merged at runtime by `swagger-jsdoc`.
 
 - **JSON**: `GET /api-docs.json` (runtime)
 - **YAML**: `GET /api-docs.yaml` (runtime)
-- **Static file**: Run `pnpm --filter @chenaikit/backend run generate:api-types` to write `../types/openapi-spec.json`
+- **Static file**: Run `npx ts-node scripts/generate-types.ts` to write `../types/openapi-spec.json`
