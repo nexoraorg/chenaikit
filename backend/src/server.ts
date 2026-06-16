@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Application } from 'express';
 import {
   initSentry,
   sentryRequestHandler,
@@ -8,7 +8,7 @@ import {
 } from './middleware/errorTracking';
 import healthRouter, { registerHealthCheck } from './routes/health';
 
-const app = express();
+const app: Application = express();
 
 // Initialize Sentry
 if (process.env.SENTRY_DSN) {
