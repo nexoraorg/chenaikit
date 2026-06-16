@@ -20,6 +20,12 @@ interface PerformanceMetricsChartProps extends ChartProps {
   showGrid?: boolean;
   animate?: boolean;
   onMetricClick?: (metric: string, value: number) => void;
+  config?: any;
+  onDataPointClick?: (data: any) => void;
+  className?: string;
+  id?: string;
+  'aria-label'?: string;
+  'aria-describedby'?: string;
 }
 
 export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = ({
@@ -48,7 +54,7 @@ export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = (
   const processedData = React.useMemo(() => {
     if (chartType === 'radar') {
       // For radar chart, we need to aggregate data by model
-      const modelData = data.reduce((acc, item) => {
+      const modelData = data.reduce((acc: Record<string, any>, item: PerformanceMetrics) => {
         if (!acc[item.modelName]) {
           acc[item.modelName] = {
             model: item.modelName,
@@ -67,7 +73,7 @@ export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = (
         return acc;
       }, {} as Record<string, any>);
 
-      return Object.values(modelData).map(model => ({
+      return Object.values(modelData).map((model: any) => ({
         ...model,
         accuracy: model.accuracy / model.count,
         precision: model.precision / model.count,
@@ -269,7 +275,7 @@ export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = (
             <PolarAngleAxis dataKey="model" stroke="#6B7280" fontSize={12} />
             <PolarRadiusAxis 
               angle={90} 
-              domain={[0, 1]}}
+              domain={[0, 1]}
               stroke="#6B7280"
               fontSize={12}
               tickFormatter={(value) => formatNumber(value * 100, 0) + '%'}

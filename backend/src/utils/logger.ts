@@ -1,5 +1,5 @@
 import winston from 'winston';
-import { monitoringConfig, isProduction } from '../config/monitoring';
+import { monitoringConfig } from '../config/monitoring';
 import { LogContext } from '../types/monitoring';
 
 // Custom format for structured logging

@@ -1,5 +1,5 @@
 
-import StellarSdk, { Asset, Operation, TransactionBuilder, Keypair } from '@stellar/stellar-sdk';
+import { Asset, Operation, TransactionBuilder, Keypair } from '@stellar/stellar-sdk';
 import { StellarConnector } from './connector';
 
 /**
@@ -22,7 +22,7 @@ export async function createTrustline(
 
   const transaction = new TransactionBuilder(sourceAccount, {
     fee: await stellarConnector.getFee(),
-    networkPassphrase: stellarConnector.getNetworkPassphrase(),
+    networkPassphrase: await stellarConnector.getNetworkPassphrase(),
   })
     .addOperation(
       Operation.changeTrust({
@@ -75,7 +75,7 @@ export async function issueAsset(
 
   const transaction = new TransactionBuilder(issuerAccount, {
     fee: await stellarConnector.getFee(),
-    networkPassphrase: stellarConnector.getNetworkPassphrase(),
+    networkPassphrase: await stellarConnector.getNetworkPassphrase(),
   })
     .addOperation(
       Operation.payment({
@@ -113,7 +113,7 @@ export async function transferAsset(
 
   const transaction = new TransactionBuilder(sourceAccount, {
     fee: await stellarConnector.getFee(),
-    networkPassphrase: stellarConnector.getNetworkPassphrase(),
+    networkPassphrase: await stellarConnector.getNetworkPassphrase(),
   })
     .addOperation(
       Operation.payment({

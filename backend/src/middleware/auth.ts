@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../utils/jwt';
 import { UserPayload } from '../types/auth';
+import { ApiKey } from '../models/ApiKey';
 
 declare global {
   namespace Express {
     interface Request {
       user?: UserPayload;
+      apiKey?: ApiKey;
     }
   }
 }
@@ -24,7 +26,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   }
 };
 
-export const authorize = (roles: Array<'user' | 'admin'>) => {
+export const authorize = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({ message: 'Forbidden' });

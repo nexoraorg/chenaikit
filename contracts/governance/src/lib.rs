@@ -23,6 +23,11 @@ pub mod timelock;
 #[cfg(any(test, feature = "timelock"))]
 pub use timelock::Timelock;
 
+#[cfg(any(test, feature = "upgrades"))]
+pub mod upgrade_proposal;
+#[cfg(any(test, feature = "upgrades"))]
+pub use upgrade_proposal::UpgradeManager;
+
 #[cfg(test)]
 mod integration_tests;
 

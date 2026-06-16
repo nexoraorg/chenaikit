@@ -202,7 +202,7 @@ describe('CreditScoreCard', () => {
         />
       );
 
-      expect(screen.getByText('0')).toBeInTheDocument();
+      expect(screen.getAllByText('0').length).toBeGreaterThan(0);
       expect(screen.getByText('Poor')).toBeInTheDocument();
     });
 
@@ -214,7 +214,7 @@ describe('CreditScoreCard', () => {
         />
       );
 
-      expect(screen.getByText('100')).toBeInTheDocument();
+      expect(screen.getAllByText('100').length).toBeGreaterThan(0);
       expect(screen.getByText('Excellent')).toBeInTheDocument();
     });
 

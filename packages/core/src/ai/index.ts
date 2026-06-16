@@ -2,6 +2,7 @@ export * from './service';
 export * from './credit-scorer';
 export * from './fraud-detector';
 export * from './recommendations';
+export * from './nlp';
 export * from './base-model';
 export * from './providers';
 

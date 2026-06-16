@@ -12,6 +12,7 @@ token = []
 voting = []
 proposals = []
 timelock = []
+upgrades = []
 
 [dependencies]
 soroban-sdk = "21.0.0"

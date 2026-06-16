@@ -1,8 +1,9 @@
 import { Router } from 'express';
+import type { Router as ExpressRouter } from 'express';
 import rateLimit from 'express-rate-limit';
 import { AuthController } from '../controllers/authController';
 
-const router = Router();
+const router: ExpressRouter = Router();
 const controller = new AuthController();
 
 

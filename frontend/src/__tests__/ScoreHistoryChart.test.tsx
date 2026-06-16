@@ -77,7 +77,7 @@ describe('ScoreHistoryChart', () => {
       );
 
       expect(screen.getByText('Current')).toBeInTheDocument();
-      expect(screen.getByText('80')).toBeInTheDocument();
+      expect(screen.getByTestId('current-score')).toHaveTextContent('80');
     });
 
     it('displays average score stat', () => {
@@ -162,7 +162,7 @@ describe('ScoreHistoryChart', () => {
       );
 
       expect(screen.getByText('Score History')).toBeInTheDocument();
-      expect(screen.getByText('75')).toBeInTheDocument();
+      expect(screen.getByTestId('current-score')).toHaveTextContent('75');
     });
 
     it('handles all scores at minimum (0)', () => {

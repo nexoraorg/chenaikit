@@ -97,7 +97,8 @@ export class AccountController {
       };
 
       res.status(200).json(response);
-    } catch (error) {
+    } catch (err) {
+      const error = err as Error;
       console.error('Error getting account:', error);
       res.status(500).json({
         success: false,
@@ -147,7 +148,8 @@ export class AccountController {
       };
 
       res.status(200).json(response);
-    } catch (error) {
+    } catch (err) {
+      const error = err as Error;
       console.error('Error getting account balance:', error);
       res.status(500).json({
         success: false,
@@ -222,7 +224,8 @@ export class AccountController {
       };
 
       res.status(200).json(response);
-    } catch (error) {
+    } catch (err) {
+      const error = err as Error;
       console.error('Error getting account transactions:', error);
       res.status(500).json({
         success: false,
@@ -286,7 +289,8 @@ export class AccountController {
       };
 
       res.status(201).json(response);
-    } catch (error) {
+    } catch (err) {
+      const error = err as Error;
       console.error('Error creating account:', error);
       res.status(500).json({
         success: false,
