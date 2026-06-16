@@ -1,0 +1,248 @@
+# Reusable OpenAPI Schemas
+# These are the canonical schemas defined in ../config/swagger.ts
+# This file serves as a reference copy for external tooling (e.g., client SDK generators).
+
+components:
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: INTERNAL_SERVER_ERROR
+            message:
+              type: string
+              example: An unexpected error occurred
+            details:
+              type: array
+              items:
+                $ref: "#/components/schemas/ValidationError"
+            timestamp:
+              type: string
+              format: date-time
+
+    ValidationError:
+      type: object
+      properties:
+        field:
+          type: string
+          example: email
+        message:
+          type: string
+          example: Invalid email format
+
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+        publicKey:
+          type: string
+        balance:
+          type: number
+          format: double
+          example: 1000.50
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+          example: true
+
+    AccountCreationRequest:
+      type: object
+      required: [name, email, publicKey]
+      properties:
+        name:
+          type: string
+          example: Jane Doe
+        email:
+          type: string
+          format: email
+          example: jane.doe@example.com
+        publicKey:
+          type: string
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          example: tx_001
+        accountId:
+          type: string
+        amount:
+          type: number
+          format: double
+        type:
+          type: string
+          enum: [credit, debit]
+        description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        fromAccount:
+          type: string
+          nullable: true
+        toAccount:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, completed, failed]
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        role:
+          type: string
+          enum: [user, admin]
+          default: user
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+
+    RefreshRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    AuthTokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+
+    CreditScoreResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            score:
+              type: integer
+              minimum: 150
+              maximum: 850
+            factors:
+              type: array
+              items:
+                type: string
+            timestamp:
+              type: string
+              format: date-time
+
+    FraudDetectionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            riskScore:
+              type: integer
+              minimum: 0
+              maximum: 100
+            riskLevel:
+              type: string
+              enum: [low, medium, high]
+            factors:
+              type: array
+              items:
+                type: string
+            timestamp:
+              type: string
+              format: date-time
+
+    HealthCheckResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: number
+        checks:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [up, down, degraded]
+              responseTime:
+                type: number
+              error:
+                type: string
+
+    PaginatedTransactions:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/Transaction"
+            pagination:
+              type: object
+              properties:
+                page:
+                  type: integer
+                limit:
+                  type: integer
+                total:
+                  type: integer
+                pages:
+                  type: integer
+                hasNext:
+                  type: boolean
+                hasPrev:
+                  type: boolean
+        timestamp:
+          type: string
+          format: date-time
