@@ -1,21 +1,13 @@
+// Initialize Sentry first before creating Express app
+import { initSentry, sentryErrorHandler, errorTrackingMiddleware } from './middleware/errorTracking';
+if (process.env.SENTRY_DSN) {
+  initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || 'development');
+}
+
 import express, { Application } from 'express';
-import {
-  initSentry,
-  sentryRequestHandler,
-  sentryTracingHandler,
-  sentryErrorHandler,
-  errorTrackingMiddleware
-} from './middleware/errorTracking';
 import healthRouter, { registerHealthCheck } from './routes/health';
 
 const app: Application = express();
-
-// Initialize Sentry
-if (process.env.SENTRY_DSN) {
-  initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || 'development');
-  app.use(sentryRequestHandler());
-  app.use(sentryTracingHandler());
-}
 
 app.use(express.json());
 
