@@ -16,6 +16,7 @@ import healthRouter from './routes/health';
 import { metricsService, metricsMiddleware } from './services/metricsService';
 import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
 import authRoutes from './routes/auth';
+import { createFeatureFlagRouter } from './routes/featureFlags';
 import { UserPayload } from './types/auth';
 import { ensureRedisConnection } from './config/redis';
 import accountRoutes from './routes/accounts';
@@ -37,6 +38,7 @@ app.use(requestLoggingMiddleware);
 app.use('/api', healthRouter);
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', accountRoutes);
+app.use('/api/v1/feature-flags', createFeatureFlagRouter());
 // app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
 
 // Gateway-protected endpoints
