@@ -12,15 +12,13 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [18.x, 24.x]
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -53,7 +51,7 @@ jobs:
           name: codecov-umbrella
 
       - name: Generate coverage badge
-        if: matrix.node-version == '20.x'
+        if: matrix.node-version == '24.x'
         run: |
           COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
           echo "Coverage: $COVERAGE%"
