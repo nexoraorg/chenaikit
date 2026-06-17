@@ -29,7 +29,10 @@ jobs:
         
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
-      
+
+    - name: Generate Prisma Client
+      run: cd backend && pnpm prisma:generate
+
     - name: Run linting
       run: pnpm run lint
       
@@ -38,11 +41,12 @@ jobs:
       
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
+      continue-on-error: true
       with:
         directory: ./coverage
         flags: unittests
         name: codecov-umbrella
-        fail_ci_if_error: true
+        fail_ci_if_error: false
         
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
@@ -70,7 +74,10 @@ jobs:
         
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
-      
+
+    - name: Generate Prisma Client
+      run: cd backend && pnpm prisma:generate
+
     - name: Run integration tests
       run: pnpm run test:integration
       
@@ -103,7 +110,10 @@ jobs:
         
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
-      
+
+    - name: Generate Prisma Client
+      run: cd backend && pnpm prisma:generate
+
     - name: Build packages
       run: pnpm run build
       
