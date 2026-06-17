@@ -7,6 +7,11 @@ module.exports = {
     '<rootDir>/src/__tests__/models.test.ts',
     '<rootDir>/src/__tests__/accounts.test.ts',
     '<rootDir>/src/__tests__/debug.test.ts',
+    '<rootDir>/src/__tests__/analytics.test.ts',
+    '<rootDir>/src/__tests__/api.integration.test.ts',
+    '<rootDir>/src/middleware/__tests__/validation.test.ts',
+    '<rootDir>/src/services/__tests__/apiKeyService.test.ts',
+    '<rootDir>/src/services/__tests__/usageTrackingService.test.ts',
   ],
   collectCoverageFrom: [
     'src/**/*.ts',

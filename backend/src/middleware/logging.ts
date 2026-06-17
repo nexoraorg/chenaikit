@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import { log, Timer } from '../utils/logger';
 import { LogContext } from '../types/monitoring';
 
@@ -21,7 +21,7 @@ export const requestIdMiddleware = (
   res: Response,
   next: NextFunction
 ): void => {
-  req.id = req.headers['x-request-id'] as string || uuidv4();
+  req.id = req.headers['x-request-id'] as string || crypto.randomUUID();
   res.setHeader('X-Request-Id', req.id);
   next();
 };

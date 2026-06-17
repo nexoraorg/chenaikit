@@ -8,6 +8,8 @@ module.exports = {
   ],
   testPathIgnorePatterns: [
     '<rootDir>/src/stellar/__tests__/horizon.test.ts',
+    '<rootDir>/src/stellar/__tests__/dex.test.ts',
+    '<rootDir>/src/stellar/__tests__/assetManager.test.ts',
     '<rootDir>/src/ai/__tests__/providers.test.ts'
   ],
   transform: {

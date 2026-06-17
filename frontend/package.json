@@ -41,12 +41,14 @@
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
     "i18next-scanner": "^4.4.0",
+    "jest-environment-jsdom": "^27.5.1",
+    "jsdom": "^16.7.0",
     "react-scripts": "5.0.1",
     "typescript": "^5.0.0"
   },
   "jest": {
     "transformIgnorePatterns": [
-      "node_modules/(?!(@chenaikit|axios|@stellar)/)"
+      "node_modules/(?!(@chenaikit|axios|@stellar|d3|d3-|internmap|delaunator|robust-predicates)/)"
     ]
   },
   "browserslist": {
