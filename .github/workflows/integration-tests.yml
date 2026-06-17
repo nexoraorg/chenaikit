@@ -64,7 +64,7 @@ jobs:
           NODE_ENV: test
         run: |
           cd tests/integration
-          pnpm test --coverage
+          pnpm test -- --coverage
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3

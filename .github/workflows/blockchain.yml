@@ -47,5 +47,13 @@ jobs:
       - name: Run cargo test for governance
         run: cd contracts/governance && cargo test
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Build blockchain contracts
         run: pnpm blockchain:build
