@@ -121,13 +121,14 @@ function convertToAppError(error: Error): AppError {
  */
 function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): AppError {
   switch (error.code) {
-    case 'P2002':
+    case 'P2002': {
       // Unique constraint violation
       const fields = error.meta?.target as string[] || [];
       return new ValidationError(
         `A record with this ${fields.join(', ')} already exists`,
         { fields, code: error.code }
       );
+    }
 
     case 'P2025':
       // Record not found

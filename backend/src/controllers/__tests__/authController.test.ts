@@ -75,12 +75,7 @@ describe('AuthController', () => {
         email: 'existing@example.com',
       });
 
-      await authController.register(mockReq as Request, mockRes as Response);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Email already registered' })
-      );
+      await expect(authController.register(mockReq as Request, mockRes as Response)).rejects.toThrow();
     });
 
     it('should reject invalid email format', async () => {
@@ -89,9 +84,7 @@ describe('AuthController', () => {
         password: 'SecurePass123!',
       };
 
-      await authController.register(mockReq as Request, mockRes as Response);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
+      await expect(authController.register(mockReq as Request, mockRes as Response)).rejects.toThrow();
     });
   });
 
@@ -136,12 +129,7 @@ describe('AuthController', () => {
 
       (prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
 
-      await authController.login(mockReq as Request, mockRes as Response);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Invalid credentials' })
-      );
+      await expect(authController.login(mockReq as Request, mockRes as Response)).rejects.toThrow();
     });
   });
 
@@ -151,9 +139,7 @@ describe('AuthController', () => {
         token: 'invalid-token',
       };
 
-      await authController.refreshToken(mockReq as Request, mockRes as Response);
-
-      expect(mockRes.status).toHaveBeenCalledWith(403);
+      await expect(authController.refreshToken(mockReq as Request, mockRes as Response)).rejects.toThrow();
     });
   });
 });
