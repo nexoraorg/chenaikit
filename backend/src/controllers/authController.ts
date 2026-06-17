@@ -5,6 +5,12 @@ import { prisma } from '../prisma/client';
 import { UserPayload } from '../types/auth';
 import crypto from 'crypto';
 import { z } from 'zod';
+import {
+  ValidationError,
+  AuthenticationError,
+  ConflictError,
+  NotFoundError
+} from '../utils/errors';
 
 const durationToMs = (input: string): number => {
   const trimmed = input.trim();
@@ -54,7 +60,9 @@ export class AuthController {
     try {
       const { email, password, role } = registerSchema.parse(req.body);
       const existing = await prisma.user.findFirst({ where: { email, deletedAt: null } });
-      if (existing) return res.status(400).json({ message: 'Email already registered' });
+      if (existing) {
+        throw new ConflictError('Email already registered', { email });
+      }
 
       const hashed = await hashPassword(password);
       const user = await prisma.user.create({
@@ -63,8 +71,7 @@ export class AuthController {
 
       res.status(201).json({ message: 'User registered', userId: user.id });
     } catch (err) {
-      const error = err as Error;
-      res.status(400).json({ message: error.message || 'Registration failed' });
+      throw err; // Let the error handler middleware handle it
     }
   }
 
@@ -72,10 +79,14 @@ export class AuthController {
     try {
       const { email, password } = loginSchema.parse(req.body);
       const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
-      if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+      if (!user) {
+        throw new AuthenticationError('Invalid credentials');
+      }
 
       const valid = await comparePassword(password, user.password);
-      if (!valid) return res.status(400).json({ message: 'Invalid credentials' });
+      if (!valid) {
+        throw new AuthenticationError('Invalid credentials');
+      }
 
       const payload: UserPayload = { id: user.id, email: user.email, role: user.role };
       const accessToken = generateAccessToken(payload);
@@ -92,8 +103,7 @@ export class AuthController {
 
       res.json({ accessToken, refreshToken: refreshTokenRaw });
     } catch (err) {
-      const error = err as Error;
-      res.status(400).json({ message: error.message || 'Login failed' });
+      throw err; // Let the error handler middleware handle it
     }
   }
 
@@ -104,19 +114,25 @@ export class AuthController {
 
       const id = Number(idPart);
       if (!Number.isFinite(id) || !tokenPart) {
-        return res.status(403).json({ message: 'Invalid refresh token' });
+        throw new AuthenticationError('Invalid refresh token');
       }
 
       const stored = await prisma.refreshToken.findUnique({ where: { id }, include: { user: true } });
-      if (!stored) return res.status(403).json({ message: 'Invalid refresh token' });
-      if (stored.expiresAt < new Date()) return res.status(403).json({ message: 'Refresh token expired' });
+      if (!stored) {
+        throw new AuthenticationError('Invalid refresh token');
+      }
+      if (stored.expiresAt < new Date()) {
+        throw new AuthenticationError('Refresh token expired');
+      }
 
       const matches = await comparePassword(tokenPart, stored.tokenHash);
-      if (!matches) return res.status(403).json({ message: 'Invalid refresh token' });
+      if (!matches) {
+        throw new AuthenticationError('Invalid refresh token');
+      }
 
       if (stored.user?.deletedAt) {
         await prisma.refreshToken.deleteMany({ where: { userId: stored.user.id } });
-        return res.status(403).json({ message: 'Account disabled' });
+        throw new AuthenticationError('Account disabled');
       }
 
       // Rotate refresh token on successful use
@@ -131,7 +147,6 @@ export class AuthController {
         },
       });
 
-
       const payload: UserPayload = {
         id: stored.user.id,
         email: stored.user.email,
@@ -140,8 +155,7 @@ export class AuthController {
       const accessToken = generateAccessToken(payload);
       res.json({ accessToken });
     } catch (err) {
-      const error = err as Error;
-      res.status(400).json({ message: error.message || 'Token refresh failed' });
+      throw err; // Let the error handler middleware handle it
     }
   }
 }

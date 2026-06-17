@@ -27,6 +27,7 @@ import { createTieredRateLimiter } from './middleware/advancedRateLimiter';
 import Redis from 'ioredis';
 import { applySecurityMiddleware } from './middleware/security';
 import { loadVaultSecrets } from './config/secrets';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
 const app: express.Application = express();
 
@@ -76,16 +77,7 @@ app.get('/metrics', async (_req: Request, res: Response) => {
 });
 
 // 404 handler
-app.use('*', (req: Request, res: Response) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      code: 'ENDPOINT_NOT_FOUND',
-      message: `Endpoint ${req.method} ${req.originalUrl} not found`,
-      timestamp: new Date().toISOString()
-    }
-  });
-});
+app.use('*', notFoundHandler);
 
 // Sentry error handler (must be before other error handlers)
 if (process.env.SENTRY_DSN) {
@@ -93,18 +85,7 @@ if (process.env.SENTRY_DSN) {
 }
 
 // Global error handler
-app.use((error: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Unhandled error:', error);
-
-  res.status(500).json({
-    success: false,
-    error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected error occurred',
-      timestamp: new Date().toISOString()
-    }
-  });
-});
+app.use(errorHandler);
 
 export const startServer = async (): Promise<void> => {
   // Load environment variables
