@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { NetworkNode, NetworkLink, ChartProps, ZoomState, TooltipData } from '@chenaikit/core';
+import { NetworkNode, NetworkLink, ChartProps, ZoomState } from '@chenaikit/core';
 import { 
   DEFAULT_CHART_CONFIG, 
   getResponsiveConfig, 
   formatNumber, 
   formatDateTime,
   generateTooltipContent,
-  calculateZoomBounds,
   clampZoom,
   debounce,
   getAriaLabel,
@@ -79,7 +78,6 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedLink, setSelectedLink] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string } | null>(null);
-  const [simulation, setSimulation] = useState<d3.Simulation<NetworkNodeExtended, NetworkLinkExtended> | null>(null);
 
   const chartConfig = { ...DEFAULT_CHART_CONFIG, ...config };
 
@@ -224,8 +222,6 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
       .force('center', d3.forceCenter<NetworkNodeExtended>(innerWidth / 2, innerHeight / 2))
       .force('collision', d3.forceCollide<NetworkNodeExtended>().radius((d: any) => d.size + 5));
 
-    setSimulation(forceSimulation);
-
     // Create links
     const link = g
       .append('g')
@@ -349,7 +345,7 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
 
     // Add labels
     if (showLabels) {
-      const labels = g
+      g
         .append('g')
         .attr('class', 'labels')
         .selectAll('text')
@@ -366,7 +362,7 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
 
     // Add node values
     if (showNodeValues) {
-      const values = g
+      g
         .append('g')
         .attr('class', 'node-values')
         .selectAll('text')

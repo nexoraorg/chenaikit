@@ -12,7 +12,6 @@ import {
   Alert,
   Chip,
   Button,
-  Collapse,
   useTheme,
   useMediaQuery
 } from '@mui/material';

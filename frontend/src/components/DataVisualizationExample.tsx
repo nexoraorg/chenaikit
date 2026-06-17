@@ -62,7 +62,7 @@ const generateSampleData = () => {
   }));
 
   // Generate network links
-  const links: NetworkLink[] = Array.from({ length: 30 }, (_, i) => ({
+  const links: NetworkLink[] = Array.from({ length: 30 }, () => ({
     source: `node_${Math.floor(Math.random() * 20)}`,
     target: `node_${Math.floor(Math.random() * 20)}`,
     weight: Math.random(),
