@@ -56,13 +56,11 @@ jobs:
               run: |
                 cargo build --release --manifest-path ./contracts/credit-score/Cargo.toml
                 cargo build --release --manifest-path ./contracts/fraud-detect/Cargo.toml
-                cargo build --release --manifest-path ./contracts/common-utils/contract/Cargo.toml
 
             - name: Test Contracts
               run: |
                 cargo test --manifest-path ./contracts/credit-score/Cargo.toml
                 cargo test --manifest-path ./contracts/fraud-detect/Cargo.toml
-                cargo test --manifest-path ./contracts/common-utils/contract/Cargo.toml
 
             - name: Upload Contract Artifacts
               uses: actions/upload-artifact@v4

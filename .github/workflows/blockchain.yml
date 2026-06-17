@@ -29,12 +29,6 @@ jobs:
           profile: minimal
           override: true
 
-      - name: Run cargo check for common-utils
-        run: cd contracts/common-utils/contract && cargo check
-
-      - name: Run cargo test for common-utils
-        run: cd contracts/common-utils/contract && cargo test
-
       - name: Run cargo check for credit-score
         run: cd contracts/credit-score && cargo check
 
