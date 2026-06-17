@@ -417,7 +417,6 @@ export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = (
             key={type}
             onClick={() => {
               // This would need to be handled by parent component
-              console.log(`Switch to ${type} chart`);
             }}
             style={{
               padding: '4px 8px',

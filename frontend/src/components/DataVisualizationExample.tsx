@@ -1,12 +1,11 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Typography } from '@mui/material';
 import { TransactionData, PerformanceMetrics, UserActivity, NetworkNode, NetworkLink } from '@chenaikit/core';
-import { 
-  exportVisualization, 
-  exportTransactionData, 
-  exportPerformanceData, 
-  exportUserActivityData, 
-  exportNetworkData 
+import {
+  exportVisualization,
+  exportTransactionData,
+  exportPerformanceData,
+  exportUserActivityData,
+  exportNetworkData
 } from '@chenaikit/core';
 import TransactionFlowChart from './TransactionFlowChart';
 import PerformanceMetricsChart from './PerformanceMetricsChart';
@@ -42,7 +41,7 @@ const generateSampleData = () => {
   }));
 
   // Generate user activity data
-  const userActivity: UserActivity[] = Array.from({ length: 200 }, (_, i) => ({
+  const userActivity: UserActivity[] = Array.from({ length: 200 }, () => ({
     userId: `user_${Math.floor(Math.random() * 20)}`,
     timestamp: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
     action: ['login', 'transaction', 'view', 'click', 'scroll'][Math.floor(Math.random() * 5)],
@@ -119,7 +118,6 @@ export const DataVisualizationExample: React.FC = () => {
         await exportVisualization(element, exportData, format, filename);
       }
     } catch (error) {
-      console.error('Export failed:', error);
       alert('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
@@ -238,8 +236,6 @@ export const DataVisualizationExample: React.FC = () => {
               showArrows={true}
               nodeSize={10}
               linkWidth={3}
-              onNodeClick={(node) => console.log('Node clicked:', node)}
-              onLinkClick={(link) => console.log('Link clicked:', link)}
             />
           </div>
         )}
@@ -253,7 +249,6 @@ export const DataVisualizationExample: React.FC = () => {
               showLegend={true}
               showGrid={true}
               animate={true}
-              onMetricClick={(metric, value) => console.log('Metric clicked:', metric, value)}
             />
           </div>
         )}
@@ -267,8 +262,6 @@ export const DataVisualizationExample: React.FC = () => {
               colorScheme="blue"
               showTooltip={true}
               showLegend={true}
-              onCellClick={(cell) => console.log('Cell clicked:', cell)}
-              onTimeRangeChange={(range) => console.log('Time range changed:', range)}
             />
           </div>
         )}
@@ -286,9 +279,6 @@ export const DataVisualizationExample: React.FC = () => {
               showNodeValues={false}
               enableDrag={true}
               enableZoom={true}
-              onNodeClick={(node) => console.log('Node clicked:', node)}
-              onLinkClick={(link) => console.log('Link clicked:', link)}
-              onLayoutChange={(layout) => console.log('Layout changed:', layout)}
             />
           </div>
         )}

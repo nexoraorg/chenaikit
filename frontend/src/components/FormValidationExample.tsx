@@ -86,7 +86,6 @@ export const FormValidationExample: React.FC = () => {
       memo: ValidationRules.maxLength(100)
     },
     onSubmit: async (values: Record<string, any>) => {
-      console.log('Form submitted with values:', values);
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       alert('Form submitted successfully!');
