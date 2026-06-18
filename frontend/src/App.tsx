@@ -11,6 +11,39 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import './components/FormValidation.css';
 
+// Stub page components for policy/auth routes
+const ForgotPasswordPage: React.FC = () => (
+  <Box sx={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f8fafc' }}>
+    <Box sx={{ maxWidth: 480, width: '100%', p: 4, borderRadius: 3, boxShadow: '0 4px 32px rgba(0,0,0,0.08)', background: '#fff' }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: '#0f172a' }}>Reset your password</Typography>
+      <Typography variant="body2" sx={{ color: '#64748b', mb: 3 }}>Enter your email address and we'll send you a password reset link.</Typography>
+      <Typography variant="caption" sx={{ color: '#94a3b8' }}>Password reset functionality coming soon.</Typography>
+    </Box>
+  </Box>
+);
+
+const TermsPage: React.FC = () => (
+  <Box sx={{ minHeight: '100vh', p: { xs: 3, md: 6 }, background: '#f8fafc' }}>
+    <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, color: '#0f172a' }}>Terms of Service</Typography>
+      <Typography variant="body1" sx={{ color: '#475569', lineHeight: 1.8 }}>
+        These Terms of Service govern your use of ChenaiKit. By accessing or using our platform, you agree to be bound by these terms. Full terms documentation will be published here prior to production launch.
+      </Typography>
+    </Box>
+  </Box>
+);
+
+const PrivacyPage: React.FC = () => (
+  <Box sx={{ minHeight: '100vh', p: { xs: 3, md: 6 }, background: '#f8fafc' }}>
+    <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, color: '#0f172a' }}>Privacy Policy</Typography>
+      <Typography variant="body1" sx={{ color: '#475569', lineHeight: 1.8 }}>
+        Your privacy is important to us. ChenaiKit collects only the data necessary to provide our services and never sells personal information to third parties. Full privacy policy documentation will be published here prior to production launch.
+      </Typography>
+    </Box>
+  </Box>
+);
+
 const DashboardShell: React.FC = () => {
   const [activeDemo, setActiveDemo] = useState<'analytics' | 'forms' | 'visualization'>('analytics');
   const { user, logout } = useAuth();
@@ -146,6 +179,9 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route 
             path="/" 
             element={

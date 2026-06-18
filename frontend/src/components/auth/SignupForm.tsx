@@ -110,10 +110,10 @@ export const SignupForm: React.FC = () => {
           <CheckCircleOutline sx={{ fontSize: 72, color: '#34d399' }} />
         </Box>
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, color: '#0f172a' }}>
-          Verify your email
+          Account Created!
         </Typography>
         <Typography variant="body1" sx={{ color: '#475569', mb: 4, px: 2 }}>
-          We have sent a verification link to <strong>{registeredEmail}</strong>. Please check your inbox and click the link to verify your account.
+          Your account was created for <strong>{registeredEmail}</strong>. You can now sign in to continue.
         </Typography>
         <Button
           component={Link}
@@ -297,18 +297,16 @@ export const SignupForm: React.FC = () => {
               <Typography variant="body2" sx={{ color: '#475569', userSelect: 'none' }}>
                 I agree to the{' '}
                 <MuiLink 
-                  component="button" 
-                  type="button" 
-                  onClick={() => alert('Terms of Service dialog (Demo Mode)')}
+                  component={Link}
+                  to="/terms"
                   sx={{ color: '#0284c7', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
                 >
                   Terms of Service
                 </MuiLink>{' '}
                 and{' '}
                 <MuiLink 
-                  component="button" 
-                  type="button" 
-                  onClick={() => alert('Privacy Policy dialog (Demo Mode)')}
+                  component={Link}
+                  to="/privacy"
                   sx={{ color: '#0284c7', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
                 >
                   Privacy Policy

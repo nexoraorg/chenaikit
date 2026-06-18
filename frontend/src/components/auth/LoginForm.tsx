@@ -21,7 +21,7 @@ import {
   Google,
   GitHub
 } from '@mui/icons-material';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ValidationRules } from '@chenaikit/core';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { useAuth } from './AuthContext';
@@ -29,6 +29,8 @@ import { useAuth } from './AuthContext';
 export const LoginForm: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/';
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -55,7 +57,7 @@ export const LoginForm: React.FC = () => {
       setSubmitError(null);
       try {
         await login(formValues.email, formValues.password, rememberMe);
-        navigate('/');
+        navigate(from, { replace: true });
       } catch (err: any) {
         setSubmitError(err.message || 'Failed to sign in. Please try again.');
       }
@@ -64,8 +66,8 @@ export const LoginForm: React.FC = () => {
     validateOnBlur: true
   });
 
-  const handleSocialLogin = (platform: string) => {
-    alert(`Signing in with ${platform} (Demo Mode)`);
+  const handleSocialLogin = (platform: 'google' | 'github') => {
+    window.location.assign(`/api/auth/oauth/${platform}`);
   };
 
   return (
@@ -162,10 +164,9 @@ export const LoginForm: React.FC = () => {
               }
             />
             <MuiLink
-              component="button"
-              type="button"
+              component={Link}
+              to="/forgot-password"
               variant="body2"
-              onClick={() => alert('Reset password link sent to email! (Demo Mode)')}
               sx={{ 
                 color: '#0284c7', 
                 textDecoration: 'none', 
@@ -211,7 +212,7 @@ export const LoginForm: React.FC = () => {
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
               variant="outlined"
-              onClick={() => handleSocialLogin('Google')}
+              onClick={() => handleSocialLogin('google')}
               fullWidth
               startIcon={<Google />}
               sx={{
@@ -231,7 +232,7 @@ export const LoginForm: React.FC = () => {
             </Button>
             <Button
               variant="outlined"
-              onClick={() => handleSocialLogin('GitHub')}
+              onClick={() => handleSocialLogin('github')}
               fullWidth
               startIcon={<GitHub />}
               sx={{
