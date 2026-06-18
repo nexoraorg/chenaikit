@@ -57,6 +57,7 @@ export interface Column<T> {
   cell?: (value: unknown, row: T) => React.ReactNode;
   enableSorting?: boolean;
   enableFilter?: boolean;
+  enableResizing?: boolean;
   filterType?: FilterType;
   filterOptions?: FilterOption[];
   size?: number;
@@ -125,7 +126,11 @@ function dateRangeFilterFn<T>(
   if (!value) return false;
   const d = new Date(String(value)).getTime();
   if (filterValue.start && d < new Date(filterValue.start).getTime()) return false;
-  if (filterValue.end && d > new Date(filterValue.end).getTime()) return false;
+  if (filterValue.end) {
+    const endDate = new Date(filterValue.end);
+    endDate.setDate(endDate.getDate() + 1);
+    if (d > endDate.getTime()) return false;
+  }
   return true;
 }
 
@@ -206,14 +211,22 @@ function DataTable<T extends object>({
   const columnMenuOpen = Boolean(anchorEl);
 
   useEffect(() => {
-    if (persistKey && sorting.length > 0) {
-      localStorage.setItem(`datatable_sort_${persistKey}`, JSON.stringify(sorting));
+    if (!persistKey) return;
+    const key = `datatable_sort_${persistKey}`;
+    if (sorting.length > 0) {
+      localStorage.setItem(key, JSON.stringify(sorting));
+    } else {
+      localStorage.removeItem(key);
     }
   }, [sorting, persistKey]);
 
   useEffect(() => {
-    if (persistKey && columnFilters.length > 0) {
-      localStorage.setItem(`datatable_filters_${persistKey}`, JSON.stringify(columnFilters));
+    if (!persistKey) return;
+    const key = `datatable_filters_${persistKey}`;
+    if (columnFilters.length > 0) {
+      localStorage.setItem(key, JSON.stringify(columnFilters));
+    } else {
+      localStorage.removeItem(key);
     }
   }, [columnFilters, persistKey]);
 
@@ -222,13 +235,20 @@ function DataTable<T extends object>({
       try {
         const saved = localStorage.getItem(`datatable_visibility_${persistKey}`);
         if (saved) setColumnVisibility(JSON.parse(saved));
-      } catch { }
+      } catch (_e) {
+        localStorage.removeItem(`datatable_visibility_${persistKey}`);
+        console.warn(`Removed corrupt visibility data for key: datatable_visibility_${persistKey}`);
+      }
     }
   }, [persistKey]);
 
   useEffect(() => {
-    if (persistKey && Object.keys(columnVisibility).length > 0) {
-      localStorage.setItem(`datatable_visibility_${persistKey}`, JSON.stringify(columnVisibility));
+    if (!persistKey) return;
+    const key = `datatable_visibility_${persistKey}`;
+    if (Object.keys(columnVisibility).length > 0) {
+      localStorage.setItem(key, JSON.stringify(columnVisibility));
+    } else {
+      localStorage.removeItem(key);
     }
   }, [columnVisibility, persistKey]);
 
@@ -304,7 +324,7 @@ function DataTable<T extends object>({
         maxSize: col.maxSize,
         enableSorting: col.enableSorting ?? enableSorting,
         enableColumnFilter: col.enableFilter ?? enableFiltering,
-        enableResizing: col.enableHiding ?? enableColumnResizing,
+        enableResizing: col.enableResizing ?? enableColumnResizing,
         enableHiding: col.enableHiding ?? enableColumnVisibility,
         cell: (info) => {
           if (col.cell) {
@@ -366,6 +386,15 @@ function DataTable<T extends object>({
     enableExpanding: !!(enableExpandableRows || renderSubRow),
     globalFilterFn: 'includesString',
   });
+
+  useEffect(() => {
+    if (!externalSelectedRowIds) return;
+    const next: RowSelectionState = {};
+    externalSelectedRowIds.forEach((id) => {
+      next[id] = true;
+    });
+    setRowSelection(next);
+  }, [externalSelectedRowIds]);
 
   const selectedRowCount = Object.keys(rowSelection).length;
 
@@ -432,7 +461,7 @@ function DataTable<T extends object>({
       widths[col.id] = col.getSize();
     });
     return widths;
-  }, [table, tanstackColumns]);
+  }, [table]);
 
   if (loading) {
     return (
@@ -517,13 +546,19 @@ function DataTable<T extends object>({
                 flexRender(header.column.columnDef.header, header.getContext())
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%' }}>
-                  <TableSortLabel
-                    columnId={header.column.id}
-                    label={String(flexRender(header.column.columnDef.header, header.getContext()))}
-                    sortDirections={sorting}
-                    multiSortEnabled={!!enableMultiSort}
-                    onToggleSort={handleToggleSort}
-                  />
+                  {header.column.getCanSort() ? (
+                    <TableSortLabel
+                      columnId={header.column.id}
+                      label={String(flexRender(header.column.columnDef.header, header.getContext()))}
+                      sortDirections={sorting}
+                      multiSortEnabled={!!enableMultiSort}
+                      onToggleSort={handleToggleSort}
+                    />
+                  ) : (
+                    <Box sx={{ fontWeight: 600, fontSize: '0.8125rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {String(flexRender(header.column.columnDef.header, header.getContext()))}
+                    </Box>
+                  )}
                   {enableFiltering && column?.enableFilter !== false && (
                     <TableFilter
                       columnId={header.column.id}
@@ -582,10 +617,10 @@ function DataTable<T extends object>({
           '&:hover': { bgcolor: isSelected ? 'action.selected' : 'action.hover' },
           transition: 'background-color 0.15s',
           ...style,
-          ...rowProps,
         }}
         onClick={enableExpandableRows ? () => row.toggleExpanded() : undefined}
         style={style}
+        {...rowProps}
       >
         {row.getVisibleCells().map(cell => {
           const width = columnWidths[cell.column.id];
@@ -612,6 +647,23 @@ function DataTable<T extends object>({
             </Box>
           );
         })}
+        {isExpanded && renderSubRow && (
+          <Box
+            sx={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: '100%',
+              borderBottom: 1,
+              borderColor: 'divider',
+              bgcolor: 'grey.50',
+              px: cellPadding.px,
+              py: cellPadding.py,
+            }}
+          >
+            {renderSubRow(row.original)}
+          </Box>
+        )}
       </Box>
     );
   });
@@ -653,9 +705,9 @@ function DataTable<T extends object>({
                       bgcolor: row.getIsSelected() ? 'action.selected' : 'action.hover',
                     },
                     transition: 'background-color 0.15s',
-                    ...(getRowProps ? getRowProps(row.original) : {}),
                   }}
                   onClick={enableExpandableRows ? () => row.toggleExpanded() : undefined}
+                  {...(getRowProps ? getRowProps(row.original) : {})}
                 >
                   {row.getVisibleCells().map(cell => {
                     const width = columnWidths[cell.column.id];
@@ -731,10 +783,10 @@ function DataTable<T extends object>({
           <List
             rowCount={pageRows.length}
             rowHeight={effectiveRowHeight}
-            rowComponent={renderRow as React.ComponentType<{ index: number; style: React.CSSProperties }>}
-            rowProps={{} as Record<string, unknown>}
+            rowComponent={renderRow as any}
+            rowProps={undefined as any}
             overscanCount={10}
-            listRef={listRef}
+            listRef={listRef as any}
           />
         )}
       </Box>

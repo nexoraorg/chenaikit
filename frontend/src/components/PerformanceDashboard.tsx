@@ -60,6 +60,7 @@ interface PerformanceIssue {
   threshold: number;
   severity: 'high' | 'medium' | 'low';
   description: string;
+  direction?: 'above' | 'below';
 }
 
 interface TabPanelProps {
@@ -461,16 +462,19 @@ const PerformanceDashboard: React.FC = () => {
       cell: (value) => (value as number).toLocaleString(),
     },
     {
-      accessorKey: 'severity',
       id: 'status',
       header: 'Status',
+      enableSorting: false,
       enableFilter: false,
       size: 80,
       cell: (_, row) => {
+        const isViolation = row.direction === 'below'
+          ? row.actual < row.threshold
+          : row.actual > row.threshold;
         const ratio = row.actual / row.threshold;
         return (
           <Tooltip title={`Ratio: ${ratio.toFixed(2)}`}>
-            {row.actual > row.threshold ? (
+            {isViolation ? (
               <TrendingUpIcon color="error" />
             ) : (
               <TrendingDownIcon color="success" />

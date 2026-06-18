@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import {
   TextField,
   Select,
@@ -92,14 +92,15 @@ const SelectFilter: React.FC<{
   options?: FilterOption[];
 }> = ({ value, onChange, options }) => {
   const currentValue = value || '';
+  const filterId = useId();
 
   return (
     <FormControl size="small" sx={{ minWidth: 140 }}>
-      <InputLabel id={`filter-select-${Date.now()}`} shrink>
+      <InputLabel id={filterId} shrink>
         Filter
       </InputLabel>
       <Select
-        labelId={`filter-select-${Date.now()}`}
+        labelId={filterId}
         value={currentValue}
         label="Filter"
         displayEmpty
