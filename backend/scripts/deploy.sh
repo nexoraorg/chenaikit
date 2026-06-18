@@ -34,7 +34,10 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-STATE_DIR="${SCRIPT_DIR}/.deploy-state"
+# DEPLOY_STATE_DIR can be overridden to a persistent path (e.g. a mounted volume
+# or a directory on the deployment host) so that rollback works across CI runs.
+# Locally it defaults to the script directory, which is fine for manual use.
+STATE_DIR="${DEPLOY_STATE_DIR:-${SCRIPT_DIR}/.deploy-state}"
 
 ENVIRONMENT="${1:-}"
 GIT_SHA="$(git -C "${REPO_ROOT}" rev-parse --short HEAD 2>/dev/null || echo "manual")"
@@ -89,7 +92,14 @@ validate_environment() {
 registry_login() {
   if [[ -n "${REGISTRY_USERNAME:-}" && -n "${REGISTRY_PASSWORD:-}" ]]; then
     log "Logging in to ${REGISTRY}"
-    echo "${REGISTRY_PASSWORD}" | docker login "${REGISTRY}" -u "${REGISTRY_USERNAME}" --password-stdin
+    if [[ -n "${DEPLOY_HOST:-}" ]]; then
+      # When deploying remotely the image pull happens on the remote host,
+      # so login must run there too — otherwise the pull of a private image fails.
+      echo "${REGISTRY_PASSWORD}" | ssh "${DEPLOY_HOST}" \
+        "docker login ${REGISTRY} -u ${REGISTRY_USERNAME} --password-stdin"
+    else
+      echo "${REGISTRY_PASSWORD}" | docker login "${REGISTRY}" -u "${REGISTRY_USERNAME}" --password-stdin
+    fi
   else
     warn "No registry credentials provided - assuming the host is already authenticated."
   fi

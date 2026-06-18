@@ -18,7 +18,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-STATE_DIR="${SCRIPT_DIR}/.deploy-state"
+# DEPLOY_STATE_DIR must match the value used in deploy.sh.
+STATE_DIR="${DEPLOY_STATE_DIR:-${SCRIPT_DIR}/.deploy-state}"
 
 ENVIRONMENT="${1:-}"
 TARGET_IMAGE="${2:-}"
@@ -60,9 +61,9 @@ STATE_FILE="${STATE_DIR}/${ENVIRONMENT}.env"
 # Resolve the image to roll back to.
 if [[ -z "${TARGET_IMAGE}" ]]; then
   [[ -f "${STATE_FILE}" ]] || fail "No deployment state at ${STATE_FILE}. Pass an explicit image: ./rollback.sh ${ENVIRONMENT} <name:tag>"
-  # shellcheck disable=SC1090
-  source "${STATE_FILE}"
-  TARGET_IMAGE="${PREVIOUS_IMAGE:-}"
+  # Parse with grep instead of source to avoid executing arbitrary shell code
+  # from a potentially tampered state file.
+  TARGET_IMAGE="$(grep -E '^PREVIOUS_IMAGE=' "${STATE_FILE}" | tail -n1 | cut -d'=' -f2-)"
   [[ -n "${TARGET_IMAGE}" ]] || fail "No PREVIOUS_IMAGE recorded for ${ENVIRONMENT}. Pass an explicit image to roll back to."
 fi
 
@@ -98,13 +99,18 @@ for i in $(seq 1 30); do
 done
 
 if [[ "${ok}" == "true" ]]; then
-  # Mark the rolled-back image as current so a subsequent rollback is coherent.
+  # Update deployment state so a subsequent rollback is coherent.
+  # PREVIOUS_IMAGE must be what was running *before* this rollback so that
+  # running rollback again restores the pre-rollback version.
   if [[ -f "${STATE_FILE}" ]]; then
+    PRE_ROLLBACK_IMAGE_NAME="$(grep -E '^IMAGE_NAME=' "${STATE_FILE}" | tail -n1 | cut -d'=' -f2-)"
+    PRE_ROLLBACK_CURRENT_TAG="$(grep -E '^CURRENT_TAG=' "${STATE_FILE}" | tail -n1 | cut -d'=' -f2-)"
+    PRE_ROLLBACK_IMAGE="${PRE_ROLLBACK_IMAGE_NAME}:${PRE_ROLLBACK_CURRENT_TAG}"
     {
       echo "ENVIRONMENT=${ENVIRONMENT}"
-      echo "IMAGE_NAME=${IMAGE_NAME:-}"
+      echo "IMAGE_NAME=${PRE_ROLLBACK_IMAGE_NAME}"
       echo "CURRENT_TAG=${TARGET_IMAGE##*:}"
-      echo "PREVIOUS_IMAGE=${TARGET_IMAGE}"
+      echo "PREVIOUS_IMAGE=${PRE_ROLLBACK_IMAGE}"
       echo "DEPLOYED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
       echo "DEPLOYED_BY=${USER:-ci}-rollback"
     } > "${STATE_FILE}"

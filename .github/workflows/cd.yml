@@ -36,14 +36,12 @@ on:
         type: string
 
 concurrency:
-  # Never run two deployments to the same ref at once; let the newest win.
   group: cd-${{ github.ref }}
   cancel-in-progress: false
 
+# Minimum workflow-level permissions. Jobs that need more declare their own.
 permissions:
   contents: read
-  packages: write
-  id-token: write
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}-backend
@@ -56,20 +54,31 @@ jobs:
   build-image:
     name: Build & Push Image
     runs-on: ubuntu-latest
-    # Skip building when the dispatch action is a rollback (we redeploy an
-    # already-published image instead).
     if: github.event_name != 'workflow_dispatch' || github.event.inputs.action != 'rollback'
+    # packages: write is only needed here to push the image to GHCR.
+    permissions:
+      contents: read
+      packages: write
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Resolve image tag
         id: meta
+        # Use an env var rather than direct ${{ }} interpolation to prevent
+        # shell injection from user-supplied workflow_dispatch input.
+        env:
+          INPUT_IMAGE_TAG: ${{ github.event.inputs.image_tag }}
         run: |
-          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
-            TAG="${{ github.event.inputs.image_tag }}"
+          if [ -n "${INPUT_IMAGE_TAG}" ]; then
+            case "${INPUT_IMAGE_TAG}" in
+              *[!A-Za-z0-9._-]*) echo "::error::Invalid image_tag: only [A-Za-z0-9._-] allowed"; exit 1;;
+            esac
+            TAG="${INPUT_IMAGE_TAG}"
           else
             TAG="$(git rev-parse --short HEAD)"
           fi
@@ -77,17 +86,17 @@ jobs:
           echo "Resolved image tag: ${TAG}"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1 # v6.16.0
         with:
           context: .
           file: ./backend/Dockerfile
@@ -111,7 +120,9 @@ jobs:
     environment:
       name: dev
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Deploy
         run: bash backend/scripts/deploy.sh dev "${{ needs.build-image.outputs.image_tag }}"
         env:
@@ -136,9 +147,12 @@ jobs:
       (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy' && github.event.inputs.environment == 'staging')
     environment:
       name: staging
-      url: ${{ secrets.STAGING_HEALTHCHECK_URL }}
+      # Use vars (not secrets) for the URL - secrets get masked and break this field.
+      url: ${{ vars.STAGING_HEALTHCHECK_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Deploy
         run: bash backend/scripts/deploy.sh staging "${{ needs.build-image.outputs.image_tag }}"
         env:
@@ -153,15 +167,12 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Promote to production. Requires the protected "production" environment, so
-  # configured reviewers must approve before this job runs. Triggered after a
-  # successful staging deploy on main, on a version tag, or via dispatch.
+  # configured reviewers must approve before this job runs.
   # ---------------------------------------------------------------------------
   deploy-prod:
     name: Deploy to prod
     runs-on: ubuntu-latest
     needs: [build-image, deploy-staging]
-    # deploy-staging is skipped for tag/dispatch flows; always() lets prod still
-    # run as long as the build succeeded and staging did not fail.
     if: |
       always() &&
       needs.build-image.result == 'success' &&
@@ -173,9 +184,12 @@ jobs:
       )
     environment:
       name: production
-      url: ${{ secrets.PROD_HEALTHCHECK_URL }}
+      # Use vars (not secrets) for the URL - secrets get masked and break this field.
+      url: ${{ vars.PROD_HEALTHCHECK_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Deploy
         run: bash backend/scripts/deploy.sh prod "${{ needs.build-image.outputs.image_tag }}"
         env:
@@ -189,7 +203,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   # ---------------------------------------------------------------------------
-  # Post-deploy monitoring smoke check against whichever environments deployed.
+  # Post-deploy monitoring smoke check.
   # ---------------------------------------------------------------------------
   monitoring:
     name: Post-deploy monitoring
@@ -197,7 +211,11 @@ jobs:
     needs: [deploy-dev, deploy-staging, deploy-prod]
     if: always() && (needs.deploy-dev.result == 'success' || needs.deploy-staging.result == 'success' || needs.deploy-prod.result == 'success')
     steps:
-      - name: Probe health & metrics endpoints
+      - name: Probe health endpoints
+        # Use env vars (not direct ${{ }} interpolation) to avoid injection risk.
+        env:
+          STAGING_URL: ${{ vars.STAGING_HEALTHCHECK_URL }}
+          PROD_URL: ${{ vars.PROD_HEALTHCHECK_URL }}
         run: |
           probe() {
             local name="$1" base="$2"
@@ -205,10 +223,10 @@ jobs:
             echo "Probing ${name} -> ${base}"
             curl -fsS --retry 5 --retry-delay 5 "${base}" >/dev/null \
               && echo "${name} health OK" \
-              || { echo "::warning::${name} health probe failed"; }
+              || echo "::warning::${name} health probe failed"
           }
-          probe staging "${{ secrets.STAGING_HEALTHCHECK_URL }}"
-          probe prod "${{ secrets.PROD_HEALTHCHECK_URL }}"
+          probe staging "${STAGING_URL}"
+          probe prod "${PROD_URL}"
 
   # ---------------------------------------------------------------------------
   # Manual rollback via workflow_dispatch (action = rollback).
@@ -220,20 +238,31 @@ jobs:
     environment:
       name: ${{ github.event.inputs.environment == 'prod' && 'production' || github.event.inputs.environment }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Roll back
+        # Move inputs to env vars to prevent shell injection.
+        # environment is a choice type so its value is already constrained by
+        # GitHub Actions to one of [dev, staging, prod].
+        env:
+          INPUT_IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+          INPUT_ENVIRONMENT: ${{ github.event.inputs.environment }}
         run: |
           TARGET=""
-          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
-            TARGET="${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}"
+          if [ -n "${INPUT_IMAGE_TAG}" ]; then
+            case "${INPUT_IMAGE_TAG}" in
+              *[!A-Za-z0-9._-]*) echo "::error::Invalid image_tag: only [A-Za-z0-9._-] allowed"; exit 1;;
+            esac
+            TARGET="${IMAGE_NAME}:${INPUT_IMAGE_TAG}"
           fi
-          bash backend/scripts/rollback.sh "${{ github.event.inputs.environment }}" "${TARGET}"
+          bash backend/scripts/rollback.sh "${INPUT_ENVIRONMENT}" "${TARGET}"
         env:
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
           DEPLOY_HOST: ${{ secrets[format('{0}_DEPLOY_HOST', github.event.inputs.environment)] }}
