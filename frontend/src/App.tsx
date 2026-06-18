@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Box, Button, Typography } from '@mui/material';
 import { Logout as LogoutIcon, AccountCircle } from '@mui/icons-material';
 import FormValidationExample from './components/FormValidationExample';
@@ -9,6 +9,8 @@ import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import './components/FormValidation.css';
 
 // Stub page components for policy/auth routes
@@ -100,7 +102,7 @@ const DashboardShell: React.FC = () => {
           Advanced AI Insights & Blockchain Monitoring
         </p>
         
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={() => setActiveDemo('analytics')}
             style={{
@@ -149,6 +151,40 @@ const DashboardShell: React.FC = () => {
           >
             📊 Sandbox
           </button>
+          <Link to="/profile" style={{
+              padding: '12px 24px',
+              background: 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+            👤 Profile
+          </Link>
+          <Link to="/settings" style={{
+              padding: '12px 24px',
+              background: 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+            ⚙️ Settings
+          </Link>
         </div>
       </header>
       
@@ -187,6 +223,112 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <DashboardShell />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <Profile 
+                  user={{
+                    id: 1,
+                    email: 'user@example.com',
+                    name: 'Demo User',
+                    role: 'user'
+                  }}
+                  stats={{
+                    transactions: 156,
+                    score: 720,
+                    activeDays: 45
+                  }}
+                  activity={[]}
+                  onUpdateProfile={async () => {
+                    console.log('Profile updated');
+                  }}
+                />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute>
+                <Settings 
+                  user={{
+                    id: 1,
+                    email: 'user@example.com',
+                    name: 'Demo User',
+                    role: 'user',
+                    language: 'en',
+                    theme: 'light'
+                  }}
+                  notificationPreferences={{
+                    emailNotifications: true,
+                    pushNotifications: true,
+                    transactionAlerts: true,
+                    scoreChanges: true,
+                    marketingEmails: false,
+                    securityAlerts: true,
+                    weeklyReport: false,
+                    priceAlerts: true
+                  }}
+                  securitySettings={{
+                    twoFactorEnabled: false,
+                    sessions: [
+                      {
+                        id: '1',
+                        device: 'Chrome on macOS',
+                        location: 'San Francisco, CA',
+                        lastActive: 'Just now',
+                        current: true
+                      }
+                    ],
+                    loginHistory: [
+                      {
+                        id: '1',
+                        date: '2024-01-15 10:30 AM',
+                        device: 'Chrome on macOS',
+                        location: 'San Francisco, CA',
+                        status: 'success'
+                      }
+                    ]
+                  }}
+                  apiKeys={[]}
+                  onUpdateAccount={async () => {
+                    console.log('Account updated');
+                  }}
+                  onDeleteAccount={async () => {
+                    console.log('Account deleted');
+                  }}
+                  onUpdateNotificationPreferences={async () => {
+                    console.log('Notification preferences updated');
+                  }}
+                  onChangePassword={async () => {
+                    console.log('Password changed');
+                  }}
+                  onEnableTwoFactor={async () => {
+                    console.log('2FA enabled');
+                  }}
+                  onDisableTwoFactor={async () => {
+                    console.log('2FA disabled');
+                  }}
+                  onRevokeSession={async () => {
+                    console.log('Session revoked');
+                  }}
+                  onRevokeAllSessions={async () => {
+                    console.log('All sessions revoked');
+                  }}
+                  onCreateApiKey={async () => {
+                    return { key: 'ck_' + Math.random().toString(36).substring(2) };
+                  }}
+                  onDeleteApiKey={async () => {
+                    console.log('API key deleted');
+                  }}
+                  onRegenerateApiKey={async () => {
+                    return { key: 'ck_' + Math.random().toString(36).substring(2) };
+                  }}
+                />
               </ProtectedRoute>
             } 
           />
