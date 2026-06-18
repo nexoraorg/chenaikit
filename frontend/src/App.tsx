@@ -244,7 +244,7 @@ const App: React.FC = () => {
                   }}
                   activity={[]}
                   onUpdateProfile={async () => {
-                    console.log('Profile updated');
+                    // TODO: Integrate with backend API
                   }}
                 />
               </ProtectedRoute>
@@ -296,34 +296,34 @@ const App: React.FC = () => {
                   }}
                   apiKeys={[]}
                   onUpdateAccount={async () => {
-                    console.log('Account updated');
+                    // TODO: Integrate with backend API
                   }}
                   onDeleteAccount={async () => {
-                    console.log('Account deleted');
+                    // TODO: Integrate with backend API
                   }}
                   onUpdateNotificationPreferences={async () => {
-                    console.log('Notification preferences updated');
+                    // TODO: Integrate with backend API
                   }}
                   onChangePassword={async () => {
-                    console.log('Password changed');
+                    // TODO: Integrate with backend API
                   }}
                   onEnableTwoFactor={async () => {
-                    console.log('2FA enabled');
+                    // TODO: Integrate with backend API
                   }}
                   onDisableTwoFactor={async () => {
-                    console.log('2FA disabled');
+                    // TODO: Integrate with backend API
                   }}
                   onRevokeSession={async () => {
-                    console.log('Session revoked');
+                    // TODO: Integrate with backend API
                   }}
                   onRevokeAllSessions={async () => {
-                    console.log('All sessions revoked');
+                    // TODO: Integrate with backend API
                   }}
                   onCreateApiKey={async () => {
                     return { key: 'ck_' + Math.random().toString(36).substring(2) };
                   }}
                   onDeleteApiKey={async () => {
-                    console.log('API key deleted');
+                    // TODO: Integrate with backend API
                   }}
                   onRegenerateApiKey={async () => {
                     return { key: 'ck_' + Math.random().toString(36).substring(2) };
