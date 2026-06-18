@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify Your Account</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; overflow: hidden; }
+    .header { background: #1a1a2e; padding: 32px; text-align: center; }
+    .header h1 { color: #fff; margin: 0; font-size: 24px; }
+    .body { padding: 32px; color: #333; line-height: 1.6; }
+    .btn { display: inline-block; padding: 12px 28px; background: #27ae60; color: #fff;
+           text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 16px; }
+    .code-block { background: #f0f0f0; border-radius: 6px; padding: 16px; text-align: center;
+                  font-size: 28px; font-weight: bold; letter-spacing: 8px; color: #1a1a2e; margin: 24px 0; }
+    .footer { padding: 16px 32px; background: #f9f9f9; color: #888; font-size: 12px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header"><h1>Verify Your Account ✅</h1></div>
+    <div class="body">
+      <p>Hi {{name}},</p>
+      <p>Thanks for signing up! Please verify your email address to activate your ChenAIKit account.</p>
+      <p>Use the verification code below or click the button:</p>
+      <div class="code-block">{{verificationCode}}</div>
+      <a class="btn" href="{{verifyUrl}}">Verify Email Address</a>
+      <p style="margin-top: 24px; font-size: 14px; color: #777;">This code expires in {{expiresIn}}. If you didn't create an account, please ignore this email.</p>
+    </div>
+    <div class="footer">© {{year}} ChenAIKit. This is an automated message — please do not reply.</div>
+  </div>
+</body>
+</html>

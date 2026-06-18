@@ -210,6 +210,40 @@ const DashboardShell: React.FC = () => {
           >
             📊 Sandbox
           </button>
+          <Link to="/profile" style={{
+              padding: '12px 24px',
+              background: 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+            👤 Profile
+          </Link>
+          <Link to="/settings" style={{
+              padding: '12px 24px',
+              background: 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+            ⚙️ Settings
+          </Link>
         </div>
       </header>
 
@@ -252,6 +286,112 @@ const App: React.FC = () => {
                 <DashboardShell />
               </ProtectedRoute>
             }
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <Profile 
+                  user={{
+                    id: 1,
+                    email: 'user@example.com',
+                    name: 'Demo User',
+                    role: 'user'
+                  }}
+                  stats={{
+                    transactions: 156,
+                    score: 720,
+                    activeDays: 45
+                  }}
+                  activity={[]}
+                  onUpdateProfile={async () => {
+                    // TODO: Integrate with backend API
+                  }}
+                />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute>
+                <Settings 
+                  user={{
+                    id: 1,
+                    email: 'user@example.com',
+                    name: 'Demo User',
+                    role: 'user',
+                    language: 'en',
+                    theme: 'light'
+                  }}
+                  notificationPreferences={{
+                    emailNotifications: true,
+                    pushNotifications: true,
+                    transactionAlerts: true,
+                    scoreChanges: true,
+                    marketingEmails: false,
+                    securityAlerts: true,
+                    weeklyReport: false,
+                    priceAlerts: true
+                  }}
+                  securitySettings={{
+                    twoFactorEnabled: false,
+                    sessions: [
+                      {
+                        id: '1',
+                        device: 'Chrome on macOS',
+                        location: 'San Francisco, CA',
+                        lastActive: 'Just now',
+                        current: true
+                      }
+                    ],
+                    loginHistory: [
+                      {
+                        id: '1',
+                        date: '2024-01-15 10:30 AM',
+                        device: 'Chrome on macOS',
+                        location: 'San Francisco, CA',
+                        status: 'success'
+                      }
+                    ]
+                  }}
+                  apiKeys={[]}
+                  onUpdateAccount={async () => {
+                    // TODO: Integrate with backend API
+                  }}
+                  onDeleteAccount={async () => {
+                    // TODO: Integrate with backend API
+                  }}
+                  onUpdateNotificationPreferences={async () => {
+                    // TODO: Integrate with backend API
+                  }}
+                  onChangePassword={async () => {
+                    // TODO: Integrate with backend API
+                  }}
+                  onEnableTwoFactor={async () => {
+                    // TODO: Integrate with backend API
+                  }}
+                  onDisableTwoFactor={async () => {
+                    // TODO: Integrate with backend API
+                  }}
+                  onRevokeSession={async () => {
+                    // TODO: Integrate with backend API
+                  }}
+                  onRevokeAllSessions={async () => {
+                    // TODO: Integrate with backend API
+                  }}
+                  onCreateApiKey={async () => {
+                    return { key: 'ck_' + Math.random().toString(36).substring(2) };
+                  }}
+                  onDeleteApiKey={async () => {
+                    // TODO: Integrate with backend API
+                  }}
+                  onRegenerateApiKey={async () => {
+                    return { key: 'ck_' + Math.random().toString(36).substring(2) };
+                  }}
+                />
+              </ProtectedRoute>
+            } 
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
