@@ -15,6 +15,7 @@ import {
   Divider,
   Paper,
   Stack,
+  Snackbar,
 } from "@mui/material";
 import {
   TrendingUp,
@@ -22,6 +23,8 @@ import {
   Public,
   BugReport,
   Download,
+  CheckCircle,
+  Error as ErrorIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import { UsageChart } from "./charts/UsageChart";
@@ -33,6 +36,14 @@ import {
 import { ConnectionStatusBadge } from "./ConnectionStatusBadge";
 import { UpdateControlButton } from "./UpdateControlButton";
 import { LiveDataIndicator } from "./LiveDataIndicator";
+import ExportButton from "./ExportButton";
+import ExportModal from "./ExportModal";
+import {
+  exportDashboard,
+  ExportFormat,
+  ExportOptions,
+  ProgressCallback,
+} from "../utils/exportUtils";
 
 interface DashboardData {
   systemUsage: {
@@ -67,6 +78,13 @@ export const AnalyticsDashboard: React.FC = () => {
   );
   const [trendData, setTrendData] = useState<TrendData | null>(null);
   const [timeRange, setTimeRange] = useState("30");
+
+  // Export state
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportSuccess, setExportSuccess] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
 
   // Real-time hooks
   const { latestTransaction, recentTransactions } = useTransactionUpdates(500);
@@ -140,6 +158,124 @@ export const AnalyticsDashboard: React.FC = () => {
     );
   };
 
+  // Prepare export data from dashboard
+  const exportData = useMemo(() => {
+    if (!dashboardData || !trendData) return [];
+
+    const exportRecords = [
+      {
+        category: "System Usage",
+        metric: "Total Requests",
+        value: dashboardData.systemUsage.totalRequests,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        category: "System Usage",
+        metric: "Average Latency (ms)",
+        value: dashboardData.systemUsage.avgLatency.toFixed(2),
+        timestamp: new Date().toISOString(),
+      },
+      {
+        category: "System Usage",
+        metric: "Error Rate (%)",
+        value: dashboardData.systemUsage.errorRate.toFixed(2),
+        timestamp: new Date().toISOString(),
+      },
+      {
+        category: "System Usage",
+        metric: "Success Rate (%)",
+        value: dashboardData.systemUsage.successRate.toFixed(2),
+        timestamp: new Date().toISOString(),
+      },
+      {
+        category: "AI Performance",
+        metric: "Average Credit Score",
+        value: dashboardData.aiPerformance.avgCreditScore.toFixed(2),
+        timestamp: new Date().toISOString(),
+      },
+      {
+        category: "AI Performance",
+        metric: "Total Fraud Alerts",
+        value: dashboardData.aiPerformance.totalFraudAlerts,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        category: "AI Performance",
+        metric: "Resolved Alerts",
+        value: dashboardData.aiPerformance.resolvedAlerts,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        category: "Blockchain Activity",
+        metric: "Total Transactions",
+        value: dashboardData.blockchainActivity.totalTxCount,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        category: "Blockchain Activity",
+        metric: "Total Volume",
+        value: dashboardData.blockchainActivity.totalVolume,
+        timestamp: new Date().toISOString(),
+      },
+      ...trendData.history.map((item) => ({
+        category: "Trend History",
+        metric: "Value",
+        value: item.value,
+        date: item.date,
+        timestamp: new Date().toISOString(),
+      })),
+    ];
+
+    return exportRecords;
+  }, [dashboardData, trendData]);
+
+  const handleExportModal = async (
+    format: ExportFormat,
+    options: ExportOptions,
+  ) => {
+    try {
+      setExporting(true);
+      setExportError(null);
+      setExportProgress(0);
+
+      const progressCallback: ProgressCallback = (progress, message) => {
+        setExportProgress(progress);
+      };
+
+      if (format === "pdf") {
+        // For PDF export, pass the element ID
+        await exportDashboard(
+          format,
+          exportData,
+          {
+            ...options,
+            metadata: {
+              ...options.metadata,
+              elementId: "analytics-dashboard-container",
+              title: "Analytics Dashboard Report",
+            },
+          },
+          progressCallback,
+        );
+      } else {
+        await exportDashboard(format, exportData, options, progressCallback);
+      }
+
+      setExportSuccess(true);
+      setTimeout(() => {
+        setExportSuccess(false);
+      }, 4000);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to export dashboard";
+      setExportError(message);
+      console.error("Export failed:", err);
+    } finally {
+      setExporting(false);
+      setExportProgress(0);
+    }
+  };
+
   if (loading)
     return (
       <Box
@@ -166,6 +302,7 @@ export const AnalyticsDashboard: React.FC = () => {
 
   return (
     <Box
+      id="analytics-dashboard-container"
       sx={{ flexGrow: 1, p: 4, backgroundColor: "#F9FAFB", minHeight: "100vh" }}
     >
       {/* Header with real-time controls */}
@@ -188,7 +325,14 @@ export const AnalyticsDashboard: React.FC = () => {
             Real-time insights across systems, AI, and blockchain
           </Typography>
         </Box>
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
           <UpdateControlButton size="medium" />
           <ConnectionStatusBadge variant="compact" />
           <FormControl size="small" sx={{ minWidth: 120 }}>
@@ -203,19 +347,20 @@ export const AnalyticsDashboard: React.FC = () => {
               <MenuItem value="90">Last 90 Days</MenuItem>
             </Select>
           </FormControl>
-          <Button
-            startIcon={<Download />}
+          <ExportButton
+            onExport={async (format) => {
+              await handleExportModal(format, {});
+            }}
+            disabled={!dashboardData || !trendData}
             variant="outlined"
-            onClick={() => handleExport("csv")}
-          >
-            Export CSV
-          </Button>
+          />
           <Button
             startIcon={<Download />}
             variant="contained"
-            onClick={() => handleExport("pdf")}
+            onClick={() => setExportModalOpen(true)}
+            disabled={!dashboardData || !trendData}
           >
-            Export PDF
+            Advanced Export
           </Button>
         </Box>
       </Box>
@@ -374,6 +519,52 @@ export const AnalyticsDashboard: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Export Modal */}
+      <ExportModal
+        open={exportModalOpen}
+        onClose={() => {
+          setExportModalOpen(false);
+          setExportError(null);
+        }}
+        onExport={handleExportModal}
+        loading={exporting}
+        error={exportError}
+      />
+
+      {/* Success Notification */}
+      <Snackbar
+        open={exportSuccess}
+        autoHideDuration={4000}
+        onClose={() => setExportSuccess(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setExportSuccess(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+          icon={<CheckCircle />}
+        >
+          Data exported successfully!
+        </Alert>
+      </Snackbar>
+
+      {/* Error Notification */}
+      <Snackbar
+        open={!!exportError}
+        autoHideDuration={6000}
+        onClose={() => setExportError(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setExportError(null)}
+          severity="error"
+          sx={{ width: "100%" }}
+          icon={<ErrorIcon />}
+        >
+          {exportError}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
