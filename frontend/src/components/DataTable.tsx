@@ -222,7 +222,11 @@ function DataTable<T extends object>({
       try {
         const saved = localStorage.getItem(`datatable_visibility_${persistKey}`);
         if (saved) setColumnVisibility(JSON.parse(saved));
-      } catch { }
+      } catch {
+        localStorage.removeItem(`datatable_visibility_${persistKey}`);
+      }
+    }
+  }, [persistKey]);
     }
   }, [persistKey]);
 
