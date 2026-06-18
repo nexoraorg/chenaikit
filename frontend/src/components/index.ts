@@ -13,3 +13,11 @@ export { default as FraudDetection } from './FraudDetection';
 export { default as ChatInterface } from './ChatInterface';
 export { default as WalletInterface } from './WalletInterface';
 export { AnalyticsDashboard } from './AnalyticsDashboard';
+
+export { default as DataTable } from './DataTable';
+export type { Column as DataTableColumn, DataTableProps } from './DataTable';
+export { default as TableSortLabel } from './TableSortLabel';
+export type { SortDirection } from './TableSortLabel';
+export { default as TableFilter } from './TableFilter';
+export type { FilterType, FilterOption, FilterValue, DateRangeValue } from './TableFilter';
+export { default as TablePagination } from './TablePagination';

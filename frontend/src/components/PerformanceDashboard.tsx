@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -13,12 +13,6 @@ import {
   Tab,
   Tabs,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -29,6 +23,7 @@ import {
   Error as ErrorIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
+import DataTable, { Column } from './DataTable';
 
 // Performance data types
 interface PerformanceMetrics {
@@ -422,60 +417,84 @@ const PerformanceDashboard: React.FC = () => {
     </Grid>
   );
 
+  const issueColumns: Column<PerformanceIssue>[] = [
+    {
+      accessorKey: 'severity',
+      header: 'Severity',
+      filterType: 'select',
+      filterOptions: [
+        { label: 'High', value: 'high' },
+        { label: 'Medium', value: 'medium' },
+        { label: 'Low', value: 'low' },
+      ],
+      cell: (value) => (
+        <Chip
+          label={value as string}
+          color={value === 'high' ? 'error' : value === 'medium' ? 'warning' : 'info'}
+          size="small"
+        />
+      ),
+      size: 100,
+    },
+    {
+      accessorKey: 'type',
+      header: 'Type',
+      filterType: 'text',
+      size: 150,
+    },
+    {
+      accessorKey: 'description',
+      header: 'Description',
+      filterType: 'text',
+      size: 300,
+    },
+    {
+      accessorKey: 'actual',
+      header: 'Actual',
+      size: 100,
+      cell: (value) => (value as number).toLocaleString(),
+    },
+    {
+      accessorKey: 'threshold',
+      header: 'Threshold',
+      size: 100,
+      cell: (value) => (value as number).toLocaleString(),
+    },
+    {
+      accessorKey: 'severity',
+      id: 'status',
+      header: 'Status',
+      enableFilter: false,
+      size: 80,
+      cell: (_, row) => {
+        const ratio = row.actual / row.threshold;
+        return (
+          <Tooltip title={`Ratio: ${ratio.toFixed(2)}`}>
+            {row.actual > row.threshold ? (
+              <TrendingUpIcon color="error" />
+            ) : (
+              <TrendingDownIcon color="success" />
+            )}
+          </Tooltip>
+        );
+      },
+    },
+  ];
+
   const renderIssuesTable = () => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Severity</TableCell>
-            <TableCell>Type</TableCell>
-            <TableCell>Description</TableCell>
-            <TableCell>Actual</TableCell>
-            <TableCell>Threshold</TableCell>
-            <TableCell>Status</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {issues.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} align="center">
-                <Box py={4}>
-                  <CheckCircleIcon color="success" sx={{ fontSize: 48, mb: 2 }} />
-                  <Typography variant="h6" color="textSecondary">
-                    No performance issues detected
-                  </Typography>
-                </Box>
-              </TableCell>
-            </TableRow>
-          ) : (
-            issues.map((issue, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Chip
-                    label={issue.severity}
-                    color={issue.severity === 'high' ? 'error' : issue.severity === 'medium' ? 'warning' : 'info'}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>{issue.type}</TableCell>
-                <TableCell>{issue.description}</TableCell>
-                <TableCell>{issue.actual.toLocaleString()}</TableCell>
-                <TableCell>{issue.threshold.toLocaleString()}</TableCell>
-                <TableCell>
-                  <Tooltip title={`Ratio: ${(issue.actual / issue.threshold).toFixed(2)}`}>
-                    {issue.actual > issue.threshold ? (
-                      <TrendingUpIcon color="error" />
-                    ) : (
-                      <TrendingDownIcon color="success" />
-                    )}
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+    <DataTable
+      columns={issueColumns}
+      data={issues}
+      enableSorting
+      enableFiltering
+      enableMultiSort
+      enablePagination
+      enableColumnVisibility
+      emptyMessage="No performance issues detected"
+      pageSize={10}
+      pageSizeOptions={[5, 10, 25, 50]}
+      density="compact"
+    />
   );
 
   if (loading) {
