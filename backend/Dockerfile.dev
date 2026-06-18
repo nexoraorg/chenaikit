@@ -1,0 +1,53 @@
+# =============================================================================
+# Development image – hot reload via ts-node --watch
+# Build context: monorepo ROOT  (docker build -f backend/Dockerfile.dev .)
+# =============================================================================
+
+FROM node:20-alpine
+
+# Native module compilation tools (required by better-sqlite3 & bcrypt)
+RUN apk add --no-cache python3 make g++
+
+RUN corepack enable && corepack prepare pnpm@10.17.1 --activate
+
+WORKDIR /app
+
+ENV NODE_ENV=development
+ENV PORT=3000
+
+# ── Install dependencies ──────────────────────────────────────────────────────
+# Copy only manifests first for dependency-layer caching
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY tsconfig.base.json ./
+COPY packages/core/package.json ./packages/core/
+COPY backend/package.json ./backend/
+
+RUN pnpm install --frozen-lockfile
+
+# ── Copy source (overridden by volume mounts in docker-compose.yml) ───────────
+COPY packages/core ./packages/core
+COPY backend ./backend
+
+# Build @chenaikit/core so TypeScript can resolve imports during dev
+RUN pnpm --filter @chenaikit/core build
+
+# Generate Prisma client
+RUN pnpm --filter @chenaikit/backend prisma:generate
+
+# Persistent data directory for SQLite database
+RUN mkdir -p /data
+
+WORKDIR /app/backend
+
+EXPOSE 3000
+
+# Healthcheck (same as production)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "\
+const h=require('http');\
+h.get('http://localhost:'+process.env.PORT+'/api/health',r=>{\
+  process.exit(r.statusCode===200?0:1)\
+}).on('error',()=>process.exit(1))"
+
+# ts-node --watch gives hot reload; transpileOnly skips type-checking for speed
+CMD ["pnpm", "dev"]
