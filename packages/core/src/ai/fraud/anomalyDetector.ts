@@ -1,4 +1,4 @@
-import { AnomalyModel, AnomalyScore, FeatureVector } from './types';
+import { AnomalyModel, AnomalyScore, FeatureVector } from "./types";
 
 // Lightweight, real-time friendly anomaly detectors
 
@@ -38,10 +38,14 @@ class IsolationForestApprox implements AnomalyModel {
       else if (v > high) deviation = (v - high) / Math.max(1e-6, max - high);
       outliers.push(Math.min(1, Math.max(0, deviation)));
     }
-    const score = clamp(0, 1, outliers.reduce((a, b) => a + b, 0) / Math.max(1, outliers.length));
+    const score = clamp(
+      0,
+      1,
+      outliers.reduce((a, b) => a + b, 0) / Math.max(1, outliers.length),
+    );
     return {
       score,
-      model: 'isolation_forest',
+      model: "isolation_forest",
       details: { outlierByFeature: outliers },
     };
   }
@@ -82,7 +86,7 @@ class OneClassSVMApprox implements AnomalyModel {
     const score = clamp(0, 1, raw);
     return {
       score,
-      model: 'one_class_svm',
+      model: "one_class_svm",
       details: { zScores: z, distance },
     };
   }

@@ -24,7 +24,7 @@ export interface CanonicalFraudResult {
 export function generateCreditScore(): CanonicalCreditScore {
   return {
     score: Math.floor(Math.random() * 850) + 150,
-    factors: ['payment_history', 'credit_utilization', 'account_age'],
+    factors: ["payment_history", "credit_utilization", "account_age"],
     generatedAt: new Date().toISOString(),
   };
 }
@@ -32,15 +32,15 @@ export function generateCreditScore(): CanonicalCreditScore {
 export function generateFraudResult(): CanonicalFraudResult {
   return {
     riskScore: Math.floor(Math.random() * 100),
-    factors: ['transaction_amount', 'location', 'device'],
+    factors: ["transaction_amount", "location", "device"],
     generatedAt: new Date().toISOString(),
   };
 }
 
-function riskLevel(riskScore: number): 'low' | 'medium' | 'high' {
-  if (riskScore < 33) return 'low';
-  if (riskScore < 66) return 'medium';
-  return 'high';
+function riskLevel(riskScore: number): "low" | "medium" | "high" {
+  if (riskScore < 33) return "low";
+  if (riskScore < 66) return "medium";
+  return "high";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -72,13 +72,16 @@ export function toCreditScoreV2(c: CanonicalCreditScore) {
   return {
     creditScore: {
       value: c.score,
-      band: c.score >= 700 ? 'excellent' : c.score >= 580 ? 'fair' : 'poor',
+      band: c.score >= 700 ? "excellent" : c.score >= 580 ? "fair" : "poor",
       // v2 promotes factors to objects so weights can be communicated.
-      factors: c.factors.map((name) => ({ name, weight: null as number | null })),
+      factors: c.factors.map((name) => ({
+        name,
+        weight: null as number | null,
+      })),
     },
     meta: {
       generatedAt: c.generatedAt,
-      model: 'credit-score-v2',
+      model: "credit-score-v2",
     },
   };
 }
@@ -88,11 +91,14 @@ export function toFraudResultV2(c: CanonicalFraudResult) {
     fraud: {
       riskScore: c.riskScore,
       riskLevel: riskLevel(c.riskScore),
-      factors: c.factors.map((name) => ({ name, weight: null as number | null })),
+      factors: c.factors.map((name) => ({
+        name,
+        weight: null as number | null,
+      })),
     },
     meta: {
       generatedAt: c.generatedAt,
-      model: 'fraud-detect-v2',
+      model: "fraud-detect-v2",
     },
   };
 }

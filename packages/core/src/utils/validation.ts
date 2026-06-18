@@ -1,35 +1,35 @@
-import { ValidationRule } from '../types/form';
+import { ValidationRule } from "../types/form";
 
 export function validateConfig(config: any): boolean {
   // TODO: Implement configuration validation - Issue #23
-  throw new Error('Not implemented yet - see issue #23');
+  throw new Error("Not implemented yet - see issue #23");
 }
 
 export function validateTransactionData(data: any): boolean {
   // TODO: Implement transaction data validation - Issue #23
-  throw new Error('Not implemented yet - see issue #23');
+  throw new Error("Not implemented yet - see issue #23");
 }
 
 // Common validation patterns
 export const ValidationRules = {
-  required: (message = 'This field is required'): ValidationRule => ({
+  required: (message = "This field is required"): ValidationRule => ({
     required: true,
     custom: (value) => {
-      if (!value || (typeof value === 'string' && value.trim() === '')) {
+      if (!value || (typeof value === "string" && value.trim() === "")) {
         return message;
       }
       return null;
-    }
+    },
   }),
 
-  email: (message = 'Please enter a valid email address'): ValidationRule => ({
+  email: (message = "Please enter a valid email address"): ValidationRule => ({
     pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     custom: (value) => {
       if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
         return message;
       }
       return null;
-    }
+    },
   }),
 
   minLength: (min: number, message?: string): ValidationRule => ({
@@ -39,7 +39,7 @@ export const ValidationRules = {
         return message || `Must be at least ${min} characters long`;
       }
       return null;
-    }
+    },
   }),
 
   maxLength: (max: number, message?: string): ValidationRule => ({
@@ -49,7 +49,7 @@ export const ValidationRules = {
         return message || `Must be no more than ${max} characters long`;
       }
       return null;
-    }
+    },
   }),
 
   pattern: (regex: RegExp, message: string): ValidationRule => ({
@@ -59,34 +59,36 @@ export const ValidationRules = {
         return message;
       }
       return null;
-    }
+    },
   }),
 
-  number: (message = 'Please enter a valid number'): ValidationRule => ({
+  number: (message = "Please enter a valid number"): ValidationRule => ({
     custom: (value) => {
       if (value && isNaN(Number(value))) {
         return message;
       }
       return null;
-    }
+    },
   }),
 
-  positiveNumber: (message = 'Please enter a positive number'): ValidationRule => ({
+  positiveNumber: (
+    message = "Please enter a positive number",
+  ): ValidationRule => ({
     custom: (value) => {
       const num = Number(value);
       if (value && (isNaN(num) || num <= 0)) {
         return message;
       }
       return null;
-    }
+    },
   }),
 
-  url: (message = 'Please enter a valid URL'): ValidationRule => ({
+  url: (message = "Please enter a valid URL"): ValidationRule => ({
     custom: (value) => {
       if (value) {
         try {
           const url = new URL(value);
-          if (!['http:', 'https:'].includes(url.protocol)) {
+          if (!["http:", "https:"].includes(url.protocol)) {
             return message;
           }
         } catch {
@@ -94,46 +96,55 @@ export const ValidationRules = {
         }
       }
       return null;
-    }
+    },
   }),
 
-  phone: (message = 'Please enter a valid phone number'): ValidationRule => ({
+  phone: (message = "Please enter a valid phone number"): ValidationRule => ({
     pattern: /^[+]?[1-9][\d]{0,15}$/,
     custom: (value) => {
-      if (value && !/^[+]?[1-9][\d]{0,15}$/.test(value.replace(/[\s\-()]/g, ''))) {
+      if (
+        value &&
+        !/^[+]?[1-9][\d]{0,15}$/.test(value.replace(/[\s\-()]/g, ""))
+      ) {
         return message;
       }
       return null;
-    }
+    },
   }),
 
   // Blockchain-specific validations
-  stellarAddress: (message = 'Please enter a valid Stellar address'): ValidationRule => ({
+  stellarAddress: (
+    message = "Please enter a valid Stellar address",
+  ): ValidationRule => ({
     custom: (value) => {
       if (value && !isValidStellarAddress(value)) {
         return message;
       }
       return null;
-    }
+    },
   }),
 
-  stellarSecretKey: (message = 'Please enter a valid Stellar secret key'): ValidationRule => ({
+  stellarSecretKey: (
+    message = "Please enter a valid Stellar secret key",
+  ): ValidationRule => ({
     custom: (value) => {
       if (value && !isValidStellarSecretKey(value)) {
         return message;
       }
       return null;
-    }
+    },
   }),
 
   // Custom validators
   custom: (validator: (value: any) => string | null): ValidationRule => ({
-    custom: validator
+    custom: validator,
   }),
 
-  async: (validator: (value: any) => Promise<string | null>): ValidationRule => ({
-    async: validator
-  })
+  async: (
+    validator: (value: any) => Promise<string | null>,
+  ): ValidationRule => ({
+    async: validator,
+  }),
 };
 
 // Helper functions for blockchain validations
@@ -148,10 +159,16 @@ function isValidStellarSecretKey(secretKey: string): boolean {
 }
 
 // Utility function to validate a single field
-export async function validateField(value: any, rules: ValidationRule): Promise<string | null> {
+export async function validateField(
+  value: any,
+  rules: ValidationRule,
+): Promise<string | null> {
   // Check required
-  if (rules.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
-    return 'This field is required';
+  if (
+    rules.required &&
+    (!value || (typeof value === "string" && value.trim() === ""))
+  ) {
+    return "This field is required";
   }
 
   // Skip other validations if value is empty and not required
@@ -171,7 +188,7 @@ export async function validateField(value: any, rules: ValidationRule): Promise<
 
   // Check pattern
   if (rules.pattern && value && !rules.pattern.test(value)) {
-    return 'Invalid format';
+    return "Invalid format";
   }
 
   // Check custom validator
@@ -192,7 +209,7 @@ export async function validateField(value: any, rules: ValidationRule): Promise<
 // Utility function to validate multiple fields
 export async function validateFields(
   values: Record<string, any>,
-  rules: Record<string, ValidationRule>
+  rules: Record<string, ValidationRule>,
 ): Promise<Record<string, string>> {
   const errors: Record<string, string> = {};
 

@@ -1,7 +1,7 @@
 // Core monitoring interfaces
 export interface MonitoringConfig {
   horizonUrl: string;
-  network: 'testnet' | 'mainnet';
+  network: "testnet" | "mainnet";
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
   batchSize?: number;
@@ -73,19 +73,19 @@ export interface LedgerEvent {
 
 // Alert system types
 export enum AlertSeverity {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  CRITICAL = 'critical'
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
+  CRITICAL = "critical",
 }
 
 export enum AlertType {
-  HIGH_VALUE_TRANSACTION = 'high_value_transaction',
-  RAPID_TRANSACTIONS = 'rapid_transactions',
-  SUSPICIOUS_PATTERN = 'suspicious_pattern',
-  FRAUD_DETECTED = 'fraud_detected',
-  SYSTEM_ERROR = 'system_error',
-  CONNECTION_LOST = 'connection_lost'
+  HIGH_VALUE_TRANSACTION = "high_value_transaction",
+  RAPID_TRANSACTIONS = "rapid_transactions",
+  SUSPICIOUS_PATTERN = "suspicious_pattern",
+  FRAUD_DETECTED = "fraud_detected",
+  SYSTEM_ERROR = "system_error",
+  CONNECTION_LOST = "connection_lost",
 }
 
 export interface AlertRule {
@@ -102,13 +102,13 @@ export interface AlertRule {
 
 export interface AlertCondition {
   field: string;
-  operator: 'gt' | 'lt' | 'eq' | 'ne' | 'contains' | 'matches';
+  operator: "gt" | "lt" | "eq" | "ne" | "contains" | "matches";
   value: any;
   timeWindow?: number; // in milliseconds
 }
 
 export interface AlertAction {
-  type: 'webhook' | 'email' | 'websocket' | 'log';
+  type: "webhook" | "email" | "websocket" | "log";
   config: {
     url?: string;
     email?: string;
@@ -174,7 +174,7 @@ export interface NetworkMetrics {
   transactionThroughput: number;
   averageFee: number;
   totalAccounts: number;
-  networkHealth: 'healthy' | 'degraded' | 'critical';
+  networkHealth: "healthy" | "degraded" | "critical";
   timestamp: Date;
 }
 
@@ -204,9 +204,9 @@ export interface AlertSummary {
 }
 
 export interface SystemHealth {
-  status: 'healthy' | 'degraded' | 'critical';
+  status: "healthy" | "degraded" | "critical";
   uptime: number;
-  connectionStatus: 'connected' | 'disconnected' | 'reconnecting';
+  connectionStatus: "connected" | "disconnected" | "reconnecting";
   processingLatency: number;
   memoryUsage: number;
   lastHealthCheck: Date;
@@ -220,7 +220,7 @@ export interface ChartDataPoint {
 
 // WebSocket and streaming types
 export interface StreamEvent {
-  type: 'transaction' | 'ledger' | 'operation' | 'account';
+  type: "transaction" | "ledger" | "operation" | "account";
   data: any;
   timestamp: Date;
 }
@@ -235,15 +235,15 @@ export interface ConnectionStatus {
 
 // Transaction categorization types
 export enum TransactionCategory {
-  NORMAL = 'normal',
-  HIGH_VALUE = 'high_value',
-  RAPID_SEQUENCE = 'rapid_sequence',
-  SUSPICIOUS = 'suspicious',
-  FRAUDULENT = 'fraudulent',
-  WHALE_MOVEMENT = 'whale_movement',
-  DEX_TRADE = 'dex_trade',
-  PAYMENT = 'payment',
-  TRUST_LINE = 'trust_line'
+  NORMAL = "normal",
+  HIGH_VALUE = "high_value",
+  RAPID_SEQUENCE = "rapid_sequence",
+  SUSPICIOUS = "suspicious",
+  FRAUDULENT = "fraudulent",
+  WHALE_MOVEMENT = "whale_movement",
+  DEX_TRADE = "dex_trade",
+  PAYMENT = "payment",
+  TRUST_LINE = "trust_line",
 }
 
 export interface TransactionAnalysis {
@@ -287,14 +287,17 @@ export interface NetworkAnalysis {
 
 // Event emitter interface for type safety
 export interface MonitoringEvents {
-  'transaction': (transaction: TransactionEvent, analysis: TransactionAnalysis) => void;
-  'ledger': (ledger: LedgerEvent) => void;
-  'alert': (alert: Alert) => void;
-  'error': (error: Error) => void;
-  'connected': () => void;
-  'disconnected': (reason: string) => void;
-  'reconnecting': (attempt: number) => void;
-  'metrics': (metrics: TransactionMetrics) => void;
+  transaction: (
+    transaction: TransactionEvent,
+    analysis: TransactionAnalysis,
+  ) => void;
+  ledger: (ledger: LedgerEvent) => void;
+  alert: (alert: Alert) => void;
+  error: (error: Error) => void;
+  connected: () => void;
+  disconnected: (reason: string) => void;
+  reconnecting: (attempt: number) => void;
+  metrics: (metrics: TransactionMetrics) => void;
 }
 
 // Use Node.js EventEmitter

@@ -1,7 +1,7 @@
 /**
  * Governance Delegation Helpers
  * @module governance/delegation
- * 
+ *
  * Utilities for managing vote delegation and computing effective voting power
  */
 
@@ -13,7 +13,7 @@ import {
   GovernanceError,
   GovernanceErrorType,
   GovernanceContracts,
-} from './types';
+} from "./types";
 
 /**
  * Delegation Manager - handles delegation operations and queries
@@ -38,7 +38,7 @@ export class DelegationManager {
       // Call governance token contract's delegate function
       const tx = await this.networkClient.invokeContract({
         contractId: this.contracts.token,
-        method: 'delegate',
+        method: "delegate",
         args: [delegator, delegatee],
         auth: delegator,
       });
@@ -48,7 +48,7 @@ export class DelegationManager {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to delegate: ${error}`,
-        { delegator, delegatee, error }
+        { delegator, delegatee, error },
       );
     }
   }
@@ -71,7 +71,7 @@ export class DelegationManager {
     try {
       const result = await this.networkClient.readContract({
         contractId: this.contracts.token,
-        method: 'delegates',
+        method: "delegates",
         args: [account],
       });
 
@@ -80,7 +80,7 @@ export class DelegationManager {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to get delegate: ${error}`,
-        { account, error }
+        { account, error },
       );
     }
   }
@@ -94,7 +94,7 @@ export class DelegationManager {
     try {
       const result = await this.networkClient.readContract({
         contractId: this.contracts.token,
-        method: 'get_current_votes',
+        method: "get_current_votes",
         args: [account],
       });
 
@@ -103,7 +103,7 @@ export class DelegationManager {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to get current voting power: ${error}`,
-        { account, error }
+        { account, error },
       );
     }
   }
@@ -114,11 +114,14 @@ export class DelegationManager {
    * @param blockNumber - Block number to query at
    * @returns Historical voting power
    */
-  async getPriorVotingPower(account: string, blockNumber: bigint): Promise<bigint> {
+  async getPriorVotingPower(
+    account: string,
+    blockNumber: bigint,
+  ): Promise<bigint> {
     try {
       const result = await this.networkClient.readContract({
         contractId: this.contracts.token,
-        method: 'get_prior_votes',
+        method: "get_prior_votes",
         args: [account, blockNumber],
       });
 
@@ -127,7 +130,7 @@ export class DelegationManager {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to get prior voting power: ${error}`,
-        { account, blockNumber, error }
+        { account, blockNumber, error },
       );
     }
   }
@@ -140,7 +143,7 @@ export class DelegationManager {
    */
   async getEffectiveVotingPower(
     account: string,
-    blockNumber?: bigint
+    blockNumber?: bigint,
   ): Promise<bigint> {
     if (blockNumber !== undefined) {
       return this.getPriorVotingPower(account, blockNumber);
@@ -202,7 +205,10 @@ export class DelegationManager {
     }
 
     // Third pass: calculate delegation depth
-    const calculateDepth = (address: string, visited: Set<string> = new Set()): number => {
+    const calculateDepth = (
+      address: string,
+      visited: Set<string> = new Set(),
+    ): number => {
       if (visited.has(address)) return 0; // Circular delegation
       visited.add(address);
 
@@ -224,10 +230,12 @@ export class DelegationManager {
    * @param limit - Maximum number of delegates to return
    * @returns Top delegates sorted by voting power
    */
-  async getTopDelegates(limit: number = 10): Promise<Array<{address: string, votingPower: bigint}>> {
+  async getTopDelegates(
+    limit: number = 10,
+  ): Promise<Array<{ address: string; votingPower: bigint }>> {
     // In a real implementation, this would query an indexer or scan events
     // For now, we provide the interface
-    throw new Error('Not implemented - requires indexer integration');
+    throw new Error("Not implemented - requires indexer integration");
   }
 
   /**
@@ -240,11 +248,11 @@ export class DelegationManager {
   async getDelegationHistory(
     account: string,
     fromBlock?: bigint,
-    toBlock?: bigint
+    toBlock?: bigint,
   ): Promise<DelegationHistory[]> {
     // Query DelegateChanged events for the account
     // This requires event indexing infrastructure
-    throw new Error('Not implemented - requires event indexer');
+    throw new Error("Not implemented - requires event indexer");
   }
 
   /**
@@ -256,7 +264,7 @@ export class DelegationManager {
     try {
       const result = await this.networkClient.readContract({
         contractId: this.contracts.token,
-        method: 'balance_of',
+        method: "balance_of",
         args: [account],
       });
 
@@ -265,7 +273,7 @@ export class DelegationManager {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to get token balance: ${error}`,
-        { account, error }
+        { account, error },
       );
     }
   }
@@ -279,15 +287,15 @@ export class DelegationManager {
  */
 export function calculateVotingPowerAtBlock(
   checkpoints: Checkpoint[],
-  blockNumber: bigint
+  blockNumber: bigint,
 ): bigint {
   if (checkpoints.length === 0) {
     return 0n;
   }
 
   // Sort checkpoints by block number
-  const sorted = [...checkpoints].sort((a, b) => 
-    Number(a.fromBlock - b.fromBlock)
+  const sorted = [...checkpoints].sort((a, b) =>
+    Number(a.fromBlock - b.fromBlock),
   );
 
   // Binary search for the checkpoint at or before blockNumber
@@ -320,7 +328,7 @@ export function calculateVotingPowerAtBlock(
 export function validateDelegationChain(
   delegationGraph: Map<string, string>,
   from: string,
-  to: string
+  to: string,
 ): boolean {
   const visited = new Set<string>();
   let current = to;
@@ -332,7 +340,7 @@ export function validateDelegationChain(
       return true;
     }
     visited.add(current);
-    current = delegationGraph.get(current) || '';
+    current = delegationGraph.get(current) || "";
   }
 
   // If we reached 'from', this would create a cycle
@@ -347,7 +355,7 @@ export function validateDelegationChain(
  */
 export function calculateTotalDelegatedPower(
   delegate: string,
-  delegationGraph: DelegationNode[]
+  delegationGraph: DelegationNode[],
 ): bigint {
   let total = 0n;
 
@@ -359,4 +367,3 @@ export function calculateTotalDelegatedPower(
 
   return total;
 }
-

@@ -13,12 +13,12 @@ export interface LogContext {
 }
 
 export interface HealthCheckResult {
-  status: 'healthy' | 'unhealthy' | 'degraded';
+  status: "healthy" | "unhealthy" | "degraded";
   timestamp: string;
   uptime: number;
   checks: {
     [key: string]: {
-      status: 'up' | 'down' | 'degraded';
+      status: "up" | "down" | "degraded";
       message?: string;
       responseTime?: number;
       details?: any;
@@ -32,7 +32,7 @@ export interface MetricLabels {
 
 export interface CustomMetric {
   name: string;
-  type: 'counter' | 'gauge' | 'histogram' | 'summary';
+  type: "counter" | "gauge" | "histogram" | "summary";
   help: string;
   labels?: string[];
 }
@@ -65,7 +65,7 @@ export interface TraceContext {
 export interface MonitoringConfig {
   logging: {
     level: string;
-    format: 'json' | 'simple';
+    format: "json" | "simple";
     console: boolean;
     file: boolean;
     filePath?: string;
@@ -98,7 +98,7 @@ export interface MonitoringConfig {
 }
 
 export interface AlertPayload {
-  severity: 'critical' | 'warning' | 'info';
+  severity: "critical" | "warning" | "info";
   title: string;
   description: string;
   timestamp: string;

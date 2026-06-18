@@ -9,12 +9,12 @@ It wraps common blockchain operations (starting with Stellar support) and connec
 
 ## ✨ Features
 
-- 🧠 *AI integrations* – ready-to-use wrapper for credit scoring and fraud detection
-- 🔗 *Blockchain connectors* – simple APIs for Stellar Horizon and Soroban contracts
-- ⚙ *TypeScript SDK* – strongly-typed, easy to extend, works in Node and browser
-- 🛠 *Examples & templates* – jump-start your own project with working examples
-- 🎯 *CLI tools* – command-line interface for common operations
-- 📊 *Smart contracts* – pre-built Soroban contracts for common use cases
+- 🧠 _AI integrations_ – ready-to-use wrapper for credit scoring and fraud detection
+- 🔗 _Blockchain connectors_ – simple APIs for Stellar Horizon and Soroban contracts
+- ⚙ _TypeScript SDK_ – strongly-typed, easy to extend, works in Node and browser
+- 🛠 _Examples & templates_ – jump-start your own project with working examples
+- 🎯 _CLI tools_ – command-line interface for common operations
+- 📊 _Smart contracts_ – pre-built Soroban contracts for common use cases
 
 ---
 
@@ -56,20 +56,20 @@ pnpm install -g @chenaikit/cli
 ### Basic usage:
 
 ```typescript
-import { StellarConnector, AIService } from '@chenaikit/core';
+import { StellarConnector, AIService } from "@chenaikit/core";
 
 // Initialize Stellar connection
 const stellar = new StellarConnector({
-  network: 'testnet'
+  network: "testnet",
 });
 
 // Initialize AI service
 const ai = new AIService({
-  apiKey: process.env.AI_API_KEY
+  apiKey: process.env.AI_API_KEY,
 });
 
 // Get account data and calculate credit score
-const account = await stellar.getAccount('G...');
+const account = await stellar.getAccount("G...");
 const score = await ai.calculateCreditScore(account);
 ```
 
@@ -87,7 +87,8 @@ const score = await ai.calculateCreditScore(account);
 ## 🤝 Contributing
 
 We welcome contributions! Check out our [issue templates](.github/ISSUE_TEMPLATE/) for beginner-friendly tasks:
-frontend 
+frontend
+
 - **Frontend**: React components, UI/UX, data visualization
 - **Backend**: APIs, databases, authentication, monitoring
 - **AI**: Machine learning models, fraud detection, NLP

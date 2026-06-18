@@ -1,7 +1,7 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class InitModels001 implements MigrationInterface {
-  name = 'InitModels001';
+  name = "InitModels001";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE TABLE "user" (
@@ -21,7 +21,9 @@ export class InitModels001 implements MigrationInterface {
       "updatedAt" TIMESTAMP NOT NULL DEFAULT now(),
       CONSTRAINT "FK_user_account" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE
     )`);
-    await queryRunner.query(`CREATE INDEX "IDX_stellarAddress" ON "account" ("stellarAddress")`);
+    await queryRunner.query(
+      `CREATE INDEX "IDX_stellarAddress" ON "account" ("stellarAddress")`,
+    );
     await queryRunner.query(`CREATE TABLE "transaction" (
       "id" uuid PRIMARY KEY,
       "transactionId" varchar(64) NOT NULL,
@@ -33,7 +35,9 @@ export class InitModels001 implements MigrationInterface {
       "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
       CONSTRAINT "FK_account_transaction" FOREIGN KEY ("accountId") REFERENCES "account"("id") ON DELETE CASCADE
     )`);
-    await queryRunner.query(`CREATE INDEX "IDX_transactionId" ON "transaction" ("transactionId")`);
+    await queryRunner.query(
+      `CREATE INDEX "IDX_transactionId" ON "transaction" ("transactionId")`,
+    );
     await queryRunner.query(`CREATE TABLE "credit_score" (
       "id" uuid PRIMARY KEY,
       "userId" uuid,

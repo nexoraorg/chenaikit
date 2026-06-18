@@ -3,6 +3,7 @@
 ## 🎯 Overview
 
 This governance system enables decentralized decision-making through:
+
 - **Governance Token** with delegation and historical voting power (checkpoints)
 - **Snapshot-based Voting** to prevent flash-loan attacks
 - **Proposal Lifecycle Management** with validation and timelock
@@ -49,12 +50,14 @@ This governance system enables decentralized decision-making through:
 **Purpose**: Governance token with Compound-style checkpoints for historical voting power.
 
 **Key Features**:
+
 - Standard token operations (transfer, approve, allowance)
 - Vote delegation without token transfer
 - Checkpoint system for snapshot voting power
 - Binary search for efficient historical queries
 
 **Storage Schema**:
+
 ```rust
 // Token metadata
 NAME -> String
@@ -73,6 +76,7 @@ NUM_CHECKPOINTS:{address} -> u32
 ```
 
 **Key Functions**:
+
 ```rust
 // Token operations
 fn balance_of(account: Address) -> u128
@@ -93,18 +97,21 @@ fn get_prior_votes(account: Address, block_number: u64) -> u128
 **Purpose**: Handles vote casting, tallying, and quorum validation.
 
 **Key Features**:
+
 - Snapshot-based voting (uses checkpoint at proposal start)
 - Prevents double voting
 - Three vote options: For, Against, Abstain
 - Quorum and turnout calculation
 
 **Storage Schema**:
+
 ```rust
 PROPOSAL:{id} -> Proposal
 VOTE:{proposal_id}:{voter} -> VoteRecord
 ```
 
 **Key Functions**:
+
 ```rust
 fn cast_vote(proposal_id: u64, voter: Address, support: VoteSupport) -> VoteRecord
 fn has_voted(proposal_id: u64, voter: Address) -> bool
@@ -118,12 +125,14 @@ fn proposal_succeeded(proposal_id: u64) -> bool
 **Purpose**: Manages the complete proposal lifecycle from creation to execution.
 
 **Key Features**:
+
 - Proposal threshold enforcement
 - State machine (Pending → Active → Succeeded/Defeated → Queued → Executed)
 - Timelock integration
 - Multi-target execution support
 
 **Proposal States**:
+
 ```
 Pending    → Voting hasn't started (voting_delay blocks)
 Active     → Voting is ongoing
@@ -136,6 +145,7 @@ Executed   → Successfully executed
 ```
 
 **Key Functions**:
+
 ```rust
 fn propose(
     proposer: Address,
@@ -156,12 +166,14 @@ fn cancel(proposal_id: u64, canceller: Address)
 **Purpose**: Delays proposal execution to allow for review and reaction time.
 
 **Key Features**:
+
 - Configurable delay period (typically 2-7 days)
 - Transaction queueing with ETA (Estimated Time of Arrival)
 - Grace period (14 days) for execution
 - Cancellation support
 
 **Key Functions**:
+
 ```rust
 fn queue_transaction(target: Address, value: u128, data: Bytes, eta: u64) -> Bytes
 fn execute_transaction(target: Address, value: u128, data: Bytes, eta: u64) -> Bytes
@@ -172,16 +184,19 @@ fn is_queued(tx_hash: Bytes) -> bool
 ## 🔐 Security Features
 
 ### 1. Snapshot Voting (Flash Loan Protection)
+
 - Voting power determined at proposal start block
 - Prevents attackers from borrowing tokens to influence votes
 - Uses checkpoint binary search for gas efficiency
 
 ### 2. Proposal Threshold
+
 - Minimum token requirement to create proposals
 - Prevents spam and low-cost governance attacks
 - Typically 1-10% of total supply
 
 ### 3. Timelock Delay
+
 - Mandatory waiting period before execution
 - Provides window for:
   - Community review
@@ -190,6 +205,7 @@ fn is_queued(tx_hash: Bytes) -> bool
 - Typically 2-7 days
 
 ### 4. Voting Delay
+
 - Gap between proposal creation and voting start
 - Allows time for:
   - Proposal review
@@ -198,37 +214,42 @@ fn is_queued(tx_hash: Bytes) -> bool
 - Typically 1-3 days
 
 ### 5. Quorum Requirements
+
 - Minimum participation threshold
 - Prevents proposals from passing with low engagement
 - Typically 30-50% of circulating supply
 
 ### 6. No Reentrancy
+
 - All state changes before external calls
 - Prevents reentrancy attacks during execution
 
 ### 7. Admin Restrictions
+
 - Only governance can execute privileged calls
 - No backdoor admin controls
 - Governance is the single source of authority
 
 ## 📊 Governance Parameters
 
-| Parameter | Description | Typical Range | Example |
-|-----------|-------------|---------------|---------|
-| `voting_delay` | Blocks before voting starts | 1-3 days | 10 blocks |
-| `voting_period` | Duration of voting | 3-7 days | 100 blocks |
-| `proposal_threshold` | Min tokens to propose | 1-10% of supply | 100,000 tokens |
-| `quorum_numerator` | Min votes required (%) | 30-50% | 40 |
-| `timelock_delay` | Delay before execution | 2-7 days | 172,800 seconds |
+| Parameter            | Description                 | Typical Range   | Example         |
+| -------------------- | --------------------------- | --------------- | --------------- |
+| `voting_delay`       | Blocks before voting starts | 1-3 days        | 10 blocks       |
+| `voting_period`      | Duration of voting          | 3-7 days        | 100 blocks      |
+| `proposal_threshold` | Min tokens to propose       | 1-10% of supply | 100,000 tokens  |
+| `quorum_numerator`   | Min votes required (%)      | 30-50%          | 40              |
+| `timelock_delay`     | Delay before execution      | 2-7 days        | 172,800 seconds |
 
 ### Calculating Values
 
 **Blocks to Time** (assuming 5 second blocks):
+
 - 1 day = 17,280 blocks
 - 3 days = 51,840 blocks
 - 7 days = 120,960 blocks
 
 **Quorum Calculation**:
+
 ```
 Required Votes = (Total Supply * quorum_numerator) / 100
 Example: 10M supply * 40 / 100 = 4M votes required
@@ -237,6 +258,7 @@ Example: 10M supply * 40 / 100 = 4M votes required
 ## 🚀 Deployment Guide
 
 ### Prerequisites
+
 ```bash
 # Install Soroban CLI
 cargo install --locked soroban-cli
@@ -253,6 +275,7 @@ rustup target add wasm32-unknown-unknown
 Each contract must be built separately using feature flags:
 
 **1. Build Governance Token**
+
 ```bash
 cd contracts/governance
 cargo build --target wasm32-unknown-unknown --release --no-default-features --features token
@@ -260,24 +283,28 @@ mv target/wasm32-unknown-unknown/release/governance.wasm target/wasm32-unknown-u
 ```
 
 **2. Build Timelock**
+
 ```bash
 cargo build --target wasm32-unknown-unknown --release --no-default-features --features timelock
 mv target/wasm32-unknown-unknown/release/governance.wasm target/wasm32-unknown-unknown/release/governance_timelock.wasm
 ```
 
 **3. Build Voting System**
+
 ```bash
 cargo build --target wasm32-unknown-unknown --release --no-default-features --features voting
 mv target/wasm32-unknown-unknown/release/governance.wasm target/wasm32-unknown-unknown/release/governance_voting.wasm
 ```
 
 **4. Build Proposal Manager**
+
 ```bash
 cargo build --target wasm32-unknown-unknown --release --no-default-features --features proposals
 mv target/wasm32-unknown-unknown/release/governance.wasm target/wasm32-unknown-unknown/release/governance_proposals.wasm
 ```
 
 ### Optimize WASM (Optional)
+
 ```bash
 soroban contract optimize --wasm target/wasm32-unknown-unknown/release/governance_token.wasm
 soroban contract optimize --wasm target/wasm32-unknown-unknown/release/governance_timelock.wasm
@@ -288,6 +315,7 @@ soroban contract optimize --wasm target/wasm32-unknown-unknown/release/governanc
 ### Deploy to Network
 
 **1. Deploy Governance Token**
+
 ```bash
 TOKEN_ID=$(soroban contract deploy \
   --wasm target/wasm32-unknown-unknown/release/governance_token.wasm \
@@ -310,6 +338,7 @@ soroban contract invoke \
 ```
 
 **2. Deploy Timelock**
+
 ```bash
 TIMELOCK_ID=$(soroban contract deploy \
   --wasm target/wasm32-unknown-unknown/release/governance_timelock.wasm \
@@ -322,6 +351,7 @@ echo "Timelock deployed: $TIMELOCK_ID"
 ```
 
 **3. Deploy Voting System**
+
 ```bash
 VOTING_ID=$(soroban contract deploy \
   --wasm target/wasm32-unknown-unknown/release/governance_voting.wasm \
@@ -332,6 +362,7 @@ echo "Voting System deployed: $VOTING_ID"
 ```
 
 **4. Deploy Proposal Manager**
+
 ```bash
 PROPOSAL_ID=$(soroban contract deploy \
   --wasm target/wasm32-unknown-unknown/release/governance_proposals.wasm \
@@ -371,12 +402,14 @@ soroban contract invoke \
 ## 🧪 Testing
 
 ### Run All Tests
+
 ```bash
 cd contracts/governance
 cargo test --lib
 ```
 
 **Result**: ✅ **22/22 PASSING (100%)**
+
 ```
 test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 ```
@@ -395,5 +428,3 @@ test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 - [x] Grace period for execution ✅ TESTED
 - [x] Cancellation rights ✅ TESTED
 - [x] Event emission for transparency ✅ VERIFIED
-
-

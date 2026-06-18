@@ -1,5 +1,5 @@
 export interface StellarConfig {
-  network: 'testnet' | 'mainnet';
+  network: "testnet" | "mainnet";
   horizonUrl?: string;
   apiKey?: string;
 }

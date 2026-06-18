@@ -1,6 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index, CreateDateColumn } from 'typeorm';
-import { Account } from './Account';
-import 'reflect-metadata';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  Index,
+  CreateDateColumn,
+} from "typeorm";
+import { Account } from "./Account";
+import "reflect-metadata";
 
 @Entity()
 @Index(["transactionId"])
@@ -24,7 +31,9 @@ export class Transaction {
   @Column({ type: "timestamp" })
   timestamp!: Date;
 
-  @ManyToOne(() => Account, account => account.transactions, { onDelete: "CASCADE" })
+  @ManyToOne(() => Account, (account) => account.transactions, {
+    onDelete: "CASCADE",
+  })
   account!: Account;
 
   @CreateDateColumn()

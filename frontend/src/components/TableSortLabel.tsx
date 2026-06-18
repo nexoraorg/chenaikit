@@ -1,10 +1,10 @@
-import React from 'react';
-import { Box, IconButton, SvgIcon } from '@mui/material';
+import React from "react";
+import { Box, IconButton, SvgIcon } from "@mui/material";
 import {
   ArrowUpward as ArrowUpwardIcon,
   ArrowDownward as ArrowDownwardIcon,
   UnfoldMore as UnfoldMoreIcon,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 
 export interface SortDirection {
   id: string;
@@ -20,7 +20,7 @@ export interface TableSortLabelProps {
   style?: React.CSSProperties;
 }
 
-const sortPriorityColors = ['#1976d2', '#4caf50', '#ff9800'];
+const sortPriorityColors = ["#1976d2", "#4caf50", "#ff9800"];
 
 const TableSortLabel: React.FC<TableSortLabelProps> = ({
   columnId,
@@ -30,7 +30,7 @@ const TableSortLabel: React.FC<TableSortLabelProps> = ({
   onToggleSort,
   style,
 }) => {
-  const sortIndex = sortDirections.findIndex(s => s.id === columnId);
+  const sortIndex = sortDirections.findIndex((s) => s.id === columnId);
   const isSorted = sortIndex !== -1;
   const isDesc = isSorted && sortDirections[sortIndex].desc;
 
@@ -38,35 +38,43 @@ const TableSortLabel: React.FC<TableSortLabelProps> = ({
     <Box
       component="span"
       sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
+        display: "inline-flex",
+        alignItems: "center",
         gap: 0.5,
-        cursor: 'pointer',
-        userSelect: 'none',
+        cursor: "pointer",
+        userSelect: "none",
         ...style,
       }}
       onClick={(e) => onToggleSort(columnId, e.shiftKey)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onToggleSort(columnId, e.shiftKey);
         }
       }}
-      aria-label={`Sort by ${label}${isSorted ? ` (${isDesc ? 'descending' : 'ascending'})` : ''}`}
+      aria-label={`Sort by ${label}${isSorted ? ` (${isDesc ? "descending" : "ascending"})` : ""}`}
     >
       {label}
       <SvgIcon
         sx={{
           fontSize: 16,
           opacity: isSorted ? 1 : 0.3,
-          transition: 'opacity 0.2s',
-          color: isSorted ? sortPriorityColors[Math.min(sortIndex, sortPriorityColors.length - 1)] : 'inherit',
+          transition: "opacity 0.2s",
+          color: isSorted
+            ? sortPriorityColors[
+                Math.min(sortIndex, sortPriorityColors.length - 1)
+              ]
+            : "inherit",
         }}
       >
         {isSorted ? (
-          isDesc ? <ArrowDownwardIcon /> : <ArrowUpwardIcon />
+          isDesc ? (
+            <ArrowDownwardIcon />
+          ) : (
+            <ArrowUpwardIcon />
+          )
         ) : (
           <UnfoldMoreIcon />
         )}
@@ -76,8 +84,11 @@ const TableSortLabel: React.FC<TableSortLabelProps> = ({
           component="span"
           sx={{
             fontSize: 10,
-            fontWeight: 'bold',
-            color: sortPriorityColors[Math.min(sortIndex, sortPriorityColors.length - 1)],
+            fontWeight: "bold",
+            color:
+              sortPriorityColors[
+                Math.min(sortIndex, sortPriorityColors.length - 1)
+              ],
             lineHeight: 1,
           }}
         >

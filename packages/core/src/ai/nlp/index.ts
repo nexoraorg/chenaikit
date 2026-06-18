@@ -1,4 +1,3 @@
-export * from './types';
-export * from './intents';
-export * from './service';
-
+export * from "./types";
+export * from "./intents";
+export * from "./service";

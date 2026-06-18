@@ -5,6 +5,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 ## Pre-Upgrade Phase
 
 ### Planning
+
 - [ ] Review upgrade requirements and scope
 - [ ] Identify breaking changes
 - [ ] Document storage migration needs
@@ -14,6 +15,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Schedule upgrade window
 
 ### Development
+
 - [ ] Implement new features/fixes
 - [ ] Add version-specific migration logic
 - [ ] Update contract version number
@@ -23,6 +25,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Security review (if major changes)
 
 ### Testing
+
 - [ ] All unit tests passing
 - [ ] Integration tests passing
 - [ ] Upgrade tests passing
@@ -34,6 +37,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 ## Testnet Deployment Phase
 
 ### Preparation
+
 - [ ] Build optimized WASM
 - [ ] Upload WASM to testnet
 - [ ] Verify WASM hash
@@ -41,6 +45,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Document current version
 
 ### Execution
+
 - [ ] Deploy to testnet
 - [ ] Initialize if new deployment
 - [ ] Perform upgrade on testnet
@@ -48,6 +53,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Check version updated correctly
 
 ### Verification
+
 - [ ] Test all contract functions
 - [ ] Verify storage integrity
 - [ ] Check event emissions
@@ -59,6 +65,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 ## Mainnet Deployment Phase
 
 ### Pre-Deployment
+
 - [ ] Testnet testing completed successfully
 - [ ] All stakeholders notified (48 hours notice)
 - [ ] Upgrade proposal created and approved
@@ -69,6 +76,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Support team on standby
 
 ### Deployment Window
+
 - [ ] Announce upgrade start
 - [ ] Verify admin credentials
 - [ ] Build and upload WASM to mainnet
@@ -78,6 +86,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Verify upgrade success
 
 ### Immediate Post-Upgrade (First Hour)
+
 - [ ] Check contract version
 - [ ] Test critical functions
 - [ ] Verify storage integrity
@@ -88,6 +97,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Check for any anomalies
 
 ### Extended Monitoring (24 Hours)
+
 - [ ] Monitor contract behavior
 - [ ] Track error rates
 - [ ] Monitor performance metrics
@@ -97,6 +107,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Update status page
 
 ### Post-Upgrade (7 Days)
+
 - [ ] Continued monitoring
 - [ ] Collect metrics
 - [ ] Analyze performance
@@ -108,12 +119,14 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 ## Rollback Phase (If Needed)
 
 ### Decision
+
 - [ ] Critical issue identified
 - [ ] Rollback criteria met
 - [ ] Stakeholders notified
 - [ ] Rollback approved
 
 ### Execution
+
 - [ ] Announce rollback
 - [ ] Execute rollback procedure
 - [ ] Verify rollback success
@@ -122,6 +135,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Monitor for stability
 
 ### Post-Rollback
+
 - [ ] Document rollback reason
 - [ ] Analyze root cause
 - [ ] Plan fix for issues
@@ -131,6 +145,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 ## Documentation Phase
 
 ### During Upgrade
+
 - [ ] Log all actions taken
 - [ ] Record timestamps
 - [ ] Document any issues
@@ -138,6 +153,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Record version changes
 
 ### After Upgrade
+
 - [ ] Update changelog
 - [ ] Update API documentation
 - [ ] Update user guides
@@ -148,6 +164,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 ## Communication Checklist
 
 ### Pre-Upgrade
+
 - [ ] Notify stakeholders (48 hours)
 - [ ] Post announcement on Discord/Twitter
 - [ ] Update status page
@@ -155,12 +172,14 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Document expected downtime
 
 ### During Upgrade
+
 - [ ] Post start notification
 - [ ] Provide status updates
 - [ ] Respond to questions
 - [ ] Update status page
 
 ### Post-Upgrade
+
 - [ ] Announce completion
 - [ ] Share upgrade summary
 - [ ] Thank participants
@@ -170,6 +189,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 ## Emergency Procedures
 
 ### If Upgrade Fails
+
 1. [ ] Stop upgrade process
 2. [ ] Assess situation
 3. [ ] Determine if rollback needed
@@ -179,6 +199,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 7. [ ] Plan remediation
 
 ### If Critical Bug Found
+
 1. [ ] Assess severity
 2. [ ] Determine if immediate rollback needed
 3. [ ] Execute emergency rollback
@@ -191,6 +212,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 ## Governance Checklist (Multi-Sig Upgrades)
 
 ### Proposal Phase
+
 - [ ] Create upgrade proposal
 - [ ] Submit to governance system
 - [ ] Provide detailed description
@@ -198,6 +220,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Attach test results
 
 ### Approval Phase
+
 - [ ] Share proposal with approvers
 - [ ] Answer questions
 - [ ] Collect required approvals
@@ -205,6 +228,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Check proposal not expired
 
 ### Execution Phase
+
 - [ ] Verify all approvals valid
 - [ ] Execute through governance
 - [ ] Verify execution success
@@ -213,6 +237,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 ## Security Checklist
 
 ### Before Upgrade
+
 - [ ] Admin keys secured
 - [ ] Multi-sig setup verified
 - [ ] Access controls reviewed
@@ -220,6 +245,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] No known vulnerabilities
 
 ### During Upgrade
+
 - [ ] Use secure connection
 - [ ] Verify transaction details
 - [ ] Double-check WASM hash
@@ -227,6 +253,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Monitor for suspicious activity
 
 ### After Upgrade
+
 - [ ] Verify no unauthorized changes
 - [ ] Check access controls intact
 - [ ] Monitor for exploits
@@ -236,6 +263,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 ## Metrics to Track
 
 ### Performance
+
 - [ ] Transaction success rate
 - [ ] Average gas cost
 - [ ] Response time
@@ -243,6 +271,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Throughput
 
 ### Business
+
 - [ ] Active users
 - [ ] Transaction volume
 - [ ] Feature adoption
@@ -250,6 +279,7 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 - [ ] Support tickets
 
 ### Technical
+
 - [ ] Contract version
 - [ ] Storage usage
 - [ ] Event emissions
@@ -259,19 +289,22 @@ Use this checklist when performing contract upgrades to ensure all steps are com
 ## Sign-Off
 
 ### Pre-Upgrade Approval
-- [ ] Developer: _________________ Date: _______
-- [ ] Security: __________________ Date: _______
-- [ ] Operations: ________________ Date: _______
-- [ ] Product: ___________________ Date: _______
+
+- [ ] Developer: ********\_******** Date: **\_\_\_**
+- [ ] Security: ********\_\_******** Date: **\_\_\_**
+- [ ] Operations: ******\_\_\_\_****** Date: **\_\_\_**
+- [ ] Product: ********\_\_\_******** Date: **\_\_\_**
 
 ### Post-Upgrade Verification
-- [ ] Developer: _________________ Date: _______
-- [ ] Operations: ________________ Date: _______
-- [ ] QA: _______________________ Date: _______
+
+- [ ] Developer: ********\_******** Date: **\_\_\_**
+- [ ] Operations: ******\_\_\_\_****** Date: **\_\_\_**
+- [ ] QA: **********\_\_\_********** Date: **\_\_\_**
 
 ### Final Sign-Off
-- [ ] Project Lead: ______________ Date: _______
-- [ ] Technical Lead: ____________ Date: _______
+
+- [ ] Project Lead: ******\_\_****** Date: **\_\_\_**
+- [ ] Technical Lead: ****\_\_\_\_**** Date: **\_\_\_**
 
 ---
 
@@ -284,21 +317,25 @@ Use this section to document any specific notes, issues, or observations during 
 ## Quick Reference
 
 ### Upgrade Command
+
 ```bash
 ./contracts/scripts/upgrade-contract.sh <contract-name> <network>
 ```
 
 ### Rollback Command
+
 ```bash
 ./contracts/scripts/rollback-contract.sh <contract-name> <network>
 ```
 
 ### Check Version
+
 ```bash
 soroban contract invoke --id $CONTRACT_ID --fn get_version
 ```
 
 ### Get Upgrade History
+
 ```bash
 soroban contract invoke --id $CONTRACT_ID --fn get_upgrade_history
 ```

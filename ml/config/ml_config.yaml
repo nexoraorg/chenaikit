@@ -45,7 +45,7 @@ models:
       random_state: 42
     validation_split: 0.2
     cross_validation_folds: 5
-  
+
   fraud_detection:
     type: "random_forest"
     hyperparameters:

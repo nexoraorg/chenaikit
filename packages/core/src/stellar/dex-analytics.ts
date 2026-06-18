@@ -2,8 +2,8 @@
  * DexAnalytics — statistics and analytics for Stellar DEX trading pairs.
  */
 
-import { DexConfig, Asset, DexStats, DexTrade, OrderBook } from '../types/dex';
-import { DexConnector, withRetry } from './dex';
+import { DexConfig, Asset, DexStats, DexTrade, OrderBook } from "../types/dex";
+import { DexConnector, withRetry } from "./dex";
 
 export class DexAnalytics {
   private connector: DexConnector;
@@ -13,9 +13,9 @@ export class DexAnalytics {
     this.connector = new DexConnector(config);
     this.horizonUrl =
       config.horizonUrl ??
-      (config.network === 'mainnet'
-        ? 'https://horizon.stellar.org'
-        : 'https://horizon-testnet.stellar.org');
+      (config.network === "mainnet"
+        ? "https://horizon.stellar.org"
+        : "https://horizon-testnet.stellar.org");
   }
 
   /**
@@ -25,18 +25,33 @@ export class DexAnalytics {
    * @param counter - Counter asset
    * @param limit - Number of trades to return (default 50)
    */
-  async getRecentTrades(base: Asset, counter: Asset, limit = 50): Promise<DexTrade[]> {
+  async getRecentTrades(
+    base: Asset,
+    counter: Asset,
+    limit = 50,
+  ): Promise<DexTrade[]> {
     const getAssetType = (a: Asset) =>
-      !a.issuer ? 'native' : a.code.length > 4 ? 'credit_alphanum12' : 'credit_alphanum4';
+      !a.issuer
+        ? "native"
+        : a.code.length > 4
+          ? "credit_alphanum12"
+          : "credit_alphanum4";
 
     return withRetry(async () => {
       const params = new URLSearchParams({
         base_asset_type: getAssetType(base),
-        ...(base.issuer ? { base_asset_code: base.code, base_asset_issuer: base.issuer } : {}),
+        ...(base.issuer
+          ? { base_asset_code: base.code, base_asset_issuer: base.issuer }
+          : {}),
         counter_asset_type: getAssetType(counter),
-        ...(counter.issuer ? { counter_asset_code: counter.code, counter_asset_issuer: counter.issuer } : {}),
+        ...(counter.issuer
+          ? {
+              counter_asset_code: counter.code,
+              counter_asset_issuer: counter.issuer,
+            }
+          : {}),
         limit: String(limit),
-        order: 'desc',
+        order: "desc",
       });
 
       const res = await fetch(`${this.horizonUrl}/trades?${params}`);
@@ -45,15 +60,13 @@ export class DexAnalytics {
       const data = await res.json();
       return (data._embedded?.records ?? []).map((t: any) => ({
         id: t.id,
-        offerId: t.offer_id ?? '',
-        baseAccount: t.base_account ?? '',
+        offerId: t.offer_id ?? "",
+        baseAccount: t.base_account ?? "",
         baseAmount: t.base_amount,
         baseAsset: base,
         counterAmount: t.counter_amount,
         counterAsset: counter,
-        price: t.price?.n && t.price?.d
-          ? String(t.price.n / t.price.d)
-          : '0',
+        price: t.price?.n && t.price?.d ? String(t.price.n / t.price.d) : "0",
         timestamp: t.ledger_close_time,
       }));
     }, 3);
@@ -68,26 +81,29 @@ export class DexAnalytics {
     const now = Date.now();
     const cutoff = now - 24 * 60 * 60 * 1000;
     const recent = trades.filter(
-      t => new Date(t.timestamp).getTime() > cutoff
+      (t) => new Date(t.timestamp).getTime() > cutoff,
     );
 
     if (recent.length === 0) {
       return {
         asset: base,
-        baseVolume: '0',
-        counterVolume: '0',
+        baseVolume: "0",
+        counterVolume: "0",
         tradeCount: 0,
-        open: '0',
-        high: '0',
-        low: '0',
-        close: '0',
+        open: "0",
+        high: "0",
+        low: "0",
+        close: "0",
         timestamp: new Date().toISOString(),
       };
     }
 
-    const prices = recent.map(t => parseFloat(t.price));
+    const prices = recent.map((t) => parseFloat(t.price));
     const baseVolume = recent.reduce((s, t) => s + parseFloat(t.baseAmount), 0);
-    const counterVolume = recent.reduce((s, t) => s + parseFloat(t.counterAmount), 0);
+    const counterVolume = recent.reduce(
+      (s, t) => s + parseFloat(t.counterAmount),
+      0,
+    );
 
     return {
       asset: base,
@@ -107,8 +123,8 @@ export class DexAnalytics {
    */
   async getSpread(base: Asset, counter: Asset): Promise<number> {
     const book: OrderBook = await this.connector.getOrderBook(base, counter, 1);
-    const bestBid = parseFloat(book.bids[0]?.price ?? '0');
-    const bestAsk = parseFloat(book.asks[0]?.price ?? '0');
+    const bestBid = parseFloat(book.bids[0]?.price ?? "0");
+    const bestAsk = parseFloat(book.asks[0]?.price ?? "0");
     if (bestBid === 0 || bestAsk === 0) return 0;
     return ((bestAsk - bestBid) / bestAsk) * 100;
   }
@@ -118,7 +134,7 @@ export class DexAnalytics {
    */
   async getVWAP(base: Asset, counter: Asset, limit = 100): Promise<string> {
     const trades = await this.getRecentTrades(base, counter, limit);
-    if (trades.length === 0) return '0';
+    if (trades.length === 0) return "0";
 
     let numerator = 0;
     let denominator = 0;
@@ -130,7 +146,7 @@ export class DexAnalytics {
       denominator += volume;
     }
 
-    return denominator === 0 ? '0' : (numerator / denominator).toFixed(7);
+    return denominator === 0 ? "0" : (numerator / denominator).toFixed(7);
   }
 
   /**
@@ -141,10 +157,10 @@ export class DexAnalytics {
     base: Asset,
     counter: Asset,
     tradeAmount: string,
-    side: 'buy' | 'sell'
+    side: "buy" | "sell",
   ): Promise<number> {
     const book = await this.connector.getOrderBook(base, counter, 50);
-    const offers = side === 'buy' ? book.asks : book.bids;
+    const offers = side === "buy" ? book.asks : book.bids;
 
     if (offers.length === 0) return 100;
 

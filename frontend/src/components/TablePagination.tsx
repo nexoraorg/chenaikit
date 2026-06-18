@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 import {
   TablePagination as MuiTablePagination,
   Box,
   Typography,
-} from '@mui/material';
+} from "@mui/material";
 
 export interface TablePaginationProps {
   pageIndex: number;
@@ -24,13 +24,18 @@ const TablePagination: React.FC<TablePaginationProps> = ({
   onPageChange,
   onPageSizeChange,
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
-  labelRowsPerPage = 'Rows per page:',
+  labelRowsPerPage = "Rows per page:",
 }) => {
-  const handleChangePage = (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+  const handleChangePage = (
+    _event: React.MouseEvent<HTMLButtonElement> | null,
+    newPage: number,
+  ) => {
     onPageChange(newPage);
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     onPageSizeChange(parseInt(event.target.value, 10));
     onPageChange(0);
   };
@@ -41,19 +46,17 @@ const TablePagination: React.FC<TablePaginationProps> = ({
   return (
     <Box
       sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
         px: 2,
         borderTop: 1,
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
+        borderColor: "divider",
+        bgcolor: "background.paper",
       }}
     >
       <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
-        {totalRows > 0
-          ? `${startRow}-${endRow} of ${totalRows}`
-          : '0 rows'}
+        {totalRows > 0 ? `${startRow}-${endRow} of ${totalRows}` : "0 rows"}
       </Typography>
       <MuiTablePagination
         component="div"
@@ -65,8 +68,8 @@ const TablePagination: React.FC<TablePaginationProps> = ({
         rowsPerPageOptions={pageSizeOptions}
         labelRowsPerPage={labelRowsPerPage}
         sx={{
-          '.MuiTablePagination-toolbar': { paddingLeft: 0 },
-          '.MuiTablePagination-spacer': { display: 'none' },
+          ".MuiTablePagination-toolbar": { paddingLeft: 0 },
+          ".MuiTablePagination-spacer": { display: "none" },
         }}
       />
     </Box>

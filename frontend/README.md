@@ -37,6 +37,7 @@ pnpm test
 ## Development
 
 The frontend uses:
+
 - **React 18** - Modern React with hooks
 - **TypeScript** - Type-safe development
 - **Material-UI** - Professional UI components

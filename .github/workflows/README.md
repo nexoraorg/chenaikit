@@ -5,6 +5,7 @@ This directory contains GitHub Actions workflows for the ChenAIKit project, orga
 ## Workflows
 
 ### 🔧 Backend CI (`backend.yml`)
+
 - **Triggers**: Changes to `packages/core/**`, `packages/cli/**`, or `backend/**`
 - **Purpose**: Build and test TypeScript packages (core SDK and CLI)
 - **Actions**:
@@ -14,6 +15,7 @@ This directory contains GitHub Actions workflows for the ChenAIKit project, orga
   - Type checking
 
 ### ⛓️ Blockchain CI (`blockchain.yml`)
+
 - **Triggers**: Changes to `contracts/**` or blockchain-related code
 - **Purpose**: Build and test Soroban smart contracts
 - **Actions**:
@@ -23,6 +25,7 @@ This directory contains GitHub Actions workflows for the ChenAIKit project, orga
   - Format checking
 
 ### 🎨 Frontend CI (`frontend.yml`)
+
 - **Triggers**: Changes to `examples/**` or frontend components
 - **Purpose**: Build and test example applications
 - **Actions**:

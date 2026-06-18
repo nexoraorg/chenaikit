@@ -1,7 +1,7 @@
 // ChenAIKit Fraud Detection Component
 // TODO: Implement fraud detection component - See frontend-03-fraud-alerts.md issue template
 
-import React from 'react';
+import React from "react";
 
 const FraudDetection: React.FC = () => {
   return (

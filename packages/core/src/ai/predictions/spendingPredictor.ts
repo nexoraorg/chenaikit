@@ -1,15 +1,30 @@
-import { ConfidenceInterval, ForecastMetrics, ForecasterOptions, SpendingPrediction, SpendingPredictionResult, SpendingTransaction } from './types';
-import { TimeSeriesForecaster } from './timeSeriesForecaster';
+import {
+  ConfidenceInterval,
+  ForecastMetrics,
+  ForecasterOptions,
+  SpendingPrediction,
+  SpendingPredictionResult,
+  SpendingTransaction,
+} from "./types";
+import { TimeSeriesForecaster } from "./timeSeriesForecaster";
 
-function groupBy<T, K extends string | number>(items: T[], getKey: (i: T) => K): Record<K, T[]> {
-  return items.reduce((acc, item) => {
-    const key = getKey(item);
-    (acc[key] = acc[key] || []).push(item);
-    return acc;
-  }, {} as Record<K, T[]>);
+function groupBy<T, K extends string | number>(
+  items: T[],
+  getKey: (i: T) => K,
+): Record<K, T[]> {
+  return items.reduce(
+    (acc, item) => {
+      const key = getKey(item);
+      (acc[key] = acc[key] || []).push(item);
+      return acc;
+    },
+    {} as Record<K, T[]>,
+  );
 }
 
-function toDailySeries(transactions: SpendingTransaction[]): Map<string, number> {
+function toDailySeries(
+  transactions: SpendingTransaction[],
+): Map<string, number> {
   const map = new Map<string, number>();
   for (const t of transactions) {
     const day = new Date(t.date);
@@ -23,8 +38,15 @@ function toDailySeries(transactions: SpendingTransaction[]): Map<string, number>
 export class SpendingPredictor {
   private forecaster = new TimeSeriesForecaster();
 
-  predict(transactions: SpendingTransaction[], horizonDays: number, options: ForecasterOptions = {}): SpendingPredictionResult {
-    const byCategory = groupBy(transactions, (t) => t.category || 'uncategorized');
+  predict(
+    transactions: SpendingTransaction[],
+    horizonDays: number,
+    options: ForecasterOptions = {},
+  ): SpendingPredictionResult {
+    const byCategory = groupBy(
+      transactions,
+      (t) => t.category || "uncategorized",
+    );
     const predictions: SpendingPrediction[] = [];
     const metricsCollect: ForecastMetrics[] = [];
 
@@ -46,19 +68,40 @@ export class SpendingPredictor {
       const combinedCI: ConfidenceInterval | undefined = result.points[0]?.ci
         ? {
             level: result.points[0].ci.level,
-            lower: result.points.reduce((sum, p) => sum + (p.ci?.lower ?? p.value), 0),
-            upper: result.points.reduce((sum, p) => sum + (p.ci?.upper ?? p.value), 0),
+            lower: result.points.reduce(
+              (sum, p) => sum + (p.ci?.lower ?? p.value),
+              0,
+            ),
+            upper: result.points.reduce(
+              (sum, p) => sum + (p.ci?.upper ?? p.value),
+              0,
+            ),
           }
         : undefined;
 
-      predictions.push({ category, amount: total, periodStart: start, periodEnd: end, ci: combinedCI });
+      predictions.push({
+        category,
+        amount: total,
+        periodStart: start,
+        periodEnd: end,
+        ci: combinedCI,
+      });
     }
 
     const avgMetrics: ForecastMetrics = {
-      rmse: metricsCollect.length ? metricsCollect.reduce((a, m) => a + m.rmse, 0) / metricsCollect.length : 0,
-      mae: metricsCollect.length ? metricsCollect.reduce((a, m) => a + m.mae, 0) / metricsCollect.length : 0,
-      mape: metricsCollect.length ? metricsCollect.reduce((a, m) => a + m.mape, 0) / metricsCollect.length : 0,
-      coverage: metricsCollect.length ? metricsCollect.reduce((a, m) => a + (m.coverage || 0), 0) / metricsCollect.length : undefined,
+      rmse: metricsCollect.length
+        ? metricsCollect.reduce((a, m) => a + m.rmse, 0) / metricsCollect.length
+        : 0,
+      mae: metricsCollect.length
+        ? metricsCollect.reduce((a, m) => a + m.mae, 0) / metricsCollect.length
+        : 0,
+      mape: metricsCollect.length
+        ? metricsCollect.reduce((a, m) => a + m.mape, 0) / metricsCollect.length
+        : 0,
+      coverage: metricsCollect.length
+        ? metricsCollect.reduce((a, m) => a + (m.coverage || 0), 0) /
+          metricsCollect.length
+        : undefined,
     };
 
     return { predictions, metrics: avgMetrics };

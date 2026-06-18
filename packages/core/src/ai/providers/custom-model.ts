@@ -1,5 +1,5 @@
-import { AIModel, ModelConfig, ModelInput, ModelOutput } from '../base-model';
-import { CustomModelConfig } from '../types';
+import { AIModel, ModelConfig, ModelInput, ModelOutput } from "../base-model";
+import { CustomModelConfig } from "../types";
 
 /**
  * Custom model implementation
@@ -14,16 +14,16 @@ export class CustomModel extends AIModel {
       ...config,
       baseUrl: config.baseUrl || config.customEndpoint,
     });
-    
+
     this.modelVersion = config.modelVersion;
     this.customEndpoint = config.customEndpoint;
   }
 
   protected async makeRequest(input: ModelInput): Promise<ModelOutput> {
     const requestBody = this.buildRequestBody(input);
-    
-    const response = await this.httpClient.post('/', requestBody);
-    
+
+    const response = await this.httpClient.post("/", requestBody);
+
     return this.parseResponse(response);
   }
 
@@ -52,10 +52,10 @@ export class CustomModel extends AIModel {
    */
   private parseResponse(response: any): ModelOutput {
     const data = response.data;
-    
+
     // Try to extract text from common response formats
     let text: string;
-    
+
     if (data.text) {
       text = data.text;
     } else if (data.response) {
@@ -64,7 +64,7 @@ export class CustomModel extends AIModel {
       text = data.output;
     } else if (data.content) {
       text = data.content;
-    } else if (typeof data === 'string') {
+    } else if (typeof data === "string") {
       text = data;
     } else {
       text = JSON.stringify(data);
@@ -75,8 +75,8 @@ export class CustomModel extends AIModel {
       tokensUsed: data.tokens_used || data.tokensUsed,
       metadata: {
         model: this.modelVersion,
-        finishReason: data.finish_reason || 'stop',
-        provider: 'custom',
+        finishReason: data.finish_reason || "stop",
+        provider: "custom",
       },
       rawResponse: data,
     };
@@ -93,7 +93,7 @@ export class CustomModel extends AIModel {
       streaming: false,
       batchProcessing: true,
       maxContextLength: 2048,
-      languages: ['en'],
+      languages: ["en"],
     };
   }
 

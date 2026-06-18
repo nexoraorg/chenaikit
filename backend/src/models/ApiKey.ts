@@ -1,6 +1,9 @@
-import { ApiKey as PrismaApiKey, ApiUsage as PrismaApiUsage } from '@prisma/client';
+import {
+  ApiKey as PrismaApiKey,
+  ApiUsage as PrismaApiUsage,
+} from "@prisma/client";
 
-export type ApiTier = 'FREE' | 'PRO' | 'ENTERPRISE';
+export type ApiTier = "FREE" | "PRO" | "ENTERPRISE";
 
 export interface ApiKeyCreateInput {
   name: string;
@@ -77,7 +80,7 @@ export class ApiKey {
     public lastUsedAt: Date,
     public usageQuota: number | null,
     public currentUsage: number,
-    public usageResetAt: Date
+    public usageResetAt: Date,
   ) {}
 
   static fromPrisma(prismaApiKey: PrismaApiKey): ApiKey {
@@ -88,14 +91,14 @@ export class ApiKey {
       prismaApiKey.tier as ApiTier,
       prismaApiKey.userId,
       prismaApiKey.isActive,
-      JSON.parse(prismaApiKey.allowedIps || '[]'),
-      JSON.parse(prismaApiKey.allowedPaths || '[]'),
+      JSON.parse(prismaApiKey.allowedIps || "[]"),
+      JSON.parse(prismaApiKey.allowedPaths || "[]"),
       prismaApiKey.createdAt,
       prismaApiKey.expiresAt,
       prismaApiKey.lastUsedAt,
       prismaApiKey.usageQuota,
       prismaApiKey.currentUsage,
-      prismaApiKey.usageResetAt
+      prismaApiKey.usageResetAt,
     );
   }
 
@@ -110,31 +113,37 @@ export class ApiKey {
 
   isPathAllowed(path: string): boolean {
     if (this.allowedPaths.length === 0) return true;
-    return this.allowedPaths.some(pattern => {
-      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+    return this.allowedPaths.some((pattern) => {
+      const regex = new RegExp(pattern.replace(/\*/g, ".*"));
       return regex.test(path);
     });
   }
 
   hasQuotaExceeded(): boolean {
     if (!this.usageQuota) return false;
-    
+
     const now = new Date();
     const resetDate = new Date(this.usageResetAt);
-    
+
     // Reset monthly quota if needed
-    if (now.getMonth() !== resetDate.getMonth() || now.getFullYear() !== resetDate.getFullYear()) {
+    if (
+      now.getMonth() !== resetDate.getMonth() ||
+      now.getFullYear() !== resetDate.getFullYear()
+    ) {
       return false;
     }
-    
+
     return this.currentUsage >= this.usageQuota;
   }
 
   needsQuotaReset(): boolean {
     const now = new Date();
     const resetDate = new Date(this.usageResetAt);
-    
-    return now.getMonth() !== resetDate.getMonth() || now.getFullYear() !== resetDate.getFullYear();
+
+    return (
+      now.getMonth() !== resetDate.getMonth() ||
+      now.getFullYear() !== resetDate.getFullYear()
+    );
   }
 }
 
@@ -150,7 +159,7 @@ export class ApiUsage {
     public responseSize: number,
     public ip: string,
     public userAgent: string | null,
-    public timestamp: Date
+    public timestamp: Date,
   ) {}
 
   static fromPrisma(prismaApiUsage: PrismaApiUsage): ApiUsage {
@@ -165,7 +174,7 @@ export class ApiUsage {
       prismaApiUsage.responseSize,
       prismaApiUsage.ip,
       prismaApiUsage.userAgent,
-      prismaApiUsage.timestamp
+      prismaApiUsage.timestamp,
     );
   }
 }
@@ -177,7 +186,7 @@ export const API_TIER_CONFIGS: ApiTierConfig = {
       max: 100,
     },
     quota: 1000, // 1000 requests per month
-    features: ['basic_access', 'rate_limiting']
+    features: ["basic_access", "rate_limiting"],
   },
   PRO: {
     rateLimit: {
@@ -185,7 +194,12 @@ export const API_TIER_CONFIGS: ApiTierConfig = {
       max: 1000,
     },
     quota: 100000, // 100k requests per month
-    features: ['basic_access', 'rate_limiting', 'analytics', 'priority_support']
+    features: [
+      "basic_access",
+      "rate_limiting",
+      "analytics",
+      "priority_support",
+    ],
   },
   ENTERPRISE: {
     rateLimit: {
@@ -193,6 +207,13 @@ export const API_TIER_CONFIGS: ApiTierConfig = {
       max: 10000,
     },
     quota: 10000000, // 10M requests per month
-    features: ['basic_access', 'rate_limiting', 'analytics', 'priority_support', 'custom_integrations', 'dedicated_support']
-  }
+    features: [
+      "basic_access",
+      "rate_limiting",
+      "analytics",
+      "priority_support",
+      "custom_integrations",
+      "dedicated_support",
+    ],
+  },
 };

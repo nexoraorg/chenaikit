@@ -3,7 +3,7 @@
  */
 
 export interface DexConfig {
-  network: 'testnet' | 'mainnet';
+  network: "testnet" | "mainnet";
   horizonUrl?: string;
   slippageTolerance?: number; // 0.0 - 1.0, default 0.01 (1%)
   retries?: number;
@@ -132,5 +132,5 @@ export interface PriceData {
   asset: Asset;
   price: string;
   timestamp: string;
-  source: 'orderbook' | 'pool';
+  source: "orderbook" | "pool";
 }

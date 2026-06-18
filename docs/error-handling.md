@@ -22,7 +22,7 @@ ChenAIKit implements multiple layers of resilience:
 ### Basic Usage
 
 ```typescript
-import { retry, isRetryableError } from '@chenaikit/core/utils/retry';
+import { retry, isRetryableError } from "@chenaikit/core/utils/retry";
 
 const result = await retry(
   async () => {
@@ -35,14 +35,15 @@ const result = await retry(
     factor: 2,
     onRetry: (error, attempt) => {
       console.log(`Retry attempt ${attempt}: ${error.message}`);
-    }
-  }
+    },
+  },
 );
 ```
 
 ### Retryable Errors
 
 The system automatically retries:
+
 - Network errors (ECONNRESET, ETIMEDOUT, ENOTFOUND)
 - HTTP 429 (Rate Limit), 503 (Service Unavailable), 504 (Gateway Timeout)
 - HTTP 5xx server errors
@@ -62,24 +63,24 @@ Prevents overwhelming failing services by "opening" the circuit after repeated f
 ### Usage
 
 ```typescript
-import { CircuitBreaker } from '@chenaikit/core/utils/circuit-breaker';
+import { CircuitBreaker } from "@chenaikit/core/utils/circuit-breaker";
 
 const breaker = new CircuitBreaker(
   async (accountId: string) => {
     return await stellarAPI.getAccount(accountId);
   },
   {
-    failureThreshold: 5,      // Open after 5 failures
-    successThreshold: 2,       // Close after 2 successes in HALF_OPEN
-    timeout: 60000,            // Request timeout (60s)
-    resetTimeout: 30000,       // Try HALF_OPEN after 30s
+    failureThreshold: 5, // Open after 5 failures
+    successThreshold: 2, // Close after 2 successes in HALF_OPEN
+    timeout: 60000, // Request timeout (60s)
+    resetTimeout: 30000, // Try HALF_OPEN after 30s
     onStateChange: (state) => {
       console.log(`Circuit breaker: ${state}`);
-    }
-  }
+    },
+  },
 );
 
-const account = await breaker.execute('GXXX...');
+const account = await breaker.execute("GXXX...");
 ```
 
 ---
@@ -91,12 +92,12 @@ When AI services fail, the system uses rule-based fallbacks.
 ### Credit Scoring Fallback
 
 ```typescript
-import { AIServiceWithResilience } from '@chenaikit/core/services/ai-resilient';
+import { AIServiceWithResilience } from "@chenaikit/core/services/ai-resilient";
 
 const aiService = new AIServiceWithResilience({
   apiKey: process.env.AI_API_KEY,
-  endpoint: 'https://api.example.com',
-  fallbackEnabled: true
+  endpoint: "https://api.example.com",
+  fallbackEnabled: true,
 });
 
 const result = await aiService.calculateCreditScore(accountData);
@@ -104,6 +105,7 @@ const result = await aiService.calculateCreditScore(accountData);
 ```
 
 Fallback calculation:
+
 - Base score: 500
 - Balance factor: +50 per 10k units
 - Account age: +100 per year
@@ -113,6 +115,7 @@ Fallback calculation:
 ### Fraud Detection Fallback
 
 Simple rule-based detection:
+
 - Flag transactions > 100k
 - Flag high velocity (>10 tx/hour)
 - Confidence: 0.5
@@ -124,7 +127,11 @@ Simple rule-based detection:
 ### Setup
 
 ```typescript
-import { initSentry, sentryRequestHandler, sentryErrorHandler } from './middleware/errorTracking';
+import {
+  initSentry,
+  sentryRequestHandler,
+  sentryErrorHandler,
+} from "./middleware/errorTracking";
 
 initSentry(process.env.SENTRY_DSN!, process.env.NODE_ENV);
 
@@ -139,15 +146,17 @@ app.use(sentryErrorHandler());
 ### Manual Error Capture
 
 ```typescript
-import { captureError } from './middleware/errorTracking';
+import { captureError } from "./middleware/errorTracking";
 
 try {
   await riskyOperation();
 } catch (error) {
   captureError(error, {
     userId: user.id,
-    operation: 'riskyOperation',
-    context: { /* additional data */ }
+    operation: "riskyOperation",
+    context: {
+      /* additional data */
+    },
   });
   throw error;
 }
@@ -166,23 +175,23 @@ try {
 ### Register Custom Checks
 
 ```typescript
-import { registerHealthCheck } from './routes/health';
+import { registerHealthCheck } from "./routes/health";
 
-registerHealthCheck('database', async () => {
+registerHealthCheck("database", async () => {
   try {
-    await db.query('SELECT 1');
-    return { status: 'up' };
+    await db.query("SELECT 1");
+    return { status: "up" };
   } catch (error) {
-    return { status: 'down', error: error.message };
+    return { status: "down", error: error.message };
   }
 });
 
-registerHealthCheck('stellar', async () => {
+registerHealthCheck("stellar", async () => {
   try {
     await stellar.getNetwork();
-    return { status: 'up' };
+    return { status: "up" };
   } catch (error) {
-    return { status: 'down', error: error.message };
+    return { status: "down", error: error.message };
   }
 });
 ```
@@ -203,6 +212,7 @@ registerHealthCheck('stellar', async () => {
 ```
 
 Status codes:
+
 - `200` - Healthy
 - `207` - Degraded (some services down)
 - `503` - Unhealthy
@@ -214,9 +224,9 @@ Status codes:
 ### Setup
 
 ```typescript
-import { JobQueue } from './services/jobQueue';
+import { JobQueue } from "./services/jobQueue";
 
-const queue = new JobQueue('credit-scoring', process.env.REDIS_URL!);
+const queue = new JobQueue("credit-scoring", process.env.REDIS_URL!);
 
 queue.process(5, async (job) => {
   const { accountId } = job.data;
@@ -229,11 +239,11 @@ queue.process(5, async (job) => {
 
 ```typescript
 await queue.add(
-  { accountId: 'GXXX...', userId: '123' },
+  { accountId: "GXXX...", userId: "123" },
   {
     attempts: 3,
-    backoff: { type: 'exponential', delay: 2000 }
-  }
+    backoff: { type: "exponential", delay: 2000 },
+  },
 );
 ```
 
@@ -244,7 +254,7 @@ await queue.add(
 const failedJobs = await queue.getDeadLetterJobs();
 
 // Retry specific job
-await queue.retryDeadLetterJob('dlq-job-123');
+await queue.retryDeadLetterJob("dlq-job-123");
 ```
 
 ---
@@ -254,14 +264,14 @@ await queue.retryDeadLetterJob('dlq-job-123');
 ### Usage
 
 ```tsx
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 function App() {
   return (
     <ErrorBoundary
       fallback={<div>Custom error UI</div>}
       onError={(error, errorInfo) => {
-        console.error('App error:', error);
+        console.error("App error:", error);
       }}
     >
       <YourApp />
@@ -278,10 +288,9 @@ function App() {
 
 ```typescript
 // Combine retry + circuit breaker + fallback
-const result = await retry(
-  () => circuitBreaker.execute(data),
-  { maxAttempts: 3 }
-).catch(() => fallbackFunction(data));
+const result = await retry(() => circuitBreaker.execute(data), {
+  maxAttempts: 3,
+}).catch(() => fallbackFunction(data));
 ```
 
 ### 2. Set Appropriate Timeouts
@@ -294,11 +303,11 @@ const result = await retry(
 ### 3. Log with Context
 
 ```typescript
-console.error('Operation failed', {
+console.error("Operation failed", {
   userId,
-  operation: 'creditScore',
+  operation: "creditScore",
   attempt: 2,
-  error: error.message
+  error: error.message,
 });
 ```
 
@@ -343,13 +352,14 @@ AI_API_KEY=your-api-key
 
 ```typescript
 // Test retry logic
-const flaky = jest.fn()
-  .mockRejectedValueOnce(new Error('Fail 1'))
-  .mockRejectedValueOnce(new Error('Fail 2'))
-  .mockResolvedValueOnce('Success');
+const flaky = jest
+  .fn()
+  .mockRejectedValueOnce(new Error("Fail 1"))
+  .mockRejectedValueOnce(new Error("Fail 2"))
+  .mockResolvedValueOnce("Success");
 
 const result = await retry(flaky, { maxAttempts: 3 });
-expect(result).toBe('Success');
+expect(result).toBe("Success");
 ```
 
 ### Test Circuit Breaker
@@ -368,6 +378,7 @@ expect(breaker.getState()).toBe(CircuitState.OPEN);
 ## Monitoring & Alerts
 
 Set up alerts for:
+
 - Circuit breaker state changes
 - High retry rates (>20%)
 - Dead letter queue growth

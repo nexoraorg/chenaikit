@@ -1,4 +1,10 @@
-import React, { useMemo, useCallback, useRef, useState, useEffect } from 'react';
+import React, {
+  useMemo,
+  useCallback,
+  useRef,
+  useState,
+  useEffect,
+} from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -15,8 +21,8 @@ import {
   ColumnDef,
   FilterFn,
   Row,
-} from '@tanstack/react-table';
-import { List, useListRef } from 'react-window';
+} from "@tanstack/react-table";
+import { List, useListRef } from "react-window";
 import {
   Box,
   Checkbox,
@@ -34,7 +40,7 @@ import {
   Divider,
   useTheme,
   Button,
-} from '@mui/material';
+} from "@mui/material";
 import {
   ChevronRight as ChevronRightIcon,
   ExpandMore as ExpandMoreIcon,
@@ -42,12 +48,17 @@ import {
   Refresh as RefreshIcon,
   Inbox as InboxIcon,
   ErrorOutline as ErrorOutlineIcon,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 
-import TableSortLabel from './TableSortLabel';
-import TableFilter from './TableFilter';
-import TablePagination from './TablePagination';
-import type { FilterType, FilterOption, FilterValue, DateRangeValue } from './TableFilter';
+import TableSortLabel from "./TableSortLabel";
+import TableFilter from "./TableFilter";
+import TablePagination from "./TablePagination";
+import type {
+  FilterType,
+  FilterOption,
+  FilterValue,
+  DateRangeValue,
+} from "./TableFilter";
 
 export interface Column<T> {
   id?: string;
@@ -101,7 +112,7 @@ export interface DataTableProps<T> {
 
   getRowProps?: (row: T) => Record<string, unknown>;
 
-  density?: 'compact' | 'standard' | 'comfortable';
+  density?: "compact" | "standard" | "comfortable";
 }
 
 const ROW_HEIGHTS: Record<string, number> = {
@@ -119,13 +130,14 @@ const DEFAULT_CELL_PADDINGS: Record<string, { px: number; py: number }> = {
 function dateRangeFilterFn<T>(
   row: Row<T>,
   columnId: string,
-  filterValue: DateRangeValue
+  filterValue: DateRangeValue,
 ): boolean {
   if (!filterValue?.start && !filterValue?.end) return true;
   const value = row.getValue(columnId);
   if (!value) return false;
   const d = new Date(String(value)).getTime();
-  if (filterValue.start && d < new Date(filterValue.start).getTime()) return false;
+  if (filterValue.start && d < new Date(filterValue.start).getTime())
+    return false;
   if (filterValue.end) {
     const endDate = new Date(filterValue.end);
     endDate.setDate(endDate.getDate() + 1);
@@ -138,7 +150,7 @@ function DataTable<T extends object>({
   columns,
   data,
   loading = false,
-  emptyMessage = 'No data',
+  emptyMessage = "No data",
   error = null,
   onRetry,
 
@@ -169,7 +181,7 @@ function DataTable<T extends object>({
 
   getRowProps,
 
-  density = 'standard',
+  density = "standard",
 }: DataTableProps<T>) {
   const theme = useTheme();
   const listRef = useListRef();
@@ -182,7 +194,9 @@ function DataTable<T extends object>({
       try {
         const saved = localStorage.getItem(`datatable_sort_${persistKey}`);
         return saved ? (JSON.parse(saved) as SortingState) : [];
-      } catch { return []; }
+      } catch {
+        return [];
+      }
     }
     return [];
   });
@@ -192,7 +206,9 @@ function DataTable<T extends object>({
       try {
         const saved = localStorage.getItem(`datatable_filters_${persistKey}`);
         return saved ? (JSON.parse(saved) as ColumnFiltersState) : [];
-      } catch { return []; }
+      } catch {
+        return [];
+      }
     }
     return [];
   });
@@ -200,7 +216,7 @@ function DataTable<T extends object>({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [globalFilter, setGlobalFilter] = useState('');
+  const [globalFilter, setGlobalFilter] = useState("");
 
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -233,11 +249,15 @@ function DataTable<T extends object>({
   useEffect(() => {
     if (persistKey) {
       try {
-        const saved = localStorage.getItem(`datatable_visibility_${persistKey}`);
+        const saved = localStorage.getItem(
+          `datatable_visibility_${persistKey}`,
+        );
         if (saved) setColumnVisibility(JSON.parse(saved));
       } catch (_e) {
         localStorage.removeItem(`datatable_visibility_${persistKey}`);
-        console.warn(`Removed corrupt visibility data for key: datatable_visibility_${persistKey}`);
+        console.warn(
+          `Removed corrupt visibility data for key: datatable_visibility_${persistKey}`,
+        );
       }
     }
   }, [persistKey]);
@@ -257,14 +277,14 @@ function DataTable<T extends object>({
 
     if (enableRowSelection) {
       result.push({
-        id: 'select',
+        id: "select",
         header: ({ table }) => (
           <Checkbox
             checked={table.getIsAllRowsSelected()}
             indeterminate={table.getIsSomeRowsSelected()}
             onChange={table.getToggleAllRowsSelectedHandler()}
             size="small"
-            inputProps={{ 'aria-label': 'Select all rows' }}
+            inputProps={{ "aria-label": "Select all rows" }}
           />
         ),
         cell: ({ row }) => (
@@ -273,7 +293,7 @@ function DataTable<T extends object>({
             disabled={!row.getCanSelect()}
             onChange={row.getToggleSelectedHandler()}
             size="small"
-            inputProps={{ 'aria-label': `Select row ${row.id}` }}
+            inputProps={{ "aria-label": `Select row ${row.id}` }}
           />
         ),
         size: 48,
@@ -285,10 +305,13 @@ function DataTable<T extends object>({
       });
     }
 
-    if ((enableExpandableRows || renderSubRow) && !columns.some(c => c.id === 'expander')) {
+    if (
+      (enableExpandableRows || renderSubRow) &&
+      !columns.some((c) => c.id === "expander")
+    ) {
       result.push({
-        id: 'expander',
-        header: '',
+        id: "expander",
+        header: "",
         cell: ({ row }) => {
           if (!row.getCanExpand()) return null;
           return (
@@ -298,7 +321,7 @@ function DataTable<T extends object>({
                 e.stopPropagation();
                 row.toggleExpanded();
               }}
-              aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+              aria-label={row.getIsExpanded() ? "Collapse row" : "Expand row"}
             >
               {row.getIsExpanded() ? <ExpandMoreIcon /> : <ChevronRightIcon />}
             </IconButton>
@@ -331,27 +354,42 @@ function DataTable<T extends object>({
             return col.cell(info.getValue(), info.row.original);
           }
           const v = info.getValue();
-          if (v === null || v === undefined) return <Typography variant="body2" color="text.disabled">—</Typography>;
+          if (v === null || v === undefined)
+            return (
+              <Typography variant="body2" color="text.disabled">
+                —
+              </Typography>
+            );
           return String(v);
         },
-        filterFn: col.filterType === 'date-range'
-          ? (dateRangeFilterFn as FilterFn<T>)
-          : col.filterType === 'select'
-            ? 'equalsString'
-            : 'includesString',
+        filterFn:
+          col.filterType === "date-range"
+            ? (dateRangeFilterFn as FilterFn<T>)
+            : col.filterType === "select"
+              ? "equalsString"
+              : "includesString",
       };
       result.push(colDef);
     });
 
     return result;
-  }, [columns, enableRowSelection, enableExpandableRows, renderSubRow, enableSorting, enableFiltering, enableColumnResizing, enableColumnVisibility]);
+  }, [
+    columns,
+    enableRowSelection,
+    enableExpandableRows,
+    renderSubRow,
+    enableSorting,
+    enableFiltering,
+    enableColumnResizing,
+    enableColumnVisibility,
+  ]);
 
   const getRowIdFn = useCallback(
     (row: T, index: number, parent?: Row<T>) => {
       if (getRowId) return getRowId(row, index);
       return String(index);
     },
-    [getRowId]
+    [getRowId],
   );
 
   const table = useReactTable({
@@ -378,13 +416,16 @@ function DataTable<T extends object>({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
     getFilteredRowModel: enableFiltering ? getFilteredRowModel() : undefined,
-    getPaginationRowModel: enablePagination ? getPaginationRowModel() : undefined,
-    getExpandedRowModel: (enableExpandableRows || renderSubRow) ? getExpandedRowModel() : undefined,
+    getPaginationRowModel: enablePagination
+      ? getPaginationRowModel()
+      : undefined,
+    getExpandedRowModel:
+      enableExpandableRows || renderSubRow ? getExpandedRowModel() : undefined,
     enableSorting,
     enableMultiSort,
     enableRowSelection,
     enableExpanding: !!(enableExpandableRows || renderSubRow),
-    globalFilterFn: 'includesString',
+    globalFilterFn: "includesString",
   });
 
   useEffect(() => {
@@ -411,16 +452,20 @@ function DataTable<T extends object>({
   const handleToggleSort = useCallback(
     (columnId: string, shiftKey: boolean) => {
       setSorting((prev) => {
-        const existing = prev.findIndex(s => s.id === columnId);
+        const existing = prev.findIndex((s) => s.id === columnId);
         if (existing >= 0) {
           const current = prev[existing];
           if (current.desc) {
             if (enableMultiSort && shiftKey && prev.length > 1) {
-              return prev.filter(s => s.id !== columnId);
+              return prev.filter((s) => s.id !== columnId);
             }
-            return prev.map(s => s.id === columnId ? { ...s, desc: false } : s);
+            return prev.map((s) =>
+              s.id === columnId ? { ...s, desc: false } : s,
+            );
           }
-          return prev.map(s => s.id === columnId ? { ...s, desc: true } : s);
+          return prev.map((s) =>
+            s.id === columnId ? { ...s, desc: true } : s,
+          );
         }
         if (enableMultiSort && shiftKey) {
           return [...prev, { id: columnId, desc: false }];
@@ -428,31 +473,38 @@ function DataTable<T extends object>({
         return [{ id: columnId, desc: false }];
       });
     },
-    [enableMultiSort]
+    [enableMultiSort],
   );
 
   const handleFilterChange = useCallback(
     (columnId: string, value: FilterValue) => {
       setColumnFilters((prev) => {
-        const existing = prev.filter(f => f.id !== columnId);
-        if (value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
+        const existing = prev.filter((f) => f.id !== columnId);
+        if (
+          value === undefined ||
+          value === "" ||
+          (Array.isArray(value) && value.length === 0)
+        ) {
           return existing;
         }
-        if (typeof value === 'object' && !Array.isArray(value)) {
+        if (typeof value === "object" && !Array.isArray(value)) {
           const dv = value as DateRangeValue;
           if (!dv.start && !dv.end) return existing;
         }
         return [...existing, { id: columnId, value }];
       });
     },
-    []
+    [],
   );
 
   const rows = table.getRowModel().rows;
   const pageRows = enablePagination ? rows : rows;
-  const totalRows = enablePagination ? table.getFilteredRowModel().rows.length : data.length;
+  const totalRows = enablePagination
+    ? table.getFilteredRowModel().rows.length
+    : data.length;
 
-  const shouldVirtualize = enableVirtualization && rows.length > virtualizationThreshold;
+  const shouldVirtualize =
+    enableVirtualization && rows.length > virtualizationThreshold;
 
   const columnWidths = useMemo(() => {
     const allColumns = table.getAllColumns();
@@ -465,7 +517,7 @@ function DataTable<T extends object>({
 
   if (loading) {
     return (
-      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+      <Paper variant="outlined" sx={{ overflow: "hidden" }}>
         <Box sx={{ p: 2 }}>
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton
@@ -482,8 +534,8 @@ function DataTable<T extends object>({
 
   if (error) {
     return (
-      <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
-        <ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
+      <Paper variant="outlined" sx={{ p: 4, textAlign: "center" }}>
+        <ErrorOutlineIcon sx={{ fontSize: 48, color: "error.main", mb: 2 }} />
         <Typography variant="h6" color="error.main" gutterBottom>
           Error loading data
         </Typography>
@@ -491,7 +543,11 @@ function DataTable<T extends object>({
           {error}
         </Typography>
         {onRetry && (
-          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={onRetry}>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={onRetry}
+          >
             Retry
           </Button>
         )}
@@ -502,69 +558,104 @@ function DataTable<T extends object>({
   const renderHeaderRow = () => (
     <Box
       sx={{
-        display: 'flex',
+        display: "flex",
         borderBottom: 2,
-        borderColor: 'divider',
-        bgcolor: 'action.selected',
-        position: 'sticky',
+        borderColor: "divider",
+        bgcolor: "action.selected",
+        position: "sticky",
         top: 0,
         zIndex: 2,
       }}
       role="row"
     >
-      {table.getHeaderGroups().map(headerGroup =>
-        headerGroup.headers.map(header => {
+      {table.getHeaderGroups().map((headerGroup) =>
+        headerGroup.headers.map((header) => {
           const width = columnWidths[header.column.id];
-          const column = columns.find(c => (c.id || c.accessorKey) === header.column.id);
+          const column = columns.find(
+            (c) => (c.id || c.accessorKey) === header.column.id,
+          );
           return (
             <Box
               key={header.id}
               role="columnheader"
               aria-sort={
                 header.column.getIsSorted()
-                  ? header.column.getIsSorted() === 'asc' ? 'ascending' : 'descending'
+                  ? header.column.getIsSorted() === "asc"
+                    ? "ascending"
+                    : "descending"
                   : undefined
               }
               sx={{
-                display: 'flex',
-                alignItems: 'center',
+                display: "flex",
+                alignItems: "center",
                 px: cellPadding.px,
                 py: cellPadding.py,
-                width: typeof width === 'number' ? width : undefined,
+                width: typeof width === "number" ? width : undefined,
                 minWidth: header.column.columnDef.minSize || 80,
                 maxWidth: header.column.columnDef.maxSize,
-                flex: typeof width === 'number' ? '0 0 auto' : '1 1 150px',
-                position: 'relative',
+                flex: typeof width === "number" ? "0 0 auto" : "1 1 150px",
+                position: "relative",
                 fontWeight: 600,
-                fontSize: '0.8125rem',
-                color: 'text.secondary',
-                textTransform: 'uppercase',
+                fontSize: "0.8125rem",
+                color: "text.secondary",
+                textTransform: "uppercase",
                 letterSpacing: 0.5,
               }}
             >
-              {header.isPlaceholder ? null : header.id === 'select' || header.id === 'expander' ? (
+              {header.isPlaceholder ? null : header.id === "select" ||
+                header.id === "expander" ? (
                 flexRender(header.column.columnDef.header, header.getContext())
               ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%' }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.5,
+                    width: "100%",
+                  }}
+                >
                   {header.column.getCanSort() ? (
                     <TableSortLabel
                       columnId={header.column.id}
-                      label={String(flexRender(header.column.columnDef.header, header.getContext()))}
+                      label={String(
+                        flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        ),
+                      )}
                       sortDirections={sorting}
                       multiSortEnabled={!!enableMultiSort}
                       onToggleSort={handleToggleSort}
                     />
                   ) : (
-                    <Box sx={{ fontWeight: 600, fontSize: '0.8125rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                      {String(flexRender(header.column.columnDef.header, header.getContext()))}
+                    <Box
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: "0.8125rem",
+                        color: "text.secondary",
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      {String(
+                        flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        ),
+                      )}
                     </Box>
                   )}
                   {enableFiltering && column?.enableFilter !== false && (
                     <TableFilter
                       columnId={header.column.id}
-                      filterType={column?.filterType || 'text'}
-                      value={columnFilters.find(f => f.id === header.column.id)?.value as FilterValue}
-                      onChange={(value) => handleFilterChange(header.column.id, value)}
+                      filterType={column?.filterType || "text"}
+                      value={
+                        columnFilters.find((f) => f.id === header.column.id)
+                          ?.value as FilterValue
+                      }
+                      onChange={(value) =>
+                        handleFilterChange(header.column.id, value)
+                      }
                       options={column?.filterOptions}
                       placeholder={`Filter ${String(flexRender(header.column.columnDef.header, header.getContext()))}`}
                     />
@@ -576,15 +667,15 @@ function DataTable<T extends object>({
                   onMouseDown={header.getResizeHandler()}
                   onTouchStart={header.getResizeHandler()}
                   sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     right: 0,
                     top: 0,
                     bottom: 0,
                     width: 4,
-                    cursor: 'col-resize',
-                    bgcolor: 'divider',
-                    '&:hover': { bgcolor: 'primary.main' },
-                    transition: 'background-color 0.15s',
+                    cursor: "col-resize",
+                    bgcolor: "divider",
+                    "&:hover": { bgcolor: "primary.main" },
+                    transition: "background-color 0.15s",
                   }}
                   role="separator"
                   aria-label={`Resize column ${String(flexRender(header.column.columnDef.header, header.getContext()))}`}
@@ -592,96 +683,102 @@ function DataTable<T extends object>({
               )}
             </Box>
           );
-        })
+        }),
       )}
     </Box>
   );
 
-  const renderRow = React.memo(({ index, style }: { index: number; style: React.CSSProperties }) => {
-    const row = pageRows[index];
-    if (!row) return null;
+  const renderRow = React.memo(
+    ({ index, style }: { index: number; style: React.CSSProperties }) => {
+      const row = pageRows[index];
+      if (!row) return null;
 
-    const rowProps = getRowProps ? getRowProps(row.original) : {};
-    const isSelected = row.getIsSelected();
-    const isExpanded = row.getIsExpanded();
+      const rowProps = getRowProps ? getRowProps(row.original) : {};
+      const isSelected = row.getIsSelected();
+      const isExpanded = row.getIsExpanded();
 
-    return (
-      <Box
-        role="row"
-        aria-selected={isSelected}
-        sx={{
-          display: 'flex',
-          borderBottom: 1,
-          borderColor: 'divider',
-          bgcolor: isSelected ? 'action.selected' : 'inherit',
-          '&:hover': { bgcolor: isSelected ? 'action.selected' : 'action.hover' },
-          transition: 'background-color 0.15s',
-          ...style,
-        }}
-        onClick={enableExpandableRows ? () => row.toggleExpanded() : undefined}
-        style={style}
-        {...rowProps}
-      >
-        {row.getVisibleCells().map(cell => {
-          const width = columnWidths[cell.column.id];
-          return (
+      return (
+        <Box
+          role="row"
+          aria-selected={isSelected}
+          sx={{
+            display: "flex",
+            borderBottom: 1,
+            borderColor: "divider",
+            bgcolor: isSelected ? "action.selected" : "inherit",
+            "&:hover": {
+              bgcolor: isSelected ? "action.selected" : "action.hover",
+            },
+            transition: "background-color 0.15s",
+            ...style,
+          }}
+          onClick={
+            enableExpandableRows ? () => row.toggleExpanded() : undefined
+          }
+          style={style}
+          {...rowProps}
+        >
+          {row.getVisibleCells().map((cell) => {
+            const width = columnWidths[cell.column.id];
+            return (
+              <Box
+                key={cell.id}
+                role="cell"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  px: cellPadding.px,
+                  py: cellPadding.py,
+                  width: typeof width === "number" ? width : undefined,
+                  minWidth: cell.column.columnDef.minSize || 80,
+                  maxWidth: cell.column.columnDef.maxSize,
+                  flex: typeof width === "number" ? "0 0 auto" : "1 1 150px",
+                  fontSize: "0.875rem",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </Box>
+            );
+          })}
+          {isExpanded && renderSubRow && (
             <Box
-              key={cell.id}
-              role="cell"
               sx={{
-                display: 'flex',
-                alignItems: 'center',
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: "100%",
+                borderBottom: 1,
+                borderColor: "divider",
+                bgcolor: "grey.50",
                 px: cellPadding.px,
                 py: cellPadding.py,
-                width: typeof width === 'number' ? width : undefined,
-                minWidth: cell.column.columnDef.minSize || 80,
-                maxWidth: cell.column.columnDef.maxSize,
-                flex: typeof width === 'number' ? '0 0 auto' : '1 1 150px',
-                fontSize: '0.875rem',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
               }}
             >
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              {renderSubRow(row.original)}
             </Box>
-          );
-        })}
-        {isExpanded && renderSubRow && (
-          <Box
-            sx={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: '100%',
-              borderBottom: 1,
-              borderColor: 'divider',
-              bgcolor: 'grey.50',
-              px: cellPadding.px,
-              py: cellPadding.py,
-            }}
-          >
-            {renderSubRow(row.original)}
-          </Box>
-        )}
-      </Box>
-    );
-  });
-  renderRow.displayName = 'DataTableRow';
+          )}
+        </Box>
+      );
+    },
+  );
+  renderRow.displayName = "DataTableRow";
 
   const renderNonVirtualizedTable = () => (
-    <Box sx={{ overflow: 'auto', maxHeight: tableHeight }}>
-      <Box role="table" sx={{ minWidth: 'fit-content', width: '100%' }}>
+    <Box sx={{ overflow: "auto", maxHeight: tableHeight }}>
+      <Box role="table" sx={{ minWidth: "fit-content", width: "100%" }}>
         {renderHeaderRow()}
         {pageRows.length === 0 ? (
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
               py: 8,
-              color: 'text.secondary',
+              color: "text.secondary",
             }}
           >
             <InboxIcon sx={{ fontSize: 48, mb: 2, opacity: 0.4 }} />
@@ -697,40 +794,54 @@ function DataTable<T extends object>({
                   role="row"
                   aria-selected={row.getIsSelected()}
                   sx={{
-                    display: 'flex',
+                    display: "flex",
                     borderBottom: 1,
-                    borderColor: 'divider',
-                    bgcolor: row.getIsSelected() ? 'action.selected' : 'inherit',
-                    '&:hover': {
-                      bgcolor: row.getIsSelected() ? 'action.selected' : 'action.hover',
+                    borderColor: "divider",
+                    bgcolor: row.getIsSelected()
+                      ? "action.selected"
+                      : "inherit",
+                    "&:hover": {
+                      bgcolor: row.getIsSelected()
+                        ? "action.selected"
+                        : "action.hover",
                     },
-                    transition: 'background-color 0.15s',
+                    transition: "background-color 0.15s",
                   }}
-                  onClick={enableExpandableRows ? () => row.toggleExpanded() : undefined}
+                  onClick={
+                    enableExpandableRows
+                      ? () => row.toggleExpanded()
+                      : undefined
+                  }
                   {...(getRowProps ? getRowProps(row.original) : {})}
                 >
-                  {row.getVisibleCells().map(cell => {
+                  {row.getVisibleCells().map((cell) => {
                     const width = columnWidths[cell.column.id];
                     return (
                       <Box
                         key={cell.id}
                         role="cell"
                         sx={{
-                          display: 'flex',
-                          alignItems: 'center',
+                          display: "flex",
+                          alignItems: "center",
                           px: cellPadding.px,
                           py: cellPadding.py,
-                          width: typeof width === 'number' ? width : undefined,
+                          width: typeof width === "number" ? width : undefined,
                           minWidth: cell.column.columnDef.minSize || 80,
                           maxWidth: cell.column.columnDef.maxSize,
-                          flex: typeof width === 'number' ? '0 0 auto' : '1 1 150px',
-                          fontSize: '0.875rem',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
+                          flex:
+                            typeof width === "number"
+                              ? "0 0 auto"
+                              : "1 1 150px",
+                          fontSize: "0.875rem",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
                       </Box>
                     );
                   })}
@@ -738,10 +849,10 @@ function DataTable<T extends object>({
                 {row.getIsExpanded() && renderSubRow && (
                   <Box
                     sx={{
-                      display: 'flex',
+                      display: "flex",
                       borderBottom: 1,
-                      borderColor: 'divider',
-                      bgcolor: 'grey.50',
+                      borderColor: "divider",
+                      bgcolor: "grey.50",
                       px: cellPadding.px,
                       py: cellPadding.py,
                     }}
@@ -758,20 +869,18 @@ function DataTable<T extends object>({
   );
 
   const renderVirtualizedTable = () => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: tableHeight }}>
-      <Box sx={{ flexShrink: 0 }}>
-        {renderHeaderRow()}
-      </Box>
+    <Box sx={{ display: "flex", flexDirection: "column", height: tableHeight }}>
+      <Box sx={{ flexShrink: 0 }}>{renderHeaderRow()}</Box>
       <Box sx={{ flex: 1, minHeight: 0 }}>
         {pageRows.length === 0 ? (
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              color: 'text.secondary',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              color: "text.secondary",
             }}
           >
             <InboxIcon sx={{ fontSize: 48, mb: 2, opacity: 0.4 }} />
@@ -793,23 +902,24 @@ function DataTable<T extends object>({
     </Box>
   );
 
-  const selectedInfo = selectedRowCount > 0 ? `${selectedRowCount} selected` : null;
+  const selectedInfo =
+    selectedRowCount > 0 ? `${selectedRowCount} selected` : null;
 
   return (
-    <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+    <Paper variant="outlined" sx={{ overflow: "hidden" }}>
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
           px: 2,
           py: 1,
           borderBottom: 1,
-          borderColor: 'divider',
+          borderColor: "divider",
           minHeight: 48,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {selectedInfo && (
             <Chip
               label={selectedInfo}
@@ -822,7 +932,7 @@ function DataTable<T extends object>({
             />
           )}
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {enableColumnVisibility && (
             <>
               <Tooltip title="Column visibility">
@@ -839,9 +949,15 @@ function DataTable<T extends object>({
                 open={columnMenuOpen}
                 onClose={() => setAnchorEl(null)}
               >
-                {table.getAllLeafColumns()
-                  .filter(col => col.id !== 'select' && col.id !== 'expander' && col.getCanHide())
-                  .map(col => (
+                {table
+                  .getAllLeafColumns()
+                  .filter(
+                    (col) =>
+                      col.id !== "select" &&
+                      col.id !== "expander" &&
+                      col.getCanHide(),
+                  )
+                  .map((col) => (
                     <MenuItem key={col.id} dense>
                       <FormControlLabel
                         control={
@@ -853,7 +969,13 @@ function DataTable<T extends object>({
                         }
                         label={
                           <Typography variant="body2">
-                            {String(flexRender(col.columnDef.header, { column: col, header: col.columnDef.header, table } as any)) || col.id}
+                            {String(
+                              flexRender(col.columnDef.header, {
+                                column: col,
+                                header: col.columnDef.header,
+                                table,
+                              } as any),
+                            ) || col.id}
                           </Typography>
                         }
                         sx={{ ml: 0 }}
@@ -866,15 +988,21 @@ function DataTable<T extends object>({
         </Box>
       </Box>
 
-      {shouldVirtualize ? renderVirtualizedTable() : renderNonVirtualizedTable()}
+      {shouldVirtualize
+        ? renderVirtualizedTable()
+        : renderNonVirtualizedTable()}
 
       {enablePagination && (
         <TablePagination
           pageIndex={pagination.pageIndex}
           pageSize={pagination.pageSize}
           totalRows={totalRows}
-          onPageChange={(page) => setPagination(prev => ({ ...prev, pageIndex: page }))}
-          onPageSizeChange={(size) => setPagination({ pageIndex: 0, pageSize: size })}
+          onPageChange={(page) =>
+            setPagination((prev) => ({ ...prev, pageIndex: page }))
+          }
+          onPageSizeChange={(size) =>
+            setPagination({ pageIndex: 0, pageSize: size })
+          }
           pageSizeOptions={pageSizeOptions}
         />
       )}

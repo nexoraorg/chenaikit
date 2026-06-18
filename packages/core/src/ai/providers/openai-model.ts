@@ -1,5 +1,5 @@
-import { AIModel, ModelConfig, ModelInput, ModelOutput } from '../base-model';
-import { OpenAIConfig } from '../types';
+import { AIModel, ModelConfig, ModelInput, ModelOutput } from "../base-model";
+import { OpenAIConfig } from "../types";
 
 /**
  * OpenAI model implementation
@@ -12,18 +12,21 @@ export class OpenAIModel extends AIModel {
   constructor(config: OpenAIConfig) {
     super({
       ...config,
-      baseUrl: config.baseUrl || 'https://api.openai.com/v1',
+      baseUrl: config.baseUrl || "https://api.openai.com/v1",
     });
-    
+
     this.modelVersion = config.modelVersion;
     this.organization = config.organization;
   }
 
   protected async makeRequest(input: ModelInput): Promise<ModelOutput> {
     const requestBody = this.buildRequestBody(input);
-    
-    const response = await this.httpClient.post('/chat/completions', requestBody);
-    
+
+    const response = await this.httpClient.post(
+      "/chat/completions",
+      requestBody,
+    );
+
     return this.parseResponse(response);
   }
 
@@ -36,7 +39,7 @@ export class OpenAIModel extends AIModel {
    */
   private buildRequestBody(input: ModelInput): any {
     const messages = this.buildMessages(input);
-    
+
     return {
       model: this.modelVersion,
       messages,
@@ -51,13 +54,15 @@ export class OpenAIModel extends AIModel {
   /**
    * Build messages array for OpenAI chat format
    */
-  private buildMessages(input: ModelInput): Array<{ role: string; content: string }> {
+  private buildMessages(
+    input: ModelInput,
+  ): Array<{ role: string; content: string }> {
     const messages: Array<{ role: string; content: string }> = [];
 
     // Add system message if provided
     if (input.systemMessage) {
       messages.push({
-        role: 'system',
+        role: "system",
         content: input.systemMessage,
       });
     }
@@ -67,7 +72,7 @@ export class OpenAIModel extends AIModel {
       messages.push(...input.messages);
     } else {
       messages.push({
-        role: 'user',
+        role: "user",
         content: input.prompt,
       });
     }
@@ -88,7 +93,7 @@ export class OpenAIModel extends AIModel {
       metadata: {
         model: response.data.model,
         finishReason: choice.finish_reason,
-        provider: 'openai',
+        provider: "openai",
       },
       rawResponse: response.data,
     };
@@ -104,7 +109,7 @@ export class OpenAIModel extends AIModel {
       streaming: true,
       batchProcessing: true,
       maxContextLength: this.getMaxContextLength(),
-      languages: ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh'],
+      languages: ["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
     };
   }
 
@@ -113,11 +118,11 @@ export class OpenAIModel extends AIModel {
    */
   private getMaxContextLength(): number {
     const contextLengths: Record<string, number> = {
-      'gpt-3.5-turbo': 4096,
-      'gpt-3.5-turbo-16k': 16384,
-      'gpt-4': 8192,
-      'gpt-4-32k': 32768,
-      'gpt-4-turbo': 128000,
+      "gpt-3.5-turbo": 4096,
+      "gpt-3.5-turbo-16k": 16384,
+      "gpt-4": 8192,
+      "gpt-4-32k": 32768,
+      "gpt-4-turbo": 128000,
     };
 
     return contextLengths[this.modelVersion] || 4096;

@@ -1,4 +1,3 @@
-
 export type ID = string;
 
 export interface Interaction {

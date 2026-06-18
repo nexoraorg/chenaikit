@@ -1,19 +1,19 @@
-import type { Application } from 'express';
-import { getSecurityConfig } from '../config/security';
-import { createCorsMiddleware } from './cors';
-import { applySecurityHeaders } from './securityHeaders';
+import type { Application } from "express";
+import { getSecurityConfig } from "../config/security";
+import { createCorsMiddleware } from "./cors";
+import { applySecurityHeaders } from "./securityHeaders";
 import {
   requestIdMiddleware,
   apiVersionMiddleware,
-} from '../utils/headerUtils';
+} from "../utils/headerUtils";
 
 export const applySecurityMiddleware = (app: Application): void => {
   const config = getSecurityConfig();
 
-  app.disable('x-powered-by');
+  app.disable("x-powered-by");
 
   if (config.trustProxy !== undefined) {
-    app.set('trust proxy', config.trustProxy);
+    app.set("trust proxy", config.trustProxy);
   }
 
   // Security headers (helmet + custom)
@@ -26,15 +26,15 @@ export const applySecurityMiddleware = (app: Application): void => {
   app.use(
     requestIdMiddleware(
       config.requestMeta.requestIdHeader,
-      config.requestMeta.enableRequestId
-    )
+      config.requestMeta.enableRequestId,
+    ),
   );
 
   // API version header
   app.use(
     apiVersionMiddleware(
       config.requestMeta.apiVersionHeader,
-      config.requestMeta.apiVersion
-    )
+      config.requestMeta.apiVersion,
+    ),
   );
 };

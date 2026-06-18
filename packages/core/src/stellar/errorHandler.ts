@@ -2,8 +2,8 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
 function isObject(value: any): value is object {
-    const type = typeof value;
-    return value != null && (type === 'object' || type === 'function');
+  const type = typeof value;
+  return value != null && (type === "object" || type === "function");
 }
 
 /**
@@ -13,9 +13,14 @@ function isObject(value: any): value is object {
  * @returns {string}
  */
 export function handleStellarError(error: any): string {
-  if (isObject(error) && error.hasOwnProperty('response')) {
+  if (isObject(error) && error.hasOwnProperty("response")) {
     const response = (error as any).response;
-    if (response && response.data && response.data.extras && response.data.extras.result_codes) {
+    if (
+      response &&
+      response.data &&
+      response.data.extras &&
+      response.data.extras.result_codes
+    ) {
       const { result_codes } = response.data.extras;
       return `Transaction failed with error codes: ${JSON.stringify(result_codes)}`;
     }
@@ -25,7 +30,7 @@ export function handleStellarError(error: any): string {
     return error.message;
   }
 
-  return 'An unknown error occurred.';
+  return "An unknown error occurred.";
 }
 
 /**

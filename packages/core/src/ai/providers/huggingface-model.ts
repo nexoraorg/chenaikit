@@ -1,5 +1,5 @@
-import { AIModel, ModelConfig, ModelInput, ModelOutput } from '../base-model';
-import { HuggingFaceConfig } from '../types';
+import { AIModel, ModelConfig, ModelInput, ModelOutput } from "../base-model";
+import { HuggingFaceConfig } from "../types";
 
 /**
  * Hugging Face model implementation
@@ -12,18 +12,21 @@ export class HuggingFaceModel extends AIModel {
   constructor(config: HuggingFaceConfig) {
     super({
       ...config,
-      baseUrl: config.baseUrl || 'https://api-inference.huggingface.co/models',
+      baseUrl: config.baseUrl || "https://api-inference.huggingface.co/models",
     });
-    
+
     this.modelVersion = config.modelVersion;
     this.useAuth = config.useAuth || false;
   }
 
   protected async makeRequest(input: ModelInput): Promise<ModelOutput> {
     const requestBody = this.buildRequestBody(input);
-    
-    const response = await this.httpClient.post(`/${this.modelVersion}`, requestBody);
-    
+
+    const response = await this.httpClient.post(
+      `/${this.modelVersion}`,
+      requestBody,
+    );
+
     return this.parseResponse(response);
   }
 
@@ -53,14 +56,14 @@ export class HuggingFaceModel extends AIModel {
    */
   private parseResponse(response: any): ModelOutput {
     const data = response.data;
-    
+
     // Handle different response formats
     let text: string;
     let tokensUsed: number | undefined;
 
     if (Array.isArray(data) && data.length > 0) {
       // Text generation response
-      text = data[0].generated_text || data[0].text || '';
+      text = data[0].generated_text || data[0].text || "";
     } else if (data.generated_text) {
       // Single response
       text = data.generated_text;
@@ -75,8 +78,8 @@ export class HuggingFaceModel extends AIModel {
       tokensUsed,
       metadata: {
         model: this.modelVersion,
-        finishReason: 'stop',
-        provider: 'huggingface',
+        finishReason: "stop",
+        provider: "huggingface",
       },
       rawResponse: data,
     };
@@ -92,7 +95,7 @@ export class HuggingFaceModel extends AIModel {
       streaming: false,
       batchProcessing: true,
       maxContextLength: 1024, // Default for most HF models
-      languages: ['en'], // Depends on the specific model
+      languages: ["en"], // Depends on the specific model
     };
   }
 

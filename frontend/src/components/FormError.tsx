@@ -1,15 +1,15 @@
-import React from 'react';
-import { FormErrorProps } from '@chenaikit/core';
+import React from "react";
+import { FormErrorProps } from "@chenaikit/core";
 
-export const FormError: React.FC<FormErrorProps> = ({ 
-  error, 
-  field, 
-  className = '' 
+export const FormError: React.FC<FormErrorProps> = ({
+  error,
+  field,
+  className = "",
 }) => {
   if (!error) return null;
 
   return (
-    <div 
+    <div
       className={`form-error ${className}`}
       role="alert"
       aria-live="polite"
@@ -18,9 +18,7 @@ export const FormError: React.FC<FormErrorProps> = ({
       <span className="form-error__icon" aria-hidden="true">
         ⚠️
       </span>
-      <span className="form-error__message">
-        {error}
-      </span>
+      <span className="form-error__message">{error}</span>
     </div>
   );
 };

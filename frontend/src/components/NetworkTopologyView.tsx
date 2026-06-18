@@ -1,17 +1,22 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import * as d3 from 'd3';
-import { NetworkNode, NetworkLink, ChartProps, ZoomState } from '@chenaikit/core';
-import { 
-  DEFAULT_CHART_CONFIG, 
-  getResponsiveConfig, 
-  formatNumber, 
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import * as d3 from "d3";
+import {
+  NetworkNode,
+  NetworkLink,
+  ChartProps,
+  ZoomState,
+} from "@chenaikit/core";
+import {
+  DEFAULT_CHART_CONFIG,
+  getResponsiveConfig,
+  formatNumber,
   formatDateTime,
   generateTooltipContent,
   clampZoom,
   debounce,
   getAriaLabel,
-  CHART_COLORS
-} from '@chenaikit/core';
+  CHART_COLORS,
+} from "@chenaikit/core";
 
 // Extend D3 types to include our custom properties
 interface NetworkNodeExtended extends NetworkNode, d3.SimulationNodeDatum {
@@ -27,17 +32,17 @@ interface NetworkLinkExtended extends d3.SimulationLinkDatum<NetworkNodeExtended
   target: NetworkNodeExtended;
   value: number;
   weight: number;
-  type: 'transaction' | 'trust' | 'offer';
+  type: "transaction" | "trust" | "offer";
   timestamp: Date;
   width?: number;
   color?: string;
   opacity?: number;
 }
 
-interface NetworkTopologyViewProps extends Omit<ChartProps, 'data'> {
+interface NetworkTopologyViewProps extends Omit<ChartProps, "data"> {
   nodes: NetworkNode[];
   links: NetworkLink[];
-  layout?: 'force' | 'hierarchical' | 'circular' | 'grid';
+  layout?: "force" | "hierarchical" | "circular" | "grid";
   nodeSize?: number | ((node: NetworkNode) => number);
   linkWidth?: number | ((link: NetworkLink) => number);
   showLabels?: boolean;
@@ -54,7 +59,7 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
   nodes,
   links,
   config = {},
-  layout = 'force',
+  layout = "force",
   nodeSize = 8,
   linkWidth = 2,
   showLabels = true,
@@ -66,38 +71,46 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
   onNodeClick,
   onLinkClick,
   onLayoutChange,
-  className = '',
+  className = "",
   id,
-  'aria-label': ariaLabel,
-  'aria-describedby': ariaDescribedby
+  "aria-label": ariaLabel,
+  "aria-describedby": ariaDescribedby,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [zoom, setZoom] = useState<ZoomState>({ scale: 1, translateX: 0, translateY: 0 });
+  const [zoom, setZoom] = useState<ZoomState>({
+    scale: 1,
+    translateX: 0,
+    translateY: 0,
+  });
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedLink, setSelectedLink] = useState<string | null>(null);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string } | null>(null);
+  const [tooltip, setTooltip] = useState<{
+    x: number;
+    y: number;
+    content: string;
+  } | null>(null);
 
   const chartConfig = { ...DEFAULT_CHART_CONFIG, ...config };
 
   // Process nodes and links
   const processedData = React.useMemo(() => {
-    const processedNodes: NetworkNodeExtended[] = nodes.map(node => ({
+    const processedNodes: NetworkNodeExtended[] = nodes.map((node) => ({
       ...node,
-      size: typeof nodeSize === 'function' ? nodeSize(node) : nodeSize,
+      size: typeof nodeSize === "function" ? nodeSize(node) : nodeSize,
       color: getNodeColor(node),
-      opacity: 1
+      opacity: 1,
     }));
 
     // Create a map for quick node lookup
     const nodeMap = new Map<string, NetworkNodeExtended>();
-    processedNodes.forEach(node => nodeMap.set(node.id, node));
+    processedNodes.forEach((node) => nodeMap.set(node.id, node));
 
-    const processedLinks: NetworkLinkExtended[] = links.map(link => {
+    const processedLinks: NetworkLinkExtended[] = links.map((link) => {
       const sourceNode = nodeMap.get(link.source);
       const targetNode = nodeMap.get(link.target);
-      
+
       if (!sourceNode || !targetNode) {
         throw new Error(`Invalid link: source or target node not found`);
       }
@@ -108,17 +121,17 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
         target: targetNode,
         value: link.weight || 1,
         weight: link.weight,
-        type: link.type as 'transaction' | 'trust' | 'offer',
+        type: link.type as "transaction" | "trust" | "offer",
         timestamp: (link as any).timestamp || new Date(),
-        width: typeof linkWidth === 'function' ? linkWidth(link) : linkWidth,
+        width: typeof linkWidth === "function" ? linkWidth(link) : linkWidth,
         color: getLinkColor({
           source: sourceNode,
           target: targetNode,
           weight: link.weight,
-          type: link.type as 'transaction' | 'trust' | 'offer',
-          timestamp: (link as any).timestamp || new Date()
+          type: link.type as "transaction" | "trust" | "offer",
+          timestamp: (link as any).timestamp || new Date(),
         }),
-        opacity: 1
+        opacity: 1,
       };
     });
 
@@ -128,12 +141,18 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
   // Get node color based on type and connections
   const getNodeColor = (node: NetworkNode): string => {
     switch (node.type) {
-      case 'account':
-        return node.connections > 10 ? CHART_COLORS.primary[0] : CHART_COLORS.primary[1];
-      case 'asset':
-        return node.connections > 5 ? CHART_COLORS.primary[2] : CHART_COLORS.primary[3];
-      case 'contract':
-        return node.connections > 3 ? CHART_COLORS.primary[4] : CHART_COLORS.primary[5];
+      case "account":
+        return node.connections > 10
+          ? CHART_COLORS.primary[0]
+          : CHART_COLORS.primary[1];
+      case "asset":
+        return node.connections > 5
+          ? CHART_COLORS.primary[2]
+          : CHART_COLORS.primary[3];
+      case "contract":
+        return node.connections > 3
+          ? CHART_COLORS.primary[4]
+          : CHART_COLORS.primary[5];
       default:
         return CHART_COLORS.primary[0];
     }
@@ -144,18 +163,18 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
     source: NetworkNodeExtended;
     target: NetworkNodeExtended;
     weight: number;
-    type: 'transaction' | 'trust' | 'offer';
+    type: "transaction" | "trust" | "offer";
     timestamp?: Date;
   }): string => {
     switch (link.type) {
-      case 'transaction':
-        return link.weight > 0.5 ? '#3B82F6' : '#93C5FD';
-      case 'trust':
-        return link.weight > 0.5 ? '#10B981' : '#86EFAC';
-      case 'offer':
-        return link.weight > 0.5 ? '#F59E0B' : '#FCD34D';
+      case "transaction":
+        return link.weight > 0.5 ? "#3B82F6" : "#93C5FD";
+      case "trust":
+        return link.weight > 0.5 ? "#10B981" : "#86EFAC";
+      case "offer":
+        return link.weight > 0.5 ? "#F59E0B" : "#FCD34D";
       default:
-        return '#6B7280';
+        return "#6B7280";
     }
   };
 
@@ -167,18 +186,18 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
         const responsiveConfig = getResponsiveConfig(width);
         setDimensions({
           width: responsiveConfig.width || chartConfig.width,
-          height: responsiveConfig.height || chartConfig.height
+          height: responsiveConfig.height || chartConfig.height,
         });
       }
     }, 250),
-    [chartConfig]
+    [chartConfig],
   );
 
   // Initialize dimensions
   useEffect(() => {
     handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [handleResize]);
 
   // Create D3 network visualization
@@ -186,7 +205,7 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
     if (!svgRef.current || !processedData.nodes.length) return;
 
     const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove();
+    svg.selectAll("*").remove();
 
     const { width, height } = dimensions;
     const margin = chartConfig.margin;
@@ -195,146 +214,174 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
 
     // Create main group
     const g = svg
-      .append('g')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Create zoom behavior
     if (enableZoom) {
-      const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+      const zoomBehavior = d3
+        .zoom<SVGSVGElement, unknown>()
         .scaleExtent([0.1, 10])
-        .on('zoom', (event) => {
+        .on("zoom", (event) => {
           const { transform } = event;
           setZoom({
             scale: transform.k,
             translateX: transform.x,
-            translateY: transform.y
+            translateY: transform.y,
           });
-          g.attr('transform', transform);
+          g.attr("transform", transform);
         });
 
       svg.call(zoomBehavior);
     }
 
     // Create force simulation
-    const forceSimulation = d3.forceSimulation<NetworkNodeExtended, NetworkLinkExtended>(processedData.nodes)
-      .force('link', d3.forceLink<NetworkNodeExtended, NetworkLinkExtended>(processedData.links).id((d: any) => d.id).distance(100))
-      .force('charge', d3.forceManyBody<NetworkNodeExtended>().strength(-300))
-      .force('center', d3.forceCenter<NetworkNodeExtended>(innerWidth / 2, innerHeight / 2))
-      .force('collision', d3.forceCollide<NetworkNodeExtended>().radius((d: any) => d.size + 5));
+    const forceSimulation = d3
+      .forceSimulation<NetworkNodeExtended, NetworkLinkExtended>(
+        processedData.nodes,
+      )
+      .force(
+        "link",
+        d3
+          .forceLink<NetworkNodeExtended, NetworkLinkExtended>(
+            processedData.links,
+          )
+          .id((d: any) => d.id)
+          .distance(100),
+      )
+      .force("charge", d3.forceManyBody<NetworkNodeExtended>().strength(-300))
+      .force(
+        "center",
+        d3.forceCenter<NetworkNodeExtended>(innerWidth / 2, innerHeight / 2),
+      )
+      .force(
+        "collision",
+        d3.forceCollide<NetworkNodeExtended>().radius((d: any) => d.size + 5),
+      );
 
     // Create links
     const link = g
-      .append('g')
-      .attr('class', 'links')
-      .selectAll('line')
+      .append("g")
+      .attr("class", "links")
+      .selectAll("line")
       .data(processedData.links)
-      .join('line')
-      .attr('stroke', (d: any) => d.color)
-      .attr('stroke-opacity', 0.6)
-      .attr('stroke-width', (d: any) => d.width)
-      .style('cursor', 'pointer')
-      .on('click', (event, d) => {
+      .join("line")
+      .attr("stroke", (d: any) => d.color)
+      .attr("stroke-opacity", 0.6)
+      .attr("stroke-width", (d: any) => d.width)
+      .style("cursor", "pointer")
+      .on("click", (event, d) => {
         event.stopPropagation();
-        setSelectedLink(selectedLink === `${d.source}-${d.target}` ? null : `${d.source}-${d.target}`);
+        setSelectedLink(
+          selectedLink === `${d.source}-${d.target}`
+            ? null
+            : `${d.source}-${d.target}`,
+        );
         // Convert back to original NetworkLink format for callback
         const originalLink: NetworkLink = {
-          source: typeof d.source === 'string' ? d.source : d.source.id,
-          target: typeof d.target === 'string' ? d.target : d.target.id,
+          source: typeof d.source === "string" ? d.source : d.source.id,
+          target: typeof d.target === "string" ? d.target : d.target.id,
           weight: d.weight,
           type: d.type,
-          timestamp: d.timestamp
+          timestamp: d.timestamp,
         };
         onLinkClick?.(originalLink);
         onDataPointClick?.(originalLink);
       })
-      .on('mouseover', (event, d) => {
-        const sourceId = typeof d.source === 'string' ? d.source : d.source.id;
-        const targetId = typeof d.target === 'string' ? d.target : d.target.id;
+      .on("mouseover", (event, d) => {
+        const sourceId = typeof d.source === "string" ? d.source : d.source.id;
+        const targetId = typeof d.target === "string" ? d.target : d.target.id;
         const tooltipContent = generateTooltipContent([
-          { label: 'Source', value: sourceId, color: '#3B82F6' },
-          { label: 'Target', value: targetId, color: '#10B981' },
-          { label: 'Weight', value: formatNumber(d.weight, 3), color: '#F59E0B' },
-          { label: 'Type', value: d.type, color: '#8B5CF6' },
-          { label: 'Time', value: formatDateTime(d.timestamp), color: '#6B7280' }
+          { label: "Source", value: sourceId, color: "#3B82F6" },
+          { label: "Target", value: targetId, color: "#10B981" },
+          {
+            label: "Weight",
+            value: formatNumber(d.weight, 3),
+            color: "#F59E0B",
+          },
+          { label: "Type", value: d.type, color: "#8B5CF6" },
+          {
+            label: "Time",
+            value: formatDateTime(d.timestamp),
+            color: "#6B7280",
+          },
         ]);
-        
+
         setTooltip({
           x: event.pageX,
           y: event.pageY,
-          content: tooltipContent
+          content: tooltipContent,
         });
       })
-      .on('mouseout', () => setTooltip(null));
+      .on("mouseout", () => setTooltip(null));
 
     // Add arrows to links
     if (showArrows) {
-      const defs = svg.append('defs');
+      const defs = svg.append("defs");
       const marker = defs
-        .append('marker')
-        .attr('id', 'arrowhead')
-        .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 15)
-        .attr('refY', 0)
-        .attr('markerWidth', 6)
-        .attr('markerHeight', 6)
-        .attr('orient', 'auto');
+        .append("marker")
+        .attr("id", "arrowhead")
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 15)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto");
 
-      marker
-        .append('path')
-        .attr('d', 'M0,-5L10,0L0,5')
-        .attr('fill', '#999');
+      marker.append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#999");
 
-      link.attr('marker-end', 'url(#arrowhead)');
+      link.attr("marker-end", "url(#arrowhead)");
     }
 
     // Create nodes
     const node = g
-      .append('g')
-      .attr('class', 'nodes')
-      .selectAll('circle')
+      .append("g")
+      .attr("class", "nodes")
+      .selectAll("circle")
       .data(processedData.nodes)
-      .join('circle')
-      .attr('r', (d: any) => d.size)
-      .attr('fill', (d: any) => d.color)
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 2)
-      .style('cursor', 'pointer')
-      .on('click', (event, d) => {
+      .join("circle")
+      .attr("r", (d: any) => d.size)
+      .attr("fill", (d: any) => d.color)
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 2)
+      .style("cursor", "pointer")
+      .on("click", (event, d) => {
         event.stopPropagation();
         setSelectedNode(selectedNode === d.id ? null : d.id);
         onNodeClick?.(d);
         onDataPointClick?.(d);
       })
-      .on('mouseover', (event, d) => {
+      .on("mouseover", (event, d) => {
         const tooltipContent = generateTooltipContent([
-          { label: 'ID', value: d.id, color: '#3B82F6' },
-          { label: 'Type', value: d.type, color: '#10B981' },
-          { label: 'Connections', value: d.connections, color: '#F59E0B' },
-          { label: 'Value', value: formatNumber(d.value), color: '#8B5CF6' },
-          { label: 'Label', value: d.label, color: '#6B7280' }
+          { label: "ID", value: d.id, color: "#3B82F6" },
+          { label: "Type", value: d.type, color: "#10B981" },
+          { label: "Connections", value: d.connections, color: "#F59E0B" },
+          { label: "Value", value: formatNumber(d.value), color: "#8B5CF6" },
+          { label: "Label", value: d.label, color: "#6B7280" },
         ]);
-        
+
         setTooltip({
           x: event.pageX,
           y: event.pageY,
-          content: tooltipContent
+          content: tooltipContent,
         });
       })
-      .on('mouseout', () => setTooltip(null));
+      .on("mouseout", () => setTooltip(null));
 
     // Add drag behavior
     if (enableDrag) {
-      const drag = d3.drag<SVGCircleElement, NetworkNodeExtended>()
-        .on('start', (event, d) => {
+      const drag = d3
+        .drag<SVGCircleElement, NetworkNodeExtended>()
+        .on("start", (event, d) => {
           if (!event.active) forceSimulation.alphaTarget(0.3).restart();
           d.fx = d.x;
           d.fy = d.y;
         })
-        .on('drag', (event, d) => {
+        .on("drag", (event, d) => {
           d.fx = event.x;
           d.fy = event.y;
         })
-        .on('end', (event, d) => {
+        .on("end", (event, d) => {
           if (!event.active) forceSimulation.alphaTarget(0);
           d.fx = null;
           d.fy = null;
@@ -345,86 +392,94 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
 
     // Add labels
     if (showLabels) {
-      g
-        .append('g')
-        .attr('class', 'labels')
-        .selectAll('text')
+      g.append("g")
+        .attr("class", "labels")
+        .selectAll("text")
         .data(processedData.nodes)
-        .join('text')
+        .join("text")
         .text((d: any) => d.label)
-        .attr('font-size', '12px')
-        .attr('font-family', 'Arial, sans-serif')
-        .attr('text-anchor', 'middle')
-        .attr('dy', (d: any) => d.size + 15)
-        .style('pointer-events', 'none')
-        .style('user-select', 'none');
+        .attr("font-size", "12px")
+        .attr("font-family", "Arial, sans-serif")
+        .attr("text-anchor", "middle")
+        .attr("dy", (d: any) => d.size + 15)
+        .style("pointer-events", "none")
+        .style("user-select", "none");
     }
 
     // Add node values
     if (showNodeValues) {
-      g
-        .append('g')
-        .attr('class', 'node-values')
-        .selectAll('text')
+      g.append("g")
+        .attr("class", "node-values")
+        .selectAll("text")
         .data(processedData.nodes)
-        .join('text')
+        .join("text")
         .text((d: any) => formatNumber(d.value))
-        .attr('font-size', '10px')
-        .attr('font-family', 'Arial, sans-serif')
-        .attr('text-anchor', 'middle')
-        .attr('dy', (d: any) => d.size + 30)
-        .style('pointer-events', 'none')
-        .style('user-select', 'none')
-        .style('fill', '#6B7280');
+        .attr("font-size", "10px")
+        .attr("font-family", "Arial, sans-serif")
+        .attr("text-anchor", "middle")
+        .attr("dy", (d: any) => d.size + 30)
+        .style("pointer-events", "none")
+        .style("user-select", "none")
+        .style("fill", "#6B7280");
     }
 
     // Update positions on simulation tick
-    forceSimulation.on('tick', () => {
+    forceSimulation.on("tick", () => {
       link
-        .attr('x1', (d: any) => {
-          const source = typeof d.source === 'string' ? processedData.nodes.find(n => n.id === d.source) : d.source;
+        .attr("x1", (d: any) => {
+          const source =
+            typeof d.source === "string"
+              ? processedData.nodes.find((n) => n.id === d.source)
+              : d.source;
           return source?.x || 0;
         })
-        .attr('y1', (d: any) => {
-          const source = typeof d.source === 'string' ? processedData.nodes.find(n => n.id === d.source) : d.source;
+        .attr("y1", (d: any) => {
+          const source =
+            typeof d.source === "string"
+              ? processedData.nodes.find((n) => n.id === d.source)
+              : d.source;
           return source?.y || 0;
         })
-        .attr('x2', (d: any) => {
-          const target = typeof d.target === 'string' ? processedData.nodes.find(n => n.id === d.target) : d.target;
+        .attr("x2", (d: any) => {
+          const target =
+            typeof d.target === "string"
+              ? processedData.nodes.find((n) => n.id === d.target)
+              : d.target;
           return target?.x || 0;
         })
-        .attr('y2', (d: any) => {
-          const target = typeof d.target === 'string' ? processedData.nodes.find(n => n.id === d.target) : d.target;
+        .attr("y2", (d: any) => {
+          const target =
+            typeof d.target === "string"
+              ? processedData.nodes.find((n) => n.id === d.target)
+              : d.target;
           return target?.y || 0;
         });
 
-      node
-        .attr('cx', (d: any) => d.x || 0)
-        .attr('cy', (d: any) => d.y || 0);
+      node.attr("cx", (d: any) => d.x || 0).attr("cy", (d: any) => d.y || 0);
 
       if (showLabels) {
-        g.selectAll('.labels text')
-          .attr('x', (d: any) => d.x || 0)
-          .attr('y', (d: any) => d.y || 0);
+        g.selectAll(".labels text")
+          .attr("x", (d: any) => d.x || 0)
+          .attr("y", (d: any) => d.y || 0);
       }
 
       if (showNodeValues) {
-        g.selectAll('.node-values text')
-          .attr('x', (d: any) => d.x || 0)
-          .attr('y', (d: any) => d.y || 0);
+        g.selectAll(".node-values text")
+          .attr("x", (d: any) => d.x || 0)
+          .attr("y", (d: any) => d.y || 0);
       }
     });
 
     // Apply layout
     switch (layout) {
-      case 'hierarchical':
+      case "hierarchical":
         // Simple hierarchical layout
         processedData.nodes.forEach((node, i) => {
           node.x = innerWidth / 2;
           node.y = (i / processedData.nodes.length) * innerHeight;
         });
         break;
-      case 'circular':
+      case "circular":
         // Circular layout
         const radius = Math.min(innerWidth, innerHeight) / 2 - 50;
         processedData.nodes.forEach((node, i) => {
@@ -433,12 +488,15 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
           node.y = innerHeight / 2 + radius * Math.sin(angle);
         });
         break;
-      case 'grid':
+      case "grid":
         // Grid layout
         const cols = Math.ceil(Math.sqrt(processedData.nodes.length));
         processedData.nodes.forEach((node, i) => {
-          node.x = (i % cols) * (innerWidth / cols) + (innerWidth / cols) / 2;
-          node.y = Math.floor(i / cols) * (innerHeight / Math.ceil(processedData.nodes.length / cols)) + 50;
+          node.x = (i % cols) * (innerWidth / cols) + innerWidth / cols / 2;
+          node.y =
+            Math.floor(i / cols) *
+              (innerHeight / Math.ceil(processedData.nodes.length / cols)) +
+            50;
         });
         break;
       default: // force
@@ -450,29 +508,46 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
     return () => {
       forceSimulation.stop();
     };
-  }, [processedData, dimensions, chartConfig, layout, showLabels, showArrows, showNodeValues, enableDrag, enableZoom, selectedNode, selectedLink, onDataPointClick, onNodeClick, onLinkClick]);
+  }, [
+    processedData,
+    dimensions,
+    chartConfig,
+    layout,
+    showLabels,
+    showArrows,
+    showNodeValues,
+    enableDrag,
+    enableZoom,
+    selectedNode,
+    selectedLink,
+    onDataPointClick,
+    onNodeClick,
+    onLinkClick,
+  ]);
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={`network-topology-view ${className}`}
-      style={{ width: '100%', height: '100%', position: 'relative' }}
+      style={{ width: "100%", height: "100%", position: "relative" }}
     >
       <svg
         ref={svgRef}
         width={dimensions.width}
         height={dimensions.height}
         id={id}
-        aria-label={ariaLabel || getAriaLabel(processedData.nodes, 'Network Topology')}
+        aria-label={
+          ariaLabel || getAriaLabel(processedData.nodes, "Network Topology")
+        }
         aria-describedby={ariaDescribedby}
-        style={{ display: 'block' }}
+        style={{ display: "block" }}
       >
         <defs>
           <filter id="glow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge> 
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
+            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
         </defs>
@@ -483,37 +558,40 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
         <div
           className="network-tooltip"
           style={{
-            position: 'fixed',
+            position: "fixed",
             left: tooltip.x + 10,
             top: tooltip.y - 10,
-            background: 'rgba(0, 0, 0, 0.9)',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            pointerEvents: 'none',
+            background: "rgba(0, 0, 0, 0.9)",
+            color: "white",
+            padding: "8px 12px",
+            borderRadius: "6px",
+            fontSize: "12px",
+            pointerEvents: "none",
             zIndex: 1000,
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
           }}
           dangerouslySetInnerHTML={{ __html: tooltip.content }}
         />
       )}
 
       {/* Layout controls */}
-      <div className="layout-controls" style={{ position: 'absolute', top: 10, right: 10, zIndex: 100 }}>
-        {['force', 'hierarchical', 'circular', 'grid'].map((layoutType) => (
+      <div
+        className="layout-controls"
+        style={{ position: "absolute", top: 10, right: 10, zIndex: 100 }}
+      >
+        {["force", "hierarchical", "circular", "grid"].map((layoutType) => (
           <button
             key={layoutType}
             onClick={() => onLayoutChange?.(layoutType)}
             style={{
-              background: layout === layoutType ? '#3B82F6' : 'white',
-              color: layout === layoutType ? 'white' : '#374151',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              padding: '4px 8px',
-              margin: '2px',
-              cursor: 'pointer',
-              fontSize: '12px'
+              background: layout === layoutType ? "#3B82F6" : "white",
+              color: layout === layoutType ? "white" : "#374151",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              padding: "4px 8px",
+              margin: "2px",
+              cursor: "pointer",
+              fontSize: "12px",
             }}
           >
             {layoutType.charAt(0).toUpperCase() + layoutType.slice(1)}
@@ -523,35 +601,46 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
 
       {/* Zoom controls */}
       {enableZoom && (
-        <div className="zoom-controls" style={{ position: 'absolute', top: 10, left: 10, zIndex: 100 }}>
+        <div
+          className="zoom-controls"
+          style={{ position: "absolute", top: 10, left: 10, zIndex: 100 }}
+        >
           <button
             onClick={() => {
-              const newZoom = { scale: zoom.scale * 1.2, translateX: zoom.translateX, translateY: zoom.translateY };
+              const newZoom = {
+                scale: zoom.scale * 1.2,
+                translateX: zoom.translateX,
+                translateY: zoom.translateY,
+              };
               setZoom(clampZoom(newZoom, { minScale: 0.1, maxScale: 10 }));
             }}
             style={{
-              background: 'white',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              padding: '4px 8px',
-              margin: '2px',
-              cursor: 'pointer'
+              background: "white",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              padding: "4px 8px",
+              margin: "2px",
+              cursor: "pointer",
             }}
           >
             +
           </button>
           <button
             onClick={() => {
-              const newZoom = { scale: zoom.scale * 0.8, translateX: zoom.translateX, translateY: zoom.translateY };
+              const newZoom = {
+                scale: zoom.scale * 0.8,
+                translateX: zoom.translateX,
+                translateY: zoom.translateY,
+              };
               setZoom(clampZoom(newZoom, { minScale: 0.1, maxScale: 10 }));
             }}
             style={{
-              background: 'white',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              padding: '4px 8px',
-              margin: '2px',
-              cursor: 'pointer'
+              background: "white",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              padding: "4px 8px",
+              margin: "2px",
+              cursor: "pointer",
             }}
           >
             -
@@ -559,12 +648,12 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
           <button
             onClick={() => setZoom({ scale: 1, translateX: 0, translateY: 0 })}
             style={{
-              background: 'white',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              padding: '4px 8px',
-              margin: '2px',
-              cursor: 'pointer'
+              background: "white",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              padding: "4px 8px",
+              margin: "2px",
+              cursor: "pointer",
             }}
           >
             Reset
@@ -573,16 +662,16 @@ export const NetworkTopologyView: React.FC<NetworkTopologyViewProps> = ({
       )}
 
       {/* Chart title */}
-      <div 
+      <div
         className="chart-title"
         style={{
-          position: 'absolute',
-          top: '16px',
-          left: enableZoom ? '120px' : '16px',
-          fontSize: '16px',
-          fontWeight: '600',
-          color: '#1F2937',
-          zIndex: 10
+          position: "absolute",
+          top: "16px",
+          left: enableZoom ? "120px" : "16px",
+          fontSize: "16px",
+          fontWeight: "600",
+          color: "#1F2937",
+          zIndex: 10,
         }}
       >
         Network Topology

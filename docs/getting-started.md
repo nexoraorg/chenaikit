@@ -38,16 +38,16 @@ yarn global add @chenaikit/cli
 ### 1. Basic Setup
 
 ```typescript
-import { StellarConnector, AIService } from '@chenaikit/core';
+import { StellarConnector, AIService } from "@chenaikit/core";
 
 // Initialize Stellar connection
 const stellar = new StellarConnector({
-  network: 'testnet'
+  network: "testnet",
 });
 
 // Initialize AI service
 const ai = new AIService({
-  apiKey: process.env.AI_API_KEY
+  apiKey: process.env.AI_API_KEY,
 });
 ```
 
@@ -55,8 +55,8 @@ const ai = new AIService({
 
 ```typescript
 // Get account data
-const account = await stellar.getAccount('G...');
-console.log('Account:', account);
+const account = await stellar.getAccount("G...");
+console.log("Account:", account);
 ```
 
 ### 3. Calculate Credit Score
@@ -64,7 +64,7 @@ console.log('Account:', account);
 ```typescript
 // Calculate credit score
 const score = await ai.calculateCreditScore(account);
-console.log('Credit Score:', score);
+console.log("Credit Score:", score);
 ```
 
 ### 4. Detect Fraud
@@ -72,7 +72,7 @@ console.log('Credit Score:', score);
 ```typescript
 // Detect fraud in transaction
 const isFraud = await ai.detectFraud(transactionData);
-console.log('Is Fraud:', isFraud);
+console.log("Is Fraud:", isFraud);
 ```
 
 ## Next Steps

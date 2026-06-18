@@ -1,25 +1,27 @@
 // Wallet Chatbot - Example application
-console.log('Wallet Chatbot starting...');
+console.log("Wallet Chatbot starting...");
 
-import { WalletChatbotNLPIntegration } from './nlp-integration';
+import { WalletChatbotNLPIntegration } from "./nlp-integration";
 
 const chatbot = new WalletChatbotNLPIntegration(
   {
-    checkBalance: async () => 'Your balance is 1000 XLM.',
+    checkBalance: async () => "Your balance is 1000 XLM.",
     sendPayment: async ({ amount, destination, asset }) =>
       `Prepared ${amount} ${asset} transfer to ${destination}.`,
-    listTransactions: async (timeframe) => `Showing ${timeframe} transaction history.`,
-    swapAsset: async ({ amount, asset }) => `Prepared swap for ${amount} into ${asset}.`,
+    listTransactions: async (timeframe) =>
+      `Showing ${timeframe} transaction history.`,
+    swapAsset: async ({ amount, asset }) =>
+      `Prepared swap for ${amount} into ${asset}.`,
   },
   {
-    provider: 'rule-based',
-  }
+    provider: "rule-based",
+  },
 );
 
 // Example NLP-powered message processing
 export async function processMessage(
   message: string,
-  conversationId = 'demo-session'
+  conversationId = "demo-session",
 ): Promise<string> {
   return chatbot.handleUserMessage(conversationId, message);
 }

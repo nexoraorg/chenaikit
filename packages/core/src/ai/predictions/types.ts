@@ -51,7 +51,7 @@ export interface TrendComponents {
   seasonal: number[];
   residual: number[];
   seasonalityStrength: number; // 0..1
-  trendDirection: 'up' | 'down' | 'flat';
+  trendDirection: "up" | "down" | "flat";
   seasonalPeriod?: number;
 }
 
@@ -65,7 +65,7 @@ export interface FinancialHealth {
   expenseVolatility: number; // std dev of expenses
   liquidityDays: number; // balance / daily spend
   debtToIncome?: number;
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: "low" | "medium" | "high";
   suggestions: string[];
 }
 

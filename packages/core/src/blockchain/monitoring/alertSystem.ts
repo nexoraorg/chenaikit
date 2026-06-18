@@ -1,16 +1,16 @@
-import { EventEmitter } from 'eventemitter3';
-import NodeCache from 'node-cache';
-import { 
-  MonitoringConfig, 
-  Alert, 
-  AlertRule, 
-  AlertType, 
+import { EventEmitter } from "eventemitter3";
+import NodeCache from "node-cache";
+import {
+  MonitoringConfig,
+  Alert,
+  AlertRule,
+  AlertType,
   AlertSeverity,
   AlertCondition,
   AlertAction,
   TransactionEvent,
-  TransactionAnalysis
-} from './types';
+  TransactionAnalysis,
+} from "./types";
 
 /**
  * Alert system for managing and triggering monitoring alerts
@@ -26,17 +26,17 @@ export class AlertSystem extends EventEmitter {
   constructor(config: MonitoringConfig) {
     super();
     this.config = config;
-    
+
     // Cache for alert history (24 hours retention)
-    this.alertHistory = new NodeCache({ 
+    this.alertHistory = new NodeCache({
       stdTTL: 86400, // 24 hours
-      checkperiod: 3600 // cleanup every hour
+      checkperiod: 3600, // cleanup every hour
     });
-    
+
     // Cache for alert cooldowns
-    this.cooldownCache = new NodeCache({ 
+    this.cooldownCache = new NodeCache({
       stdTTL: 3600, // 1 hour default cooldown
-      checkperiod: 300 // cleanup every 5 minutes
+      checkperiod: 300, // cleanup every 5 minutes
     });
 
     this.initializeDefaultRules();
@@ -46,7 +46,7 @@ export class AlertSystem extends EventEmitter {
    * Start the alert system
    */
   public async start(): Promise<void> {
-    console.log('Alert system started');
+    console.log("Alert system started");
     this.processWebhookQueue();
   }
 
@@ -56,7 +56,7 @@ export class AlertSystem extends EventEmitter {
   public async stop(): Promise<void> {
     this.alertHistory.flushAll();
     this.cooldownCache.flushAll();
-    console.log('Alert system stopped');
+    console.log("Alert system stopped");
   }
 
   /**
@@ -102,7 +102,7 @@ export class AlertSystem extends EventEmitter {
 
       // Store alert in history
       this.alertHistory.set(alert.id, alert);
-      
+
       // Set cooldown if rule specifies one
       const rule = this.rules.get(alert.ruleId);
       if (rule && rule.cooldownPeriod) {
@@ -111,7 +111,7 @@ export class AlertSystem extends EventEmitter {
       }
 
       // Emit alert event
-      this.emit('alert', alert);
+      this.emit("alert", alert);
 
       // Execute alert actions
       if (rule) {
@@ -119,9 +119,8 @@ export class AlertSystem extends EventEmitter {
       }
 
       console.log(`Alert triggered: ${alert.title} (${alert.severity})`);
-
     } catch (error) {
-      console.error('Error triggering alert:', error);
+      console.error("Error triggering alert:", error);
       throw error;
     }
   }
@@ -129,7 +128,10 @@ export class AlertSystem extends EventEmitter {
   /**
    * Evaluate transaction against alert rules
    */
-  public async evaluateTransaction(transaction: TransactionEvent, analysis: TransactionAnalysis): Promise<Alert[]> {
+  public async evaluateTransaction(
+    transaction: TransactionEvent,
+    analysis: TransactionAnalysis,
+  ): Promise<Alert[]> {
     const triggeredAlerts: Alert[] = [];
 
     for (const [ruleId, rule] of this.rules.entries()) {
@@ -153,12 +155,14 @@ export class AlertSystem extends EventEmitter {
    * Get alert history
    */
   public getAlertHistory(limit: number = 100): Alert[] {
-    const allAlerts = this.alertHistory.mget(this.alertHistory.keys()) as { [key: string]: Alert };
+    const allAlerts = this.alertHistory.mget(this.alertHistory.keys()) as {
+      [key: string]: Alert;
+    };
     const alerts = Object.values(allAlerts);
-    
+
     // Sort by timestamp (newest first)
     alerts.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    
+
     return alerts.slice(0, limit);
   }
 
@@ -198,14 +202,14 @@ export class AlertSystem extends EventEmitter {
     unacknowledged: number;
   } {
     const alerts = this.getAlertHistory(1000); // Get last 1000 alerts for stats
-    
+
     const stats = {
       total: alerts.length,
       bySeverity: {
         [AlertSeverity.LOW]: 0,
         [AlertSeverity.MEDIUM]: 0,
         [AlertSeverity.HIGH]: 0,
-        [AlertSeverity.CRITICAL]: 0
+        [AlertSeverity.CRITICAL]: 0,
       },
       byType: {
         [AlertType.HIGH_VALUE_TRANSACTION]: 0,
@@ -213,12 +217,12 @@ export class AlertSystem extends EventEmitter {
         [AlertType.SUSPICIOUS_PATTERN]: 0,
         [AlertType.FRAUD_DETECTED]: 0,
         [AlertType.SYSTEM_ERROR]: 0,
-        [AlertType.CONNECTION_LOST]: 0
+        [AlertType.CONNECTION_LOST]: 0,
       },
-      unacknowledged: 0
+      unacknowledged: 0,
     };
 
-    alerts.forEach(alert => {
+    alerts.forEach((alert) => {
       stats.bySeverity[alert.severity]++;
       stats.byType[alert.type]++;
       if (!alert.acknowledged) {
@@ -235,85 +239,85 @@ export class AlertSystem extends EventEmitter {
   private initializeDefaultRules(): void {
     // High value transaction rule
     const highValueRule: AlertRule = {
-      id: 'high_value_rule',
+      id: "high_value_rule",
       type: AlertType.HIGH_VALUE_TRANSACTION,
       severity: AlertSeverity.MEDIUM,
-      name: 'High Value Transaction',
-      description: 'Alert when a transaction exceeds the high value threshold',
+      name: "High Value Transaction",
+      description: "Alert when a transaction exceeds the high value threshold",
       conditions: [
         {
-          field: 'analysis.volumeAnalysis.isHighValue',
-          operator: 'eq',
-          value: true
-        }
+          field: "analysis.volumeAnalysis.isHighValue",
+          operator: "eq",
+          value: true,
+        },
       ],
       actions: [
         {
-          type: 'websocket',
-          config: { channel: 'alerts' }
+          type: "websocket",
+          config: { channel: "alerts" },
         },
         {
-          type: 'log',
-          config: {}
-        }
+          type: "log",
+          config: {},
+        },
       ],
       enabled: true,
-      cooldownPeriod: 300000 // 5 minutes
+      cooldownPeriod: 300000, // 5 minutes
     };
 
     // Fraud detection rule
     const fraudRule: AlertRule = {
-      id: 'fraud_detection_rule',
+      id: "fraud_detection_rule",
       type: AlertType.FRAUD_DETECTED,
       severity: AlertSeverity.HIGH,
-      name: 'Fraud Detection',
-      description: 'Alert when fraud is detected',
+      name: "Fraud Detection",
+      description: "Alert when fraud is detected",
       conditions: [
         {
-          field: 'analysis.flags',
-          operator: 'contains',
-          value: 'fraud_detected'
-        }
+          field: "analysis.flags",
+          operator: "contains",
+          value: "fraud_detected",
+        },
       ],
       actions: [
         {
-          type: 'websocket',
-          config: { channel: 'alerts' }
+          type: "websocket",
+          config: { channel: "alerts" },
         },
         {
-          type: 'webhook',
-          config: { 
-            url: process.env.FRAUD_WEBHOOK_URL || '',
-            template: 'fraud_alert'
-          }
-        }
+          type: "webhook",
+          config: {
+            url: process.env.FRAUD_WEBHOOK_URL || "",
+            template: "fraud_alert",
+          },
+        },
       ],
       enabled: true,
-      cooldownPeriod: 60000 // 1 minute
+      cooldownPeriod: 60000, // 1 minute
     };
 
     // Rapid transactions rule
     const rapidRule: AlertRule = {
-      id: 'rapid_sequence_rule',
+      id: "rapid_sequence_rule",
       type: AlertType.RAPID_TRANSACTIONS,
       severity: AlertSeverity.MEDIUM,
-      name: 'Rapid Transaction Sequence',
-      description: 'Alert when rapid transaction sequences are detected',
+      name: "Rapid Transaction Sequence",
+      description: "Alert when rapid transaction sequences are detected",
       conditions: [
         {
-          field: 'analysis.patternAnalysis.isRapidSequence',
-          operator: 'eq',
-          value: true
-        }
+          field: "analysis.patternAnalysis.isRapidSequence",
+          operator: "eq",
+          value: true,
+        },
       ],
       actions: [
         {
-          type: 'websocket',
-          config: { channel: 'alerts' }
-        }
+          type: "websocket",
+          config: { channel: "alerts" },
+        },
       ],
       enabled: true,
-      cooldownPeriod: 600000 // 10 minutes
+      cooldownPeriod: 600000, // 10 minutes
     };
 
     this.addRule(highValueRule);
@@ -324,7 +328,11 @@ export class AlertSystem extends EventEmitter {
   /**
    * Evaluate a rule against transaction data
    */
-  private async evaluateRule(rule: AlertRule, transaction: TransactionEvent, analysis: TransactionAnalysis): Promise<boolean> {
+  private async evaluateRule(
+    rule: AlertRule,
+    transaction: TransactionEvent,
+    analysis: TransactionAnalysis,
+  ): Promise<boolean> {
     try {
       for (const condition of rule.conditions) {
         if (!this.evaluateCondition(condition, transaction, analysis)) {
@@ -341,24 +349,28 @@ export class AlertSystem extends EventEmitter {
   /**
    * Evaluate a single condition
    */
-  private evaluateCondition(condition: AlertCondition, transaction: TransactionEvent, analysis: TransactionAnalysis): boolean {
+  private evaluateCondition(
+    condition: AlertCondition,
+    transaction: TransactionEvent,
+    analysis: TransactionAnalysis,
+  ): boolean {
     const value = this.getFieldValue(condition.field, transaction, analysis);
-    
+
     switch (condition.operator) {
-      case 'gt':
+      case "gt":
         return Number(value) > Number(condition.value);
-      case 'lt':
+      case "lt":
         return Number(value) < Number(condition.value);
-      case 'eq':
+      case "eq":
         return value === condition.value;
-      case 'ne':
+      case "ne":
         return value !== condition.value;
-      case 'contains':
+      case "contains":
         if (Array.isArray(value)) {
           return value.includes(condition.value);
         }
         return String(value).includes(String(condition.value));
-      case 'matches':
+      case "matches":
         const regex = new RegExp(condition.value);
         return regex.test(String(value));
       default:
@@ -369,11 +381,15 @@ export class AlertSystem extends EventEmitter {
   /**
    * Get field value from transaction or analysis data
    */
-  private getFieldValue(fieldPath: string, transaction: TransactionEvent, analysis: TransactionAnalysis): any {
+  private getFieldValue(
+    fieldPath: string,
+    transaction: TransactionEvent,
+    analysis: TransactionAnalysis,
+  ): any {
     const data = { transaction, analysis };
-    
+
     try {
-      return fieldPath.split('.').reduce((obj, key) => {
+      return fieldPath.split(".").reduce((obj, key) => {
         return obj && obj[key] !== undefined ? obj[key] : undefined;
       }, data as any);
     } catch {
@@ -384,7 +400,11 @@ export class AlertSystem extends EventEmitter {
   /**
    * Create alert from rule and transaction data
    */
-  private createAlert(rule: AlertRule, transaction: TransactionEvent, analysis: TransactionAnalysis): Alert {
+  private createAlert(
+    rule: AlertRule,
+    transaction: TransactionEvent,
+    analysis: TransactionAnalysis,
+  ): Alert {
     return {
       id: `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       ruleId: rule.id,
@@ -395,14 +415,18 @@ export class AlertSystem extends EventEmitter {
       data: { transaction, analysis },
       timestamp: new Date(),
       acknowledged: false,
-      transactionId: transaction.id
+      transactionId: transaction.id,
     };
   }
 
   /**
    * Generate alert message
    */
-  private generateAlertMessage(rule: AlertRule, transaction: TransactionEvent, analysis: TransactionAnalysis): string {
+  private generateAlertMessage(
+    rule: AlertRule,
+    transaction: TransactionEvent,
+    analysis: TransactionAnalysis,
+  ): string {
     switch (rule.type) {
       case AlertType.HIGH_VALUE_TRANSACTION:
         return `High value transaction detected: ${transaction.hash} (Risk Score: ${analysis.riskScore})`;
@@ -438,46 +462,56 @@ export class AlertSystem extends EventEmitter {
     if (alert.data && alert.data.transaction) {
       return alert.data.transaction.sourceAccount;
     }
-    return 'global';
+    return "global";
   }
 
   /**
    * Execute alert actions
    */
-  private async executeAlertActions(alert: Alert, actions: AlertAction[]): Promise<void> {
-    const executionPromises = actions.map(action => this.executeAction(alert, action));
-    
+  private async executeAlertActions(
+    alert: Alert,
+    actions: AlertAction[],
+  ): Promise<void> {
+    const executionPromises = actions.map((action) =>
+      this.executeAction(alert, action),
+    );
+
     try {
       await Promise.all(executionPromises);
     } catch (error) {
-      console.error('Error executing alert actions:', error);
+      console.error("Error executing alert actions:", error);
     }
   }
 
   /**
    * Execute individual alert action
    */
-  private async executeAction(alert: Alert, action: AlertAction): Promise<void> {
+  private async executeAction(
+    alert: Alert,
+    action: AlertAction,
+  ): Promise<void> {
     try {
       switch (action.type) {
-        case 'websocket':
+        case "websocket":
           // WebSocket notifications handled by event emission
           break;
 
-        case 'webhook':
+        case "webhook":
           if (action.config.url) {
             this.webhookQueue.push(alert);
             this.processWebhookQueue();
           }
           break;
 
-        case 'email':
+        case "email":
           // Email notifications would be implemented here
           console.log(`Email alert: ${alert.title}`);
           break;
 
-        case 'log':
-          console.log(`ALERT [${alert.severity.toUpperCase()}]: ${alert.title} - ${alert.message}`);
+        case "log":
+          console.log(
+            `ALERT [${alert.severity.toUpperCase()}]: ${alert.title} - ${alert.message}`,
+          );
           break;
 
         default:
@@ -504,12 +538,12 @@ export class AlertSystem extends EventEmitter {
         if (alert) {
           await this.sendWebhook(alert);
         }
-        
+
         // Small delay between webhook calls
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     } catch (error) {
-      console.error('Error processing webhook queue:', error);
+      console.error("Error processing webhook queue:", error);
     } finally {
       this.processingWebhooks = false;
     }
@@ -523,7 +557,9 @@ export class AlertSystem extends EventEmitter {
       const rule = this.rules.get(alert.ruleId);
       if (!rule) return;
 
-      const webhookAction = rule.actions.find(action => action.type === 'webhook');
+      const webhookAction = rule.actions.find(
+        (action) => action.type === "webhook",
+      );
       if (!webhookAction || !webhookAction.config.url) return;
 
       const payload = {
@@ -534,19 +570,19 @@ export class AlertSystem extends EventEmitter {
           title: alert.title,
           message: alert.message,
           timestamp: alert.timestamp.toISOString(),
-          transactionId: alert.transactionId
+          transactionId: alert.transactionId,
         },
         transaction: alert.data.transaction,
-        analysis: alert.data.analysis
+        analysis: alert.data.analysis,
       };
 
       const response = await fetch(webhookAction.config.url, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'ChenAIKit-AlertSystem/1.0'
+          "Content-Type": "application/json",
+          "User-Agent": "ChenAIKit-AlertSystem/1.0",
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -554,10 +590,9 @@ export class AlertSystem extends EventEmitter {
       }
 
       console.log(`Webhook sent successfully for alert: ${alert.id}`);
-
     } catch (error) {
       console.error(`Failed to send webhook for alert ${alert.id}:`, error);
-      
+
       // Optionally retry webhook (implement retry logic here)
     }
   }

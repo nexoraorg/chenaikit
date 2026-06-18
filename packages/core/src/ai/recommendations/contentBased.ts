@@ -1,5 +1,5 @@
 // packages/core/src/ai/recommendations/contentBased.ts
-import { Item, Interaction, Recommendation, UserProfile } from './types';
+import { Item, Interaction, Recommendation, UserProfile } from "./types";
 
 function dotSparse(a: Record<string, number>, b: Record<string, number>) {
   let s = 0;
@@ -60,10 +60,10 @@ export class ContentBasedRecommender {
           const token = `${k}:${String(vv)}`;
           out[token] = (out[token] || 0) + 1;
         }
-      } else if (typeof v === 'string') {
+      } else if (typeof v === "string") {
         const token = `${k}:${v}`;
         out[token] = (out[token] || 0) + 1;
-      } else if (typeof v === 'number') {
+      } else if (typeof v === "number") {
         out[k] = (out[k] || 0) + v;
       } else {
         const token = `${k}:${String(v)}`;
@@ -80,14 +80,15 @@ export class ContentBasedRecommender {
     for (const it of userInteractions) {
       const itemVec = this.itemVectors.get(it.itemId);
       if (!itemVec) continue;
-      const weight = typeof it.rating === 'number' ? it.rating : 1;
+      const weight = typeof it.rating === "number" ? it.rating : 1;
       totalWeight += weight;
       for (const k of Object.keys(itemVec)) {
         profile[k] = (profile[k] || 0) + itemVec[k] * weight;
       }
     }
     if (totalWeight > 0) {
-      for (const k of Object.keys(profile)) profile[k] = profile[k] / totalWeight;
+      for (const k of Object.keys(profile))
+        profile[k] = profile[k] / totalWeight;
     }
     return { userId, vector: profile };
   }
@@ -95,21 +96,22 @@ export class ContentBasedRecommender {
   recommendForUser(
     userId: string,
     interactions: Interaction[],
-    topN = 10
+    topN = 10,
   ): Recommendation[] {
     const profile = this.buildUserProfile(userId, interactions);
 
     const noProfile = Object.keys(profile.vector).length === 0;
     if (noProfile) {
-
-        return this.items
+      return this.items
         .slice()
         .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
         .slice(0, topN)
         .map((it) => ({ itemId: it.id, score: it.popularity || 0 }));
     }
 
-    const seenItemIds = new Set(interactions.filter((it) => it.userId === userId).map((it) => it.itemId));
+    const seenItemIds = new Set(
+      interactions.filter((it) => it.userId === userId).map((it) => it.itemId),
+    );
     const scores: Recommendation[] = [];
     for (const it of this.items) {
       if (seenItemIds.has(it.id)) continue;

@@ -10,7 +10,7 @@
  *     createVersionRouter({ v1: v1Router, v2: v2Router }));
  */
 
-import type { Request, Response, NextFunction, RequestHandler } from 'express';
+import type { Request, Response, NextFunction, RequestHandler } from "express";
 import {
   API_VERSIONS,
   DEFAULT_VERSION,
@@ -23,10 +23,10 @@ import {
   isSunset,
   normalizeVersion,
   isSupportedVersion,
-} from '../utils/versionUtils';
-import { log } from '../utils/logger';
+} from "../utils/versionUtils";
+import { log } from "../utils/logger";
 
-export type VersionSource = 'path' | 'header' | 'query' | 'default';
+export type VersionSource = "path" | "header" | "query" | "default";
 
 /** Matches a leading "/v{n}" path segment (case-insensitive). */
 const PATH_VERSION_RE = /^\/(v\d+)(?=\/|\?|$)/i;
@@ -43,16 +43,16 @@ const PATH_VERSION_RE = /^\/(v\d+)(?=\/|\?|$)/i;
 export function detectVersion(): RequestHandler {
   return (req: Request, res: Response, next: NextFunction): void => {
     let raw: string | undefined;
-    let source: VersionSource = 'default';
+    let source: VersionSource = "default";
 
     // 1. URL path versioning: leading /v{n}
     const pathMatch = req.path.match(PATH_VERSION_RE);
     if (pathMatch) {
       raw = pathMatch[1];
-      source = 'path';
+      source = "path";
       // Strip the version prefix from req.url (preserving any query string).
-      req.url = req.url.replace(/^\/v\d+/i, '');
-      if (!req.url.startsWith('/')) req.url = `/${req.url}`;
+      req.url = req.url.replace(/^\/v\d+/i, "");
+      if (!req.url.startsWith("/")) req.url = `/${req.url}`;
     }
 
     // 2. Header versioning: Accept-Version
@@ -60,7 +60,7 @@ export function detectVersion(): RequestHandler {
       const headerVal = req.header(VERSION_HEADER);
       if (headerVal) {
         raw = headerVal;
-        source = 'header';
+        source = "header";
       }
     }
 
@@ -68,9 +68,9 @@ export function detectVersion(): RequestHandler {
     if (!raw) {
       for (const param of VERSION_QUERY_PARAMS) {
         const value = req.query[param];
-        if (typeof value === 'string' && value) {
+        if (typeof value === "string" && value) {
           raw = value;
-          source = 'query';
+          source = "query";
           break;
         }
       }
@@ -78,7 +78,7 @@ export function detectVersion(): RequestHandler {
 
     if (raw === undefined) {
       req.apiVersion = DEFAULT_VERSION;
-      req.apiVersionSource = 'default';
+      req.apiVersionSource = "default";
       next();
       return;
     }
@@ -88,7 +88,7 @@ export function detectVersion(): RequestHandler {
       res.status(400).json({
         success: false,
         error: {
-          code: 'UNSUPPORTED_API_VERSION',
+          code: "UNSUPPORTED_API_VERSION",
           message: `API version '${raw}' is not supported.`,
           supportedVersions: getSupportedVersions(),
           latestVersion: LATEST_VERSION,
@@ -120,7 +120,7 @@ export function versionHeaders(): RequestHandler {
     const cfg = getVersionConfig(version);
 
     res.setHeader(RESPONSE_VERSION_HEADER, version);
-    res.setHeader('X-API-Version-Latest', LATEST_VERSION);
+    res.setHeader("X-API-Version-Latest", LATEST_VERSION);
 
     if (!cfg) {
       next();
@@ -128,12 +128,12 @@ export function versionHeaders(): RequestHandler {
     }
 
     if (cfg.sunsetDate) {
-      res.setHeader('Sunset', new Date(cfg.sunsetDate).toUTCString());
+      res.setHeader("Sunset", new Date(cfg.sunsetDate).toUTCString());
     }
 
     // Sunset enforcement: retired versions stop serving traffic.
     if (isSunset(version)) {
-      log.warn('Sunset API version requested', {
+      log.warn("Sunset API version requested", {
         version,
         path: req.originalUrl,
         source: req.apiVersionSource,
@@ -141,9 +141,9 @@ export function versionHeaders(): RequestHandler {
       res.status(410).json({
         success: false,
         error: {
-          code: 'API_VERSION_SUNSET',
+          code: "API_VERSION_SUNSET",
           message: `API ${version} was retired${
-            cfg.sunsetDate ? ` on ${cfg.sunsetDate}` : ''
+            cfg.sunsetDate ? ` on ${cfg.sunsetDate}` : ""
           }. Please migrate to ${cfg.successor || LATEST_VERSION}.`,
           latestVersion: LATEST_VERSION,
           migrationGuide: cfg.docsUrl,
@@ -154,22 +154,29 @@ export function versionHeaders(): RequestHandler {
     }
 
     // Deprecation warnings for versions still in service.
-    if (cfg.status === 'deprecated') {
+    if (cfg.status === "deprecated") {
       res.setHeader(
-        'Deprecation',
-        cfg.deprecationDate ? new Date(cfg.deprecationDate).toUTCString() : 'true'
+        "Deprecation",
+        cfg.deprecationDate
+          ? new Date(cfg.deprecationDate).toUTCString()
+          : "true",
       );
-      const sunsetMsg = cfg.sunsetDate ? ` It will be sunset on ${cfg.sunsetDate}.` : '';
+      const sunsetMsg = cfg.sunsetDate
+        ? ` It will be sunset on ${cfg.sunsetDate}.`
+        : "";
       res.setHeader(
-        'Warning',
+        "Warning",
         `299 - "Deprecated API version ${version}.${sunsetMsg} Migrate to ${
           cfg.successor || LATEST_VERSION
-        }."`
+        }."`,
       );
       if (cfg.docsUrl) {
-        res.setHeader('Link', `<${cfg.docsUrl}>; rel="deprecation"; type="text/html"`);
+        res.setHeader(
+          "Link",
+          `<${cfg.docsUrl}>; rel="deprecation"; type="text/html"`,
+        );
       }
-      log.warn('Deprecated API version used', {
+      log.warn("Deprecated API version used", {
         version,
         path: req.originalUrl,
         source: req.apiVersionSource,
@@ -187,7 +194,9 @@ export function versionHeaders(): RequestHandler {
  *
  * Requires `detectVersion()` to have run first.
  */
-export function createVersionRouter(routers: Record<string, RequestHandler>): RequestHandler {
+export function createVersionRouter(
+  routers: Record<string, RequestHandler>,
+): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
     const version = req.apiVersion || DEFAULT_VERSION;
     const handler = routers[version] || routers[DEFAULT_VERSION];
@@ -214,9 +223,9 @@ export function requireVersion(...versions: string[]): RequestHandler {
     res.status(404).json({
       success: false,
       error: {
-        code: 'ENDPOINT_NOT_IN_VERSION',
+        code: "ENDPOINT_NOT_IN_VERSION",
         message: `This endpoint is not available in API ${version}. Available in: ${versions.join(
-          ', '
+          ", ",
         )}.`,
         latestVersion: LATEST_VERSION,
         timestamp: new Date().toISOString(),

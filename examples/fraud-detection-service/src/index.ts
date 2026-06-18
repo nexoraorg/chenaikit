@@ -1,5 +1,5 @@
 // Fraud Detection Service - Example application
-console.log('Fraud Detection Service starting...');
+console.log("Fraud Detection Service starting...");
 
 // TODO: Implement fraud detection logic
 export function detectFraud(transactionData: any): boolean {

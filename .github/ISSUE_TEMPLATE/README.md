@@ -5,6 +5,7 @@ This directory contains issue templates for different areas of the ChenAIKit pro
 ## Available Issue Templates
 
 ### Frontend Issues (6 templates)
+
 1. **React Components for Credit Score Dashboard** - Build reusable React components
 2. **Wallet Interface UI Components** - Create modern wallet interface
 3. **Fraud Detection Alert System UI** - Build alert system for fraud notifications
@@ -13,6 +14,7 @@ This directory contains issue templates for different areas of the ChenAIKit pro
 6. **Responsive Layout System** - Build flexible, responsive layouts
 
 ### Backend Issues (6 templates)
+
 1. **REST API Endpoints for Account Management** - Build account management APIs
 2. **Database Models and Schemas** - Design and implement data models
 3. **Authentication and Authorization System** - Implement secure auth system
@@ -21,6 +23,7 @@ This directory contains issue templates for different areas of the ChenAIKit pro
 6. **Application Monitoring and Logging** - Add comprehensive monitoring
 
 ### AI Issues (6 templates)
+
 1. **Machine Learning Models for Credit Scoring** - Integrate ML models
 2. **Real-time Fraud Detection Algorithm** - Build fraud detection system
 3. **Natural Language Processing** - Add NLP for transaction analysis
@@ -29,6 +32,7 @@ This directory contains issue templates for different areas of the ChenAIKit pro
 6. **MLOps Pipeline** - Build model management pipeline
 
 ### Blockchain Issues (6 templates)
+
 1. **Enhanced Stellar Network Integration** - Improve Stellar integration
 2. **Advanced Soroban Smart Contracts** - Develop complex smart contracts
 3. **Real-time Transaction Monitoring** - Build transaction monitoring system
@@ -47,6 +51,7 @@ This directory contains issue templates for different areas of the ChenAIKit pro
 ## Contributing
 
 When creating new issue templates:
+
 - Follow the existing format and structure
 - Include clear acceptance criteria
 - Provide relevant resources and documentation links
@@ -56,6 +61,7 @@ When creating new issue templates:
 ## Labels
 
 Each template includes appropriate labels:
+
 - `good first issue` - Suitable for new contributors
 - `beginner` - Entry-level difficulty
 - Section labels: `frontend`, `backend`, `ai`, `blockchain`

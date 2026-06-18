@@ -1,5 +1,5 @@
-import { ApiKey } from '../models/ApiKey';
-import { FlagEvaluation } from '../models/FeatureFlag';
+import { ApiKey } from "../models/ApiKey";
+import { FlagEvaluation } from "../models/FeatureFlag";
 
 declare global {
   namespace Express {
@@ -9,7 +9,7 @@ declare global {
       /** Canonical API version resolved by the versioning middleware (e.g. "v1"). */
       apiVersion?: string;
       /** How the version was determined: path | header | query | default. */
-      apiVersionSource?: 'path' | 'header' | 'query' | 'default';
+      apiVersionSource?: "path" | "header" | "query" | "default";
     }
   }
 }

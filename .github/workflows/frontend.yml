@@ -6,15 +6,15 @@ on:
       - main
       - develop
     paths:
-      - 'frontend/**'
-      - 'packages/core/**'
+      - "frontend/**"
+      - "packages/core/**"
   pull_request:
     branches:
       - main
       - develop
     paths:
-      - 'frontend/**'
-      - 'packages/core/**'
+      - "frontend/**"
+      - "packages/core/**"
 
 jobs:
   build-and-test:
@@ -30,8 +30,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'pnpm'
+          node-version: "24"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

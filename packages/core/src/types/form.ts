@@ -10,7 +10,15 @@ export interface ValidationRule {
 export interface FormFieldConfig {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'textarea' | 'select';
+  type:
+    | "text"
+    | "email"
+    | "password"
+    | "number"
+    | "tel"
+    | "url"
+    | "textarea"
+    | "select";
   placeholder?: string;
   required?: boolean;
   validation?: ValidationRule;
@@ -21,7 +29,7 @@ export interface FormFieldConfig {
 export interface FormError {
   field: string;
   message: string;
-  type: 'validation' | 'async' | 'submit';
+  type: "validation" | "async" | "submit";
 }
 
 export interface FormState {

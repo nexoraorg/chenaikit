@@ -12,7 +12,7 @@
  *   4. Default version fallback
  */
 
-export type VersionStatus = 'active' | 'deprecated' | 'sunset';
+export type VersionStatus = "active" | "deprecated" | "sunset";
 
 export interface VersionConfig {
   /** Canonical version identifier, e.g. "v1". */
@@ -34,11 +34,11 @@ export interface VersionConfig {
 }
 
 /** Request header clients use to negotiate a version. */
-export const VERSION_HEADER = 'Accept-Version';
+export const VERSION_HEADER = "Accept-Version";
 /** Response header echoing the version that served the request. */
-export const RESPONSE_VERSION_HEADER = 'X-API-Version';
+export const RESPONSE_VERSION_HEADER = "X-API-Version";
 /** Query parameters accepted for query-string versioning. */
-export const VERSION_QUERY_PARAMS = ['version', 'api-version', 'v'] as const;
+export const VERSION_QUERY_PARAMS = ["version", "api-version", "v"] as const;
 
 /**
  * Registry of supported API versions and their lifecycle metadata.
@@ -48,28 +48,28 @@ export const VERSION_QUERY_PARAMS = ['version', 'api-version', 'v'] as const;
  */
 export const API_VERSIONS: Record<string, VersionConfig> = {
   v1: {
-    version: 'v1',
-    semver: '1.0.0',
-    status: 'deprecated',
-    releaseDate: '2025-01-01',
-    deprecationDate: '2026-01-01',
-    sunsetDate: '2026-12-31',
-    successor: 'v2',
-    docsUrl: '/docs/api/migration/v1-to-v2.md',
+    version: "v1",
+    semver: "1.0.0",
+    status: "deprecated",
+    releaseDate: "2025-01-01",
+    deprecationDate: "2026-01-01",
+    sunsetDate: "2026-12-31",
+    successor: "v2",
+    docsUrl: "/docs/api/migration/v1-to-v2.md",
   },
   v2: {
-    version: 'v2',
-    semver: '2.0.0',
-    status: 'active',
-    releaseDate: '2026-01-01',
-    docsUrl: '/docs/api/versioning.md',
+    version: "v2",
+    semver: "2.0.0",
+    status: "active",
+    releaseDate: "2026-01-01",
+    docsUrl: "/docs/api/versioning.md",
   },
 };
 
 /** Version served when a client does not request one explicitly. */
-export const DEFAULT_VERSION = 'v1';
+export const DEFAULT_VERSION = "v1";
 /** Newest available version, advertised to clients on every response. */
-export const LATEST_VERSION = 'v2';
+export const LATEST_VERSION = "v2";
 
 /** List of currently supported version identifiers. */
 export function getSupportedVersions(): string[] {
@@ -99,7 +99,9 @@ export function normalizeVersion(raw?: string | null): string | null {
 
 /** True when the given canonical version is registered. */
 export function isSupportedVersion(version?: string | null): boolean {
-  return !!version && Object.prototype.hasOwnProperty.call(API_VERSIONS, version);
+  return (
+    !!version && Object.prototype.hasOwnProperty.call(API_VERSIONS, version)
+  );
 }
 
 /** Look up the config for a canonical version, if any. */
@@ -109,7 +111,7 @@ export function getVersionConfig(version: string): VersionConfig | undefined {
 
 /** True when the version is flagged as deprecated. */
 export function isDeprecated(version: string): boolean {
-  return getVersionConfig(version)?.status === 'deprecated';
+  return getVersionConfig(version)?.status === "deprecated";
 }
 
 /**
@@ -119,7 +121,7 @@ export function isDeprecated(version: string): boolean {
 export function isSunset(version: string, now: Date = new Date()): boolean {
   const cfg = getVersionConfig(version);
   if (!cfg) return false;
-  if (cfg.status === 'sunset') return true;
+  if (cfg.status === "sunset") return true;
   if (!cfg.sunsetDate) return false;
   return now.getTime() >= new Date(cfg.sunsetDate).getTime();
 }
@@ -129,8 +131,8 @@ export function isSunset(version: string, now: Date = new Date()): boolean {
  * Returns -1 if a < b, 1 if a > b, 0 if equal.
  */
 export function compareSemver(a: string, b: string): number {
-  const pa = a.split('.').map((n) => parseInt(n, 10) || 0);
-  const pb = b.split('.').map((n) => parseInt(n, 10) || 0);
+  const pa = a.split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = b.split(".").map((n) => parseInt(n, 10) || 0);
   const len = Math.max(pa.length, pb.length);
   for (let i = 0; i < len; i += 1) {
     const da = pa[i] ?? 0;
@@ -150,15 +152,20 @@ export function resolveVersion(candidates: {
   path?: string | null;
   header?: string | null;
   query?: string | null;
-}): { version: string; source: 'path' | 'header' | 'query' | 'default' } | null {
-  const ordered: Array<['path' | 'header' | 'query', string | null | undefined]> = [
-    ['path', candidates.path],
-    ['header', candidates.header],
-    ['query', candidates.query],
+}): {
+  version: string;
+  source: "path" | "header" | "query" | "default";
+} | null {
+  const ordered: Array<
+    ["path" | "header" | "query", string | null | undefined]
+  > = [
+    ["path", candidates.path],
+    ["header", candidates.header],
+    ["query", candidates.query],
   ];
 
   for (const [source, raw] of ordered) {
-    if (raw === undefined || raw === null || raw === '') continue;
+    if (raw === undefined || raw === null || raw === "") continue;
     const normalized = normalizeVersion(raw);
     if (!normalized || !isSupportedVersion(normalized)) {
       return null; // explicit but unsupported version
@@ -166,5 +173,5 @@ export function resolveVersion(candidates: {
     return { version: normalized, source };
   }
 
-  return { version: DEFAULT_VERSION, source: 'default' };
+  return { version: DEFAULT_VERSION, source: "default" };
 }

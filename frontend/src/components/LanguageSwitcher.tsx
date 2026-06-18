@@ -1,5 +1,5 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
+import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   FormControl,
@@ -8,24 +8,28 @@ import {
   Typography,
   Tooltip,
   Avatar,
-  Chip
-} from '@mui/material';
-import { supportedLanguages, changeLanguage, getCurrentLanguage } from '../i18n/config';
+  Chip,
+} from "@mui/material";
+import {
+  supportedLanguages,
+  changeLanguage,
+  getCurrentLanguage,
+} from "../i18n/config";
 
 interface LanguageSwitcherProps {
-  variant?: 'select' | 'chip' | 'avatar';
-  size?: 'small' | 'medium' | 'large';
+  variant?: "select" | "chip" | "avatar";
+  size?: "small" | "medium" | "large";
   showFlag?: boolean;
   showNativeName?: boolean;
   compact?: boolean;
 }
 
 export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
-  variant = 'select',
-  size = 'medium',
+  variant = "select",
+  size = "medium",
   showFlag = true,
   showNativeName = true,
-  compact = false
+  compact = false,
 }) => {
   const { i18n } = useTranslation();
   const currentLang = getCurrentLanguage();
@@ -36,29 +40,32 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   };
 
   const getCurrentLanguageInfo = () => {
-    return supportedLanguages.find(lang => lang.code === currentLang) || supportedLanguages[0];
+    return (
+      supportedLanguages.find((lang) => lang.code === currentLang) ||
+      supportedLanguages[0]
+    );
   };
 
   const renderSelectVariant = () => (
-    <FormControl size={size === 'large' ? 'medium' : size}>
+    <FormControl size={size === "large" ? "medium" : size}>
       <Select
         value={currentLang}
         onChange={handleLanguageChange}
         displayEmpty
         sx={{
           minWidth: compact ? 120 : 200,
-          '& .MuiSelect-select': {
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
-          }
+          "& .MuiSelect-select": {
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          },
         }}
       >
         {supportedLanguages.map((language) => (
           <MenuItem key={language.code} value={language.code}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               {showFlag && (
-                <Typography sx={{ fontSize: '1.2em' }}>
+                <Typography sx={{ fontSize: "1.2em" }}>
                   {language.flag}
                 </Typography>
               )}
@@ -81,16 +88,16 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 
   const renderChipVariant = () => {
     const currentLangInfo = getCurrentLanguageInfo();
-    
+
     return (
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
         {supportedLanguages.map((language) => (
           <Chip
             key={language.code}
             label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 {showFlag && (
-                  <Typography sx={{ fontSize: '0.9em' }}>
+                  <Typography sx={{ fontSize: "0.9em" }}>
                     {language.flag}
                   </Typography>
                 )}
@@ -98,14 +105,17 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
               </Box>
             }
             onClick={() => changeLanguage(language.code)}
-            variant={language.code === currentLang ? 'filled' : 'outlined'}
-            color={language.code === currentLang ? 'primary' : 'default'}
-            size={size === 'large' ? 'medium' : size}
+            variant={language.code === currentLang ? "filled" : "outlined"}
+            color={language.code === currentLang ? "primary" : "default"}
+            size={size === "large" ? "medium" : size}
             clickable
             sx={{
-              '&:hover': {
-                backgroundColor: language.code === currentLang ? 'primary.dark' : 'action.hover'
-              }
+              "&:hover": {
+                backgroundColor:
+                  language.code === currentLang
+                    ? "primary.dark"
+                    : "action.hover",
+              },
             }}
           />
         ))}
@@ -115,24 +125,27 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 
   const renderAvatarVariant = () => {
     const currentLangInfo = getCurrentLanguageInfo();
-    
+
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Tooltip title={i18n.t('settings.language')}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Tooltip title={i18n.t("settings.language")}>
           <Avatar
             sx={{
-              width: size === 'large' ? 48 : size === 'small' ? 32 : 40,
-              height: size === 'large' ? 48 : size === 'small' ? 32 : 40,
-              fontSize: size === 'large' ? '1.5em' : size === 'small' ? '1em' : '1.2em',
-              cursor: 'pointer',
-              backgroundColor: 'primary.main',
-              '&:hover': {
-                backgroundColor: 'primary.dark'
-              }
+              width: size === "large" ? 48 : size === "small" ? 32 : 40,
+              height: size === "large" ? 48 : size === "small" ? 32 : 40,
+              fontSize:
+                size === "large" ? "1.5em" : size === "small" ? "1em" : "1.2em",
+              cursor: "pointer",
+              backgroundColor: "primary.main",
+              "&:hover": {
+                backgroundColor: "primary.dark",
+              },
             }}
             onClick={() => {
               // Cycle through languages
-              const currentIndex = supportedLanguages.findIndex(lang => lang.code === currentLang);
+              const currentIndex = supportedLanguages.findIndex(
+                (lang) => lang.code === currentLang,
+              );
               const nextIndex = (currentIndex + 1) % supportedLanguages.length;
               changeLanguage(supportedLanguages[nextIndex].code);
             }}
@@ -156,22 +169,26 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 
   const renderCompactVariant = () => {
     const currentLangInfo = getCurrentLanguageInfo();
-    
+
     return (
-      <Tooltip title={`${currentLangInfo.nativeName} (${currentLangInfo.name})`}>
+      <Tooltip
+        title={`${currentLangInfo.nativeName} (${currentLangInfo.name})`}
+      >
         <Typography
           sx={{
-            fontSize: '1.5em',
-            cursor: 'pointer',
-            userSelect: 'none',
-            '&:hover': {
-              transform: 'scale(1.1)',
-              transition: 'transform 0.2s'
-            }
+            fontSize: "1.5em",
+            cursor: "pointer",
+            userSelect: "none",
+            "&:hover": {
+              transform: "scale(1.1)",
+              transition: "transform 0.2s",
+            },
           }}
           onClick={() => {
             // Cycle through languages
-            const currentIndex = supportedLanguages.findIndex(lang => lang.code === currentLang);
+            const currentIndex = supportedLanguages.findIndex(
+              (lang) => lang.code === currentLang,
+            );
             const nextIndex = (currentIndex + 1) % supportedLanguages.length;
             changeLanguage(supportedLanguages[nextIndex].code);
           }}
@@ -183,9 +200,9 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   };
 
   switch (variant) {
-    case 'chip':
+    case "chip":
       return renderChipVariant();
-    case 'avatar':
+    case "avatar":
       return renderAvatarVariant();
     default:
       return renderSelectVariant();
@@ -200,29 +217,30 @@ export const MobileLanguageSelector: React.FC = () => {
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h6" gutterBottom>
-        {t('settings.language')}
+        {t("settings.language")}
       </Typography>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         {supportedLanguages.map((language) => (
           <Box
             key={language.code}
             onClick={() => changeLanguage(language.code)}
             sx={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               gap: 2,
               p: 2,
               borderRadius: 1,
-              cursor: 'pointer',
-              backgroundColor: language.code === currentLang ? 'action.selected' : 'transparent',
-              '&:hover': {
-                backgroundColor: 'action.hover'
-              }
+              cursor: "pointer",
+              backgroundColor:
+                language.code === currentLang
+                  ? "action.selected"
+                  : "transparent",
+              "&:hover": {
+                backgroundColor: "action.hover",
+              },
             }}
           >
-            <Typography sx={{ fontSize: '1.5em' }}>
-              {language.flag}
-            </Typography>
+            <Typography sx={{ fontSize: "1.5em" }}>{language.flag}</Typography>
             <Box sx={{ flex: 1 }}>
               <Typography variant="body1" sx={{ fontWeight: 500 }}>
                 {language.nativeName}
@@ -232,9 +250,7 @@ export const MobileLanguageSelector: React.FC = () => {
               </Typography>
             </Box>
             {language.code === currentLang && (
-              <Typography color="primary.main">
-                ✓
-              </Typography>
+              <Typography color="primary.main">✓</Typography>
             )}
           </Box>
         ))}
@@ -247,13 +263,13 @@ export const MobileLanguageSelector: React.FC = () => {
 export const LanguageInfo: React.FC = () => {
   const { t, i18n } = useTranslation();
   const currentLang = getCurrentLanguage();
-  const currentLangInfo = supportedLanguages.find(lang => lang.code === currentLang) || supportedLanguages[0];
+  const currentLangInfo =
+    supportedLanguages.find((lang) => lang.code === currentLang) ||
+    supportedLanguages[0];
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <Typography sx={{ fontSize: '1.2em' }}>
-        {currentLangInfo.flag}
-      </Typography>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <Typography sx={{ fontSize: "1.2em" }}>{currentLangInfo.flag}</Typography>
       <Typography variant="body2" color="text.secondary">
         {currentLangInfo.nativeName}
       </Typography>

@@ -1,24 +1,33 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import 'reflect-metadata';
-import { User } from './User';
-import { Transaction } from './Transaction';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  Index,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from "typeorm";
+import "reflect-metadata";
+import { User } from "./User";
+import { Transaction } from "./Transaction";
 
 @Entity()
-@Index(['stellarAddress'])
+@Index(["stellarAddress"])
 export class Account {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ type: 'varchar', length: 56 })
+  @Column({ type: "varchar", length: 56 })
   stellarAddress!: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: "varchar", length: 255, nullable: true })
   nickname?: string;
 
-  @ManyToOne(() => User, user => user.accounts, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.accounts, { onDelete: "CASCADE" })
   user!: User;
 
-  @OneToMany(() => Transaction, transaction => transaction.account)
+  @OneToMany(() => Transaction, (transaction) => transaction.account)
   transactions!: Transaction[];
 
   @CreateDateColumn()

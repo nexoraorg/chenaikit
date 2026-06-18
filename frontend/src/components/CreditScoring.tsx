@@ -1,7 +1,7 @@
 // ChenAIKit Credit Scoring Component
 // TODO: Implement credit scoring component - See frontend-01-react-components.md issue template
 
-import React from 'react';
+import React from "react";
 
 const CreditScoring: React.FC = () => {
   return (

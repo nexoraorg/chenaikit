@@ -1,18 +1,24 @@
-import React, { forwardRef } from 'react';
-import { FormFieldProps } from '@chenaikit/core';
-import { FormError } from './FormError';
+import React, { forwardRef } from "react";
+import { FormFieldProps } from "@chenaikit/core";
+import { FormError } from "./FormError";
 
-export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, FormFieldProps>(
-  ({ 
-    config, 
-    value, 
-    error, 
-    touched, 
-    onChange, 
-    onBlur, 
-    onFocus, 
-    disabled = false 
-  }, ref) => {
+export const FormField = forwardRef<
+  HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+  FormFieldProps
+>(
+  (
+    {
+      config,
+      value,
+      error,
+      touched,
+      onChange,
+      onBlur,
+      onFocus,
+      disabled = false,
+    },
+    ref,
+  ) => {
     const {
       name,
       label,
@@ -20,7 +26,7 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
       placeholder,
       required,
       options = [],
-      disabled: fieldDisabled = false
+      disabled: fieldDisabled = false,
     } = config;
 
     const isDisabled = disabled || fieldDisabled;
@@ -32,21 +38,25 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
     const commonProps = {
       id: fieldId,
       name,
-      value: value || '',
-      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      value: value || "",
+      onChange: (
+        e: React.ChangeEvent<
+          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >,
+      ) => {
         onChange(e.target.value);
       },
       onBlur,
       onFocus,
       disabled: isDisabled,
-      'aria-invalid': !!hasError,
-      'aria-describedby': hasError ? errorId : undefined,
-      className: `form-field__input ${hasError ? 'form-field__input--error' : ''} ${isDisabled ? 'form-field__input--disabled' : ''}`
+      "aria-invalid": !!hasError,
+      "aria-describedby": hasError ? errorId : undefined,
+      className: `form-field__input ${hasError ? "form-field__input--error" : ""} ${isDisabled ? "form-field__input--disabled" : ""}`,
     };
 
     const renderInput = () => {
       switch (type) {
-        case 'textarea':
+        case "textarea":
           return (
             <textarea
               {...commonProps}
@@ -57,7 +67,7 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
             />
           );
 
-        case 'select':
+        case "select":
           return (
             <select
               {...commonProps}
@@ -91,8 +101,10 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
     };
 
     return (
-      <div className={`form-field ${hasError ? 'form-field--error' : ''} ${isDisabled ? 'form-field--disabled' : ''}`}>
-        <label 
+      <div
+        className={`form-field ${hasError ? "form-field--error" : ""} ${isDisabled ? "form-field--disabled" : ""}`}
+      >
+        <label
           htmlFor={fieldId}
           className="form-field__label"
           id={`${name}-label`}
@@ -107,25 +119,21 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
 
         <div className="form-field__input-wrapper">
           {renderInput()}
-          
+
           {/* Loading indicator for async validation */}
-          {type === 'text' && name.includes('address') && (
+          {type === "text" && name.includes("address") && (
             <div className="form-field__loading" aria-hidden="true">
               <span className="form-field__loading-spinner">⟳</span>
             </div>
           )}
         </div>
 
-        <FormError 
-          error={error}
-          field={name}
-          className="form-field__error"
-        />
+        <FormError error={error} field={name} className="form-field__error" />
       </div>
     );
-  }
+  },
 );
 
-FormField.displayName = 'FormField';
+FormField.displayName = "FormField";
 
 export default FormField;

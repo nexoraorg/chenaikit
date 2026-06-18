@@ -1,18 +1,18 @@
 export type WalletIntent =
-  | 'check_balance'
-  | 'send_payment'
-  | 'show_transactions'
-  | 'swap_asset'
-  | 'request_help'
-  | 'unknown';
+  | "check_balance"
+  | "send_payment"
+  | "show_transactions"
+  | "swap_asset"
+  | "request_help"
+  | "unknown";
 
 export type EntityType =
-  | 'amount'
-  | 'address'
-  | 'asset'
-  | 'account'
-  | 'timeframe'
-  | 'memo';
+  | "amount"
+  | "address"
+  | "asset"
+  | "account"
+  | "timeframe"
+  | "memo";
 
 export interface NLPEntity {
   type: EntityType;
@@ -21,7 +21,7 @@ export interface NLPEntity {
 }
 
 export interface ConversationMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: "system" | "user" | "assistant";
   content: string;
   timestamp: number;
 }
@@ -45,11 +45,11 @@ export interface IntentClassification {
 }
 
 export type BlockchainOperationType =
-  | 'get_balance'
-  | 'send_payment'
-  | 'get_transactions'
-  | 'swap_asset'
-  | 'help';
+  | "get_balance"
+  | "send_payment"
+  | "get_transactions"
+  | "swap_asset"
+  | "help";
 
 export interface BlockchainOperationRequest {
   type: BlockchainOperationType;
@@ -71,7 +71,7 @@ export interface ContextStore {
 }
 
 export interface NLPServiceConfig {
-  provider?: 'openai' | 'huggingface' | 'rule-based';
+  provider?: "openai" | "huggingface" | "rule-based";
   apiKey?: string;
   modelVersion?: string;
   maxHistory?: number;
@@ -83,11 +83,10 @@ export interface NLPServiceConfig {
 export interface TrainingExample {
   intent: WalletIntent;
   utterance: string;
-  entities?: Array<Pick<NLPEntity, 'type' | 'value'>>;
+  entities?: Array<Pick<NLPEntity, "type" | "value">>;
 }
 
 export interface ExampleConversation {
   name: string;
   turns: Array<{ user: string; assistant: string }>;
 }
-

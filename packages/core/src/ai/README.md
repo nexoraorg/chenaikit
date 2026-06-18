@@ -18,17 +18,17 @@ This module provides a comprehensive base class for AI model integrations that c
 ### Basic Usage
 
 ```typescript
-import { OpenAIModel } from './providers/openai-model';
-import { ModelInput } from './types';
+import { OpenAIModel } from "./providers/openai-model";
+import { ModelInput } from "./types";
 
 const model = new OpenAIModel({
-  apiKey: 'your-openai-key',
-  provider: 'openai',
-  modelVersion: 'gpt-3.5-turbo',
+  apiKey: "your-openai-key",
+  provider: "openai",
+  modelVersion: "gpt-3.5-turbo",
 });
 
 const input: ModelInput = {
-  prompt: 'Hello, world!',
+  prompt: "Hello, world!",
   maxTokens: 100,
   temperature: 0.7,
 };
@@ -40,38 +40,41 @@ console.log(result.text);
 ### Using Different Providers
 
 #### OpenAI
+
 ```typescript
-import { OpenAIModel } from './providers/openai-model';
+import { OpenAIModel } from "./providers/openai-model";
 
 const model = new OpenAIModel({
-  apiKey: 'your-openai-key',
-  provider: 'openai',
-  modelVersion: 'gpt-4',
-  organization: 'your-org-id',
+  apiKey: "your-openai-key",
+  provider: "openai",
+  modelVersion: "gpt-4",
+  organization: "your-org-id",
 });
 ```
 
 #### Hugging Face
+
 ```typescript
-import { HuggingFaceModel } from './providers/huggingface-model';
+import { HuggingFaceModel } from "./providers/huggingface-model";
 
 const model = new HuggingFaceModel({
-  apiKey: 'your-hf-key',
-  provider: 'huggingface',
-  modelVersion: 'microsoft/DialoGPT-medium',
+  apiKey: "your-hf-key",
+  provider: "huggingface",
+  modelVersion: "microsoft/DialoGPT-medium",
   useAuth: true,
 });
 ```
 
 #### Custom Model
+
 ```typescript
-import { CustomModel } from './providers/custom-model';
+import { CustomModel } from "./providers/custom-model";
 
 const model = new CustomModel({
-  apiKey: 'your-custom-key',
-  provider: 'custom',
-  modelVersion: 'my-model-v1',
-  customEndpoint: 'https://api.mycompany.com/v1',
+  apiKey: "your-custom-key",
+  provider: "custom",
+  modelVersion: "my-model-v1",
+  customEndpoint: "https://api.mycompany.com/v1",
 });
 ```
 
@@ -91,18 +94,21 @@ The `AIModel` abstract class provides:
 ### Provider Implementations
 
 #### OpenAI Model (`OpenAIModel`)
+
 - Supports chat completions API
 - Handles system messages and conversation history
 - Configurable model versions (GPT-3.5, GPT-4, etc.)
 - Organization support
 
 #### Hugging Face Model (`HuggingFaceModel`)
+
 - Inference API integration
 - Model status checking
 - Support for various model types
 - Authentication handling
 
 #### Custom Model (`CustomModel`)
+
 - Generic implementation for custom APIs
 - Flexible request/response parsing
 - Configurable endpoints
@@ -114,10 +120,10 @@ The `AIModel` abstract class provides:
 
 ```typescript
 interface ModelConfig {
-  apiKey: string;                    // Required API key
-  baseUrl?: string;                 // API base URL
-  timeout?: number;                 // Request timeout (ms)
-  rateLimit?: number;               // Requests per minute
+  apiKey: string; // Required API key
+  baseUrl?: string; // API base URL
+  timeout?: number; // Request timeout (ms)
+  rateLimit?: number; // Requests per minute
   headers?: Record<string, string>; // Additional headers
   modelOptions?: Record<string, any>; // Model-specific options
 }
@@ -126,27 +132,30 @@ interface ModelConfig {
 ### Provider-Specific Configuration
 
 #### OpenAI
+
 ```typescript
 interface OpenAIConfig extends ModelConfig {
-  provider: 'openai';
+  provider: "openai";
   modelVersion: string;
   organization?: string;
 }
 ```
 
 #### Hugging Face
+
 ```typescript
 interface HuggingFaceConfig extends ModelConfig {
-  provider: 'huggingface';
+  provider: "huggingface";
   modelVersion: string;
   useAuth?: boolean;
 }
 ```
 
 #### Custom Model
+
 ```typescript
 interface CustomModelConfig extends ModelConfig {
-  provider: 'custom';
+  provider: "custom";
   modelVersion: string;
   customEndpoint: string;
 }
@@ -155,35 +164,39 @@ interface CustomModelConfig extends ModelConfig {
 ## Input/Output Interfaces
 
 ### Model Input
+
 ```typescript
 interface ModelInput {
-  prompt: string;                    // Required input text
-  maxTokens?: number;               // Max tokens to generate
-  temperature?: number;             // Response randomness (0-1)
-  topP?: number;                    // Top-p sampling (0-1)
-  stopSequences?: string[];         // Stop generation sequences
+  prompt: string; // Required input text
+  maxTokens?: number; // Max tokens to generate
+  temperature?: number; // Response randomness (0-1)
+  topP?: number; // Top-p sampling (0-1)
+  stopSequences?: string[]; // Stop generation sequences
   parameters?: Record<string, any>; // Additional parameters
-  systemMessage?: string;           // System message for chat models
-  messages?: Array<{                // Conversation history
-    role: 'system' | 'user' | 'assistant';
+  systemMessage?: string; // System message for chat models
+  messages?: Array<{
+    // Conversation history
+    role: "system" | "user" | "assistant";
     content: string;
   }>;
 }
 ```
 
 ### Model Output
+
 ```typescript
 interface ModelOutput {
-  text: string;                     // Generated text
-  tokensUsed?: number;              // Tokens consumed
-  metadata?: {                      // Response metadata
+  text: string; // Generated text
+  tokensUsed?: number; // Tokens consumed
+  metadata?: {
+    // Response metadata
     model: string;
     finishReason?: string;
     responseTime?: number;
     provider?: string;
   };
-  rawResponse?: any;                // Raw API response
-  chunks?: string[];               // Streaming chunks
+  rawResponse?: any; // Raw API response
+  chunks?: string[]; // Streaming chunks
 }
 ```
 
@@ -203,6 +216,7 @@ class AIModelError extends Error {
 ```
 
 ### Error Types
+
 - `INVALID_INPUT`: Input validation errors
 - `INVALID_OUTPUT`: Output validation errors
 - `RATE_LIMIT_EXCEEDED`: Rate limiting errors
@@ -218,7 +232,7 @@ Built-in rate limiting with configurable limits:
 ```typescript
 // Configure rate limiting
 const model = new OpenAIModel({
-  apiKey: 'your-key',
+  apiKey: "your-key",
   rateLimit: 60, // 60 requests per minute
 });
 
@@ -234,9 +248,9 @@ Process multiple requests efficiently:
 
 ```typescript
 const inputs: ModelInput[] = [
-  { prompt: 'First question' },
-  { prompt: 'Second question' },
-  { prompt: 'Third question' },
+  { prompt: "First question" },
+  { prompt: "Second question" },
+  { prompt: "Third question" },
 ];
 
 const results = await model.generateBatch(inputs);
@@ -253,7 +267,7 @@ Extend the base class for custom implementations:
 class MyCustomModel extends AIModel {
   protected async makeRequest(input: ModelInput): Promise<ModelOutput> {
     // Implement your custom API logic
-    const response = await this.httpClient.post('/your-endpoint', {
+    const response = await this.httpClient.post("/your-endpoint", {
       text: input.prompt,
       max_length: input.maxTokens,
     });
@@ -262,15 +276,15 @@ class MyCustomModel extends AIModel {
       text: response.data.generated_text,
       tokensUsed: response.data.tokens_used,
       metadata: {
-        model: 'my-custom-model',
-        finishReason: 'stop',
-        provider: 'custom',
+        model: "my-custom-model",
+        finishReason: "stop",
+        provider: "custom",
       },
     };
   }
 
   protected getModelName(): string {
-    return 'my-custom-model';
+    return "my-custom-model";
   }
 }
 ```

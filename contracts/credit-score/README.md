@@ -3,6 +3,7 @@
 ## 🎯 Overview
 
 The Credit Score smart contract provides on-chain credit scoring functionality for the ChenAIKit platform. It enables:
+
 - **Credit Score Storage**: Persistent storage of user credit scores
 - **Score Updates**: Dynamic score adjustments based on various factors
 - **Access Control**: Admin-controlled score management with user authorization
@@ -66,11 +67,13 @@ pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>)
 ### 2. Storage Module ([storage.rs](src/storage.rs))
 
 **Storage Schema**:
+
 ```rust
 SCORE_KEY -> Map<Address, i128>
 ```
 
 **Features**:
+
 - Persistent storage with automatic TTL extension (1 year)
 - Efficient score retrieval with default values
 - Historical score tracking in temporary storage
@@ -78,6 +81,7 @@ SCORE_KEY -> Map<Address, i128>
 ### 3. Access Control Module ([access_control.rs](src/access_control.rs))
 
 **Features**:
+
 - Admin initialization and management
 - Role-based access control
 - Admin transfer capabilities
@@ -86,6 +90,7 @@ SCORE_KEY -> Map<Address, i128>
 ### 4. Events Module ([events.rs](src/events.rs))
 
 **Events**:
+
 ```rust
 TOPIC_SCORE_UPDATE -> (user: Address, new_score: i128)
 TOPIC_UPGRADE -> (version: u32)
@@ -94,6 +99,7 @@ TOPIC_UPGRADE -> (version: u32)
 ### 5. Upgrade Module ([upgrade.rs](src/upgrade.rs))
 
 **Features**:
+
 - Version-based upgrade control
 - Admin-only upgrade execution
 - Automatic TTL extension during migration
@@ -102,20 +108,24 @@ TOPIC_UPGRADE -> (version: u32)
 ## 🔐 Security Features
 
 ### 1. Authorization Control
+
 - User authorization required for score updates (`require_auth`)
 - Admin-only upgrade functionality
 - Role-based access for sensitive operations
 
 ### 2. Overflow Protection
+
 - Safe arithmetic operations using `checked_add`/`checked_sub`
 - Score boundaries enforced (minimum 0, capped at u32::MAX)
 
 ### 3. Upgrade Safety
+
 - Version tracking prevents downgrades
 - Admin verification before WASM updates
 - TTL extension ensures data persistence
 
 ### 4. Data Persistence
+
 - Persistent storage with 1-year TTL
 - Automatic TTL extension on updates
 - Temporary storage for historical tracking
@@ -123,6 +133,7 @@ TOPIC_UPGRADE -> (version: u32)
 ## 🧪 Testing
 
 ### Run Tests
+
 ```bash
 # Using cargo directly
 cargo test --lib
@@ -140,6 +151,7 @@ test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured
 ```
 
 **Test Categories**:
+
 - ✅ Initialization and setup
 - ✅ Score calculation and retrieval
 - ✅ Score storage and persistence
@@ -195,6 +207,7 @@ export NETWORK=testnet
 ```
 
 The deployment script will:
+
 1. Deploy the contract to testnet
 2. Save the contract ID to `.contract-id-testnet`
 3. Initialize with the admin address (if provided)
@@ -258,6 +271,7 @@ soroban contract invoke \
 ## 📊 Score Mechanics
 
 ### Default Values
+
 - **Base Score**: 600
 - **Boost Adjustment**: +50
 - **Penalty Adjustment**: -50
@@ -265,11 +279,13 @@ soroban contract invoke \
 - **Maximum Score**: u32::MAX (4,294,967,295)
 
 ### Factor Types
+
 - `"boost"`: Increases score by 50
 - `"penalty"`: Decreases score by 50 (minimum 0)
 - Other values: No effect on score
 
 ### Oracle Adjustment
+
 - Stub implementation adds +10
 - Can be extended with real oracle contract integration
 - Requires oracle contract address
@@ -298,14 +314,14 @@ soroban contract invoke \
 
 All scripts are located in the `scripts/` directory:
 
-| Script | Purpose |
-|--------|---------|
-| `build.sh` | Build contract to WASM |
-| `optimize.sh` | Optimize WASM file size |
-| `test.sh` | Run test suite |
-| `deploy.sh` | Deploy to network |
+| Script          | Purpose                      |
+| --------------- | ---------------------------- |
+| `build.sh`      | Build contract to WASM       |
+| `optimize.sh`   | Optimize WASM file size      |
+| `test.sh`       | Run test suite               |
+| `deploy.sh`     | Deploy to network            |
 | `initialize.sh` | Initialize deployed contract |
-| `invoke.sh` | Invoke contract functions |
+| `invoke.sh`     | Invoke contract functions    |
 
 ## 🛡️ Security Considerations
 
@@ -331,6 +347,7 @@ This contract is part of the ChenAIKit project.
 ## 🤝 Contributing
 
 Contributions are welcome! Please ensure:
+
 - All tests pass (`cargo test --lib`)
 - Code follows Rust best practices
 - New features include test coverage

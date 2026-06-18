@@ -1,23 +1,25 @@
-import winston from 'winston';
-import { monitoringConfig } from '../config/monitoring';
-import { LogContext } from '../types/monitoring';
+import winston from "winston";
+import { monitoringConfig } from "../config/monitoring";
+import { LogContext } from "../types/monitoring";
 
 // Custom format for structured logging
 const structuredFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   winston.format.errors({ stack: true }),
-  winston.format.metadata({ fillExcept: ['message', 'level', 'timestamp', 'service'] }),
-  winston.format.json()
+  winston.format.metadata({
+    fillExcept: ["message", "level", "timestamp", "service"],
+  }),
+  winston.format.json(),
 );
 
 // Simple format for development
 const simpleFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   winston.format.colorize(),
   winston.format.printf(({ level, message, timestamp, ...meta }) => {
-    const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
-    return `${timestamp} [${level}]: ${message} ${metaStr}` ;
-  })
+    const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : "";
+    return `${timestamp} [${level}]: ${message} ${metaStr}`;
+  }),
 );
 
 // Create transports
@@ -26,16 +28,22 @@ const transports: winston.transport[] = [];
 if (monitoringConfig.logging.console) {
   transports.push(
     new winston.transports.Console({
-      format: monitoringConfig.logging.format === 'json' ? structuredFormat : simpleFormat,
-    })
+      format:
+        monitoringConfig.logging.format === "json"
+          ? structuredFormat
+          : simpleFormat,
+    }),
   );
 }
 
 if (monitoringConfig.logging.file) {
   transports.push(
     new winston.transports.File({
-      filename: monitoringConfig.logging.filePath!.replace('.log', '-error.log'),
-      level: 'error',
+      filename: monitoringConfig.logging.filePath!.replace(
+        ".log",
+        "-error.log",
+      ),
+      level: "error",
       maxsize: parseSize(monitoringConfig.logging.maxSize!),
       maxFiles: monitoringConfig.logging.maxFiles,
       format: structuredFormat,
@@ -45,7 +53,7 @@ if (monitoringConfig.logging.file) {
       maxsize: parseSize(monitoringConfig.logging.maxSize!),
       maxFiles: monitoringConfig.logging.maxFiles,
       format: structuredFormat,
-    })
+    }),
   );
 }
 
@@ -55,7 +63,7 @@ function parseSize(size: string): number {
   const match = size.toLowerCase().match(/^(\d+)([kmg])?$/);
   if (!match) return 20 * 1024 * 1024; // Default 20MB
   const value = parseInt(match[1]);
-  const unit = match[2] || '';
+  const unit = match[2] || "";
   return value * (units[unit] || 1);
 }
 
@@ -87,41 +95,49 @@ class Logger {
   }
 
   debug(message: string, meta?: LogContext): void {
-    this.log('debug', message, meta);
+    this.log("debug", message, meta);
   }
 
   info(message: string, meta?: LogContext): void {
-    this.log('info', message, meta);
+    this.log("info", message, meta);
   }
 
   warn(message: string, meta?: LogContext): void {
-    this.log('warn', message, meta);
+    this.log("warn", message, meta);
   }
 
   error(message: string, error?: Error | LogContext, meta?: LogContext): void {
-    const errorMeta = error instanceof Error
-      ? { error: { message: error.message, stack: error.stack, name: error.name }, ...meta }
-      : { ...error, ...meta };
-    this.log('error', message, errorMeta);
+    const errorMeta =
+      error instanceof Error
+        ? {
+            error: {
+              message: error.message,
+              stack: error.stack,
+              name: error.name,
+            },
+            ...meta,
+          }
+        : { ...error, ...meta };
+    this.log("error", message, errorMeta);
   }
 
   // HTTP request logging
   http(message: string, meta: LogContext): void {
-    this.log('http', message, meta);
+    this.log("http", message, meta);
   }
 
   // Performance logging
   performance(operation: string, duration: number, meta?: LogContext): void {
-    this.info(`Performance: ${operation}` , {
+    this.info(`Performance: ${operation}`, {
       operation,
       duration,
-      unit: 'ms',
+      unit: "ms",
       ...meta,
     });
 
     // Warn on slow operations
     if (duration > 1000) {
-      this.warn(`Slow operation detected: ${operation}` , {
+      this.warn(`Slow operation detected: ${operation}`, {
         operation,
         duration,
         threshold: 1000,
@@ -132,7 +148,7 @@ class Logger {
 
   // Security event logging
   security(event: string, meta?: LogContext): void {
-    this.warn(`Security Event: ${event}` , {
+    this.warn(`Security Event: ${event}`, {
       securityEvent: true,
       event,
       ...meta,
@@ -141,7 +157,7 @@ class Logger {
 
   // Audit logging
   audit(action: string, meta?: LogContext): void {
-    this.info(`Audit: ${action}` , {
+    this.info(`Audit: ${action}`, {
       audit: true,
       action,
       ...meta,
@@ -186,8 +202,7 @@ export class Timer {
       return result;
     } catch (error) {
       const duration = Date.now() - this.startTime;
-      this.logger.error(`Operation failed: ${this.operation}` 
-, error as Error, {
+      this.logger.error(`Operation failed: ${this.operation}`, error as Error, {
         ...meta,
         duration,
         success: false,

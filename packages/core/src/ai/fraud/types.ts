@@ -1,6 +1,6 @@
 // Core types for real-time fraud detection
 
-export type RiskCategory = 'low' | 'medium' | 'high';
+export type RiskCategory = "low" | "medium" | "high";
 
 export interface Transaction {
   id: string;
@@ -15,7 +15,7 @@ export interface Transaction {
   lat?: number;
   lon?: number;
   deviceId?: string;
-  channel?: 'pos' | 'online' | 'atm' | 'transfer';
+  channel?: "pos" | "online" | "atm" | "transfer";
   ipAddress?: string;
   previousBalance?: number;
 }
@@ -34,7 +34,7 @@ export interface FeatureExtractorOptions {
 
 export interface AnomalyScore {
   score: number; // 0..1
-  model: 'isolation_forest' | 'one_class_svm';
+  model: "isolation_forest" | "one_class_svm";
   details?: Record<string, any>;
 }
 

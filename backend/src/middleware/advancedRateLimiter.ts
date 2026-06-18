@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import Redis from 'ioredis';
-import { ApiKey, API_TIER_CONFIGS } from '../models/ApiKey';
-import { log } from '../utils/logger';
+import { Request, Response, NextFunction } from "express";
+import Redis from "ioredis";
+import { ApiKey, API_TIER_CONFIGS } from "../models/ApiKey";
+import { log } from "../utils/logger";
 
 export interface RateLimitInfo {
   limit: number;
@@ -28,7 +28,9 @@ export class AdvancedRateLimiter {
   private options: AdvancedRateLimitOptions;
 
   constructor(options: AdvancedRateLimitOptions = {}) {
-    this.redis = options.redis || new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    this.redis =
+      options.redis ||
+      new Redis(process.env.REDIS_URL || "redis://localhost:6379");
     this.options = {
       keyGenerator: this.defaultKeyGenerator,
       skipSuccessfulRequests: false,
@@ -42,7 +44,7 @@ export class AdvancedRateLimiter {
     if (apiKey) {
       return `api_key:${apiKey.id}`;
     }
-    return `ip:${req.ip || req.connection.remoteAddress || 'unknown'}`;
+    return `ip:${req.ip || req.connection.remoteAddress || "unknown"}`;
   }
 
   /**
@@ -52,7 +54,7 @@ export class AdvancedRateLimiter {
     key: string,
     limit: number,
     windowMs: number,
-    tokensRequested: number = 1
+    tokensRequested: number = 1,
   ): Promise<RateLimitResult> {
     const now = Date.now();
     const windowSizeSeconds = Math.ceil(windowMs / 1000);
@@ -60,27 +62,27 @@ export class AdvancedRateLimiter {
 
     try {
       const pipeline = this.redis.pipeline();
-      
+
       // Get current bucket state
       pipeline.hgetall(key);
       // Set expiration if key doesn't exist
       pipeline.expire(key, windowSizeSeconds * 2);
-      
+
       const results = await pipeline.exec();
       const current = (results?.[0]?.[1] as Record<string, string>) || {};
-      
+
       let tokens = parseFloat(current.tokens || limit.toString());
       let lastRefill = parseInt(current.lastRefill || now.toString());
 
       // Refill tokens based on time elapsed
       const timeElapsed = Math.max(0, now - lastRefill);
-      const tokensToAdd = Math.floor(timeElapsed * refillRate / 1000);
+      const tokensToAdd = Math.floor((timeElapsed * refillRate) / 1000);
       tokens = Math.min(limit, tokens + tokensToAdd);
       lastRefill = now;
 
       // Check if request can be processed
       const allowed = tokens >= tokensRequested;
-      
+
       if (allowed) {
         tokens -= tokensRequested;
       }
@@ -100,11 +102,13 @@ export class AdvancedRateLimiter {
           limit,
           remaining,
           resetTime,
-          retryAfter: allowed ? undefined : Math.ceil((resetTime.getTime() - now) / 1000),
+          retryAfter: allowed
+            ? undefined
+            : Math.ceil((resetTime.getTime() - now) / 1000),
         },
       };
     } catch (error: any) {
-      log.error('Rate limiter Redis error', error as Error);
+      log.error("Rate limiter Redis error", error as Error);
       // Fail open - allow request if Redis is down
       return {
         allowed: true,
@@ -123,23 +127,23 @@ export class AdvancedRateLimiter {
   private async slidingWindow(
     key: string,
     limit: number,
-    windowMs: number
+    windowMs: number,
   ): Promise<RateLimitResult> {
     const now = Date.now();
     const windowStart = now - windowMs;
 
     try {
       const pipeline = this.redis.pipeline();
-      
+
       // Remove expired entries
       pipeline.zremrangebyscore(key, 0, windowStart);
       // Count current entries
       pipeline.zcard(key);
       // Set expiration
       pipeline.expire(key, Math.ceil(windowMs / 1000));
-      
+
       const results = await pipeline.exec();
-      const currentCount = results?.[1]?.[1] as number || 0;
+      const currentCount = (results?.[1]?.[1] as number) || 0;
 
       const allowed = currentCount < limit;
 
@@ -157,11 +161,13 @@ export class AdvancedRateLimiter {
           limit,
           remaining,
           resetTime,
-          retryAfter: allowed ? undefined : Math.ceil((resetTime.getTime() - now) / 1000),
+          retryAfter: allowed
+            ? undefined
+            : Math.ceil((resetTime.getTime() - now) / 1000),
         },
       };
     } catch (error) {
-      log.error('Rate limiter Redis error', error as Error);
+      log.error("Rate limiter Redis error", error as Error);
       // Fail open
       return {
         allowed: true,
@@ -179,10 +185,10 @@ export class AdvancedRateLimiter {
    */
   async checkLimit(
     req: Request,
-    algorithm: 'token-bucket' | 'sliding-window' = 'token-bucket'
+    algorithm: "token-bucket" | "sliding-window" = "token-bucket",
   ): Promise<RateLimitResult> {
     const key = this.options.keyGenerator!(req);
-    
+
     // Get rate limit config based on API key tier or default
     let limit = 100; // default limit
     let windowMs = 15 * 60 * 1000; // 15 minutes default
@@ -194,7 +200,7 @@ export class AdvancedRateLimiter {
       windowMs = tierConfig.rateLimit.windowMs;
     }
 
-    if (algorithm === 'token-bucket') {
+    if (algorithm === "token-bucket") {
       return this.tokenBucket(key, limit, windowMs);
     } else {
       return this.slidingWindow(key, limit, windowMs);
@@ -204,9 +210,13 @@ export class AdvancedRateLimiter {
   /**
    * Middleware factory
    */
-  middleware(algorithm: 'token-bucket' | 'sliding-window' = 'token-bucket') {
-    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-      if (process.env.NODE_ENV === 'test') {
+  middleware(algorithm: "token-bucket" | "sliding-window" = "token-bucket") {
+    return async (
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ): Promise<void> => {
+      if (process.env.NODE_ENV === "test") {
         next();
         return;
       }
@@ -215,14 +225,16 @@ export class AdvancedRateLimiter {
 
         // Set rate limit headers
         res.set({
-          'X-RateLimit-Limit': result.info.limit.toString(),
-          'X-RateLimit-Remaining': result.info.remaining.toString(),
-          'X-RateLimit-Reset': Math.ceil(result.info.resetTime.getTime() / 1000).toString(),
+          "X-RateLimit-Limit": result.info.limit.toString(),
+          "X-RateLimit-Remaining": result.info.remaining.toString(),
+          "X-RateLimit-Reset": Math.ceil(
+            result.info.resetTime.getTime() / 1000,
+          ).toString(),
         });
 
         if (!result.allowed) {
           if (result.info.retryAfter) {
-            res.set('Retry-After', result.info.retryAfter.toString());
+            res.set("Retry-After", result.info.retryAfter.toString());
           }
 
           // Call custom limit reached handler if provided
@@ -233,8 +245,8 @@ export class AdvancedRateLimiter {
           res.status(429).json({
             success: false,
             error: {
-              code: 'RATE_LIMIT_EXCEEDED',
-              message: 'Too many requests, please try again later.',
+              code: "RATE_LIMIT_EXCEEDED",
+              message: "Too many requests, please try again later.",
               retryAfter: result.info.retryAfter,
               resetTime: result.info.resetTime.toISOString(),
               timestamp: new Date().toISOString(),
@@ -245,7 +257,7 @@ export class AdvancedRateLimiter {
 
         next();
       } catch (error) {
-        log.error('Rate limiter middleware error', error as Error);
+        log.error("Rate limiter middleware error", error as Error);
         // Fail open - allow request if rate limiter fails
         next();
       }
@@ -257,7 +269,8 @@ export class AdvancedRateLimiter {
    */
   ipRateLimitMiddleware(limit: number, windowMs: number) {
     return this.middlewareWithOptions({
-      keyGenerator: (req: Request) => `ip:${req.ip || req.connection.remoteAddress || 'unknown'}`,
+      keyGenerator: (req: Request) =>
+        `ip:${req.ip || req.connection.remoteAddress || "unknown"}`,
       customLimit: { limit, windowMs },
     });
   }
@@ -265,11 +278,21 @@ export class AdvancedRateLimiter {
   /**
    * Middleware with custom options
    */
-  middlewareWithOptions(options: Partial<AdvancedRateLimitOptions> & { customLimit?: { limit: number; windowMs: number } }) {
-    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  middlewareWithOptions(
+    options: Partial<AdvancedRateLimitOptions> & {
+      customLimit?: { limit: number; windowMs: number };
+    },
+  ) {
+    return async (
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ): Promise<void> => {
       try {
-        const key = options.keyGenerator ? options.keyGenerator(req) : this.defaultKeyGenerator(req);
-        
+        const key = options.keyGenerator
+          ? options.keyGenerator(req)
+          : this.defaultKeyGenerator(req);
+
         let limit = 100;
         let windowMs = 15 * 60 * 1000;
 
@@ -289,21 +312,23 @@ export class AdvancedRateLimiter {
 
         // Set rate limit headers
         res.set({
-          'X-RateLimit-Limit': result.info.limit.toString(),
-          'X-RateLimit-Remaining': result.info.remaining.toString(),
-          'X-RateLimit-Reset': Math.ceil(result.info.resetTime.getTime() / 1000).toString(),
+          "X-RateLimit-Limit": result.info.limit.toString(),
+          "X-RateLimit-Remaining": result.info.remaining.toString(),
+          "X-RateLimit-Reset": Math.ceil(
+            result.info.resetTime.getTime() / 1000,
+          ).toString(),
         });
 
         if (!result.allowed) {
           if (result.info.retryAfter) {
-            res.set('Retry-After', result.info.retryAfter.toString());
+            res.set("Retry-After", result.info.retryAfter.toString());
           }
 
           res.status(429).json({
             success: false,
             error: {
-              code: 'RATE_LIMIT_EXCEEDED',
-              message: 'Too many requests, please try again later.',
+              code: "RATE_LIMIT_EXCEEDED",
+              message: "Too many requests, please try again later.",
               retryAfter: result.info.retryAfter,
               resetTime: result.info.resetTime.toISOString(),
               timestamp: new Date().toISOString(),
@@ -315,7 +340,7 @@ export class AdvancedRateLimiter {
         next();
         next();
       } catch (error) {
-        log.error('Rate limiter middleware error', error as Error);
+        log.error("Rate limiter middleware error", error as Error);
         next();
       }
     };
@@ -331,8 +356,8 @@ export class AdvancedRateLimiter {
 
       const tokens = parseFloat(data.tokens);
       const lastRefill = parseInt(data.lastRefill);
-      const limit = parseFloat(data.limit || '100');
-      const windowMs = parseInt(data.windowMs || '900000');
+      const limit = parseFloat(data.limit || "100");
+      const windowMs = parseInt(data.windowMs || "900000");
 
       const resetTime = new Date(lastRefill + windowMs);
       const remaining = Math.max(0, tokens);
@@ -343,7 +368,7 @@ export class AdvancedRateLimiter {
         resetTime,
       };
     } catch (error) {
-      log.error('Failed to get rate limit status', error as Error);
+      log.error("Failed to get rate limit status", error as Error);
       return null;
     }
   }
@@ -354,9 +379,9 @@ export class AdvancedRateLimiter {
   async resetKey(key: string): Promise<void> {
     try {
       await this.redis.del(key);
-      log.info('Rate limit reset for key', { key });
+      log.info("Rate limit reset for key", { key });
     } catch (error) {
-      log.error('Failed to reset rate limit', error as Error);
+      log.error("Failed to reset rate limit", error as Error);
     }
   }
 
@@ -366,12 +391,13 @@ export class AdvancedRateLimiter {
   async cleanup(): Promise<number> {
     try {
       // Redis handles expiration automatically, but we can clean up any lingering keys
-      const keys = await this.redis.keys('*');
+      const keys = await this.redis.keys("*");
       let cleaned = 0;
 
       for (const key of keys) {
         const ttl = await this.redis.ttl(key);
-        if (ttl === -1) { // No expiration set
+        if (ttl === -1) {
+          // No expiration set
           await this.redis.expire(key, 3600); // Set 1 hour expiration
           cleaned++;
         }
@@ -379,7 +405,7 @@ export class AdvancedRateLimiter {
 
       return cleaned;
     } catch (error) {
-      log.error('Failed to cleanup rate limiter', error as Error);
+      log.error("Failed to cleanup rate limiter", error as Error);
       return 0;
     }
   }
@@ -397,11 +423,11 @@ export const createTieredRateLimiter = (redis?: Redis): AdvancedRateLimiter => {
   return new AdvancedRateLimiter({
     redis,
     onLimitReached: (req, res, info) => {
-      log.warn('Rate limit reached', {
-        key: req.ip || 'unknown',
+      log.warn("Rate limit reached", {
+        key: req.ip || "unknown",
         limit: info.limit,
         resetTime: info.resetTime,
-        userAgent: req.headers['user-agent'],
+        userAgent: req.headers["user-agent"],
       });
     },
   });

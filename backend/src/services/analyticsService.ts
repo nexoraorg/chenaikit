@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
-import { DataSource } from 'typeorm';
-import { log } from '../utils/logger';
-import { CreditScore } from '../models/CreditScore';
-import { FraudAlert } from '../models/FraudAlert';
-import { Transaction } from '../models/Transaction';
+import { PrismaClient } from "@prisma/client";
+import { DataSource } from "typeorm";
+import { log } from "../utils/logger";
+import { CreditScore } from "../models/CreditScore";
+import { FraudAlert } from "../models/FraudAlert";
+import { Transaction } from "../models/Transaction";
 
 export interface DashboardSummary {
   systemUsage: {
@@ -38,45 +38,48 @@ interface RawTrendResult {
 export class AnalyticsService {
   constructor(
     private prisma: PrismaClient,
-    private typeorm: DataSource
+    private typeorm: DataSource,
   ) {}
 
   /**
    * Get comprehensive dashboard summary
    */
-  async getDashboardSummary(startDate: Date, endDate: Date): Promise<DashboardSummary> {
+  async getDashboardSummary(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<DashboardSummary> {
     try {
       const [usageStats, aiStats, blockchainStats] = await Promise.all([
         this.getSystemUsageStats(startDate, endDate),
         this.getAIPerformanceStats(startDate, endDate),
-        this.getBlockchainStats(startDate, endDate)
+        this.getBlockchainStats(startDate, endDate),
       ]);
 
       return {
         systemUsage: usageStats,
         aiPerformance: aiStats,
-        blockchainActivity: blockchainStats
+        blockchainActivity: blockchainStats,
       };
     } catch (error) {
-      log.error('Failed to get dashboard summary', error as Error);
-      throw new Error('Analytics aggregation failed');
+      log.error("Failed to get dashboard summary", error as Error);
+      throw new Error("Analytics aggregation failed");
     }
   }
 
   private async getSystemUsageStats(startDate: Date, endDate: Date) {
     const usage = await this.prisma.apiUsage.aggregate({
       where: {
-        timestamp: { gte: startDate, lte: endDate }
+        timestamp: { gte: startDate, lte: endDate },
       },
       _count: true,
-      _avg: { responseTime: true }
+      _avg: { responseTime: true },
     });
 
     const errorCount = await this.prisma.apiUsage.count({
       where: {
         timestamp: { gte: startDate, lte: endDate },
-        statusCode: { gte: 400 }
-      }
+        statusCode: { gte: 400 },
+      },
     });
 
     const total = usage._count || 0;
@@ -84,77 +87,113 @@ export class AnalyticsService {
       totalRequests: total,
       avgLatency: usage._avg.responseTime || 0,
       errorRate: total > 0 ? (errorCount / total) * 100 : 0,
-      successRate: total > 0 ? ((total - errorCount) / total) * 100 : 0
+      successRate: total > 0 ? ((total - errorCount) / total) * 100 : 0,
     };
   }
 
   private async getAIPerformanceStats(_startDate: Date, _endDate: Date) {
     try {
-      const scores = await this.typeorm.getRepository(CreditScore)
-        .createQueryBuilder('score')
-        .where('score.createdAt BETWEEN :start AND :end', { start: _startDate, end: _endDate })
-        .select('AVG(score.score)', 'avg')
+      const scores = await this.typeorm
+        .getRepository(CreditScore)
+        .createQueryBuilder("score")
+        .where("score.createdAt BETWEEN :start AND :end", {
+          start: _startDate,
+          end: _endDate,
+        })
+        .select("AVG(score.score)", "avg")
         .getRawOne();
 
-      const alerts = await this.typeorm.getRepository(FraudAlert)
-        .createQueryBuilder('alert')
-        .where('alert.createdAt BETWEEN :start AND :end', { start: _startDate, end: _endDate })
-        .select('alert.resolved', 'resolved')
-        .addSelect('COUNT(*)', 'count')
-        .groupBy('alert.resolved')
+      const alerts = await this.typeorm
+        .getRepository(FraudAlert)
+        .createQueryBuilder("alert")
+        .where("alert.createdAt BETWEEN :start AND :end", {
+          start: _startDate,
+          end: _endDate,
+        })
+        .select("alert.resolved", "resolved")
+        .addSelect("COUNT(*)", "count")
+        .groupBy("alert.resolved")
         .getRawMany();
 
-      const riskDist = await this.typeorm.getRepository(CreditScore)
-        .createQueryBuilder('score')
-        .select("CASE WHEN score.score >= 800 THEN 'Excellent' WHEN score.score >= 700 THEN 'Good' WHEN score.score >= 600 THEN 'Fair' ELSE 'Poor' END", 'tier')
-        .addSelect('COUNT(*)', 'count')
-        .groupBy('tier')
+      const riskDist = await this.typeorm
+        .getRepository(CreditScore)
+        .createQueryBuilder("score")
+        .select(
+          "CASE WHEN score.score >= 800 THEN 'Excellent' WHEN score.score >= 700 THEN 'Good' WHEN score.score >= 600 THEN 'Fair' ELSE 'Poor' END",
+          "tier",
+        )
+        .addSelect("COUNT(*)", "count")
+        .groupBy("tier")
         .getRawMany();
 
       return {
         avgCreditScore: parseFloat(scores?.avg) || 0,
-        totalFraudAlerts: alerts.reduce((acc: number, a: Record<string, string>) => acc + parseInt(a.count), 0),
-        resolvedAlerts: parseInt(alerts.find((a: Record<string, string | boolean>) => a.resolved)?.count as string) || 0,
-        riskDistribution: riskDist.reduce((acc: Record<string, number>, d: Record<string, string>) => ({ ...acc, [d.tier]: parseInt(d.count) }), {})
+        totalFraudAlerts: alerts.reduce(
+          (acc: number, a: Record<string, string>) => acc + parseInt(a.count),
+          0,
+        ),
+        resolvedAlerts:
+          parseInt(
+            alerts.find((a: Record<string, string | boolean>) => a.resolved)
+              ?.count as string,
+          ) || 0,
+        riskDistribution: riskDist.reduce(
+          (acc: Record<string, number>, d: Record<string, string>) => ({
+            ...acc,
+            [d.tier]: parseInt(d.count),
+          }),
+          {},
+        ),
       };
     } catch (error) {
-      log.warn('AI performance stats query failed (empty DB?)', error as Error);
+      log.warn("AI performance stats query failed (empty DB?)", error as Error);
       return {
         avgCreditScore: 0,
         totalFraudAlerts: 0,
         resolvedAlerts: 0,
-        riskDistribution: {}
+        riskDistribution: {},
       };
     }
   }
 
   private async getBlockchainStats(_startDate: Date, _endDate: Date) {
     try {
-      const txStats = await this.typeorm.getRepository(Transaction)
-        .createQueryBuilder('tx')
-        .where('tx.timestamp BETWEEN :start AND :end', { start: _startDate, end: _endDate })
-        .select('COUNT(*)', 'count')
-        .addSelect('SUM(tx.amount)', 'volume')
+      const txStats = await this.typeorm
+        .getRepository(Transaction)
+        .createQueryBuilder("tx")
+        .where("tx.timestamp BETWEEN :start AND :end", {
+          start: _startDate,
+          end: _endDate,
+        })
+        .select("COUNT(*)", "count")
+        .addSelect("SUM(tx.amount)", "volume")
         .getRawOne();
 
-      const assetDist = await this.typeorm.getRepository(Transaction)
-        .createQueryBuilder('tx')
-        .select('tx.assetType', 'asset')
-        .addSelect('COUNT(*)', 'count')
-        .groupBy('tx.assetType')
+      const assetDist = await this.typeorm
+        .getRepository(Transaction)
+        .createQueryBuilder("tx")
+        .select("tx.assetType", "asset")
+        .addSelect("COUNT(*)", "count")
+        .groupBy("tx.assetType")
         .getRawMany();
 
       return {
         totalTxCount: parseInt(txStats?.count) || 0,
         totalVolume: parseFloat(txStats?.volume) || 0,
-        assetDistribution: assetDist.reduce((acc: Record<string, number>, d: Record<string, string>) => ({ ...acc, [d.asset]: parseInt(d.count) }), {})
+        assetDistribution: assetDist.reduce(
+          (acc: Record<string, number>, d: Record<string, string>) => ({
+            ...acc,
+            [d.asset]: parseInt(d.count),
+          }),
+          {},
+        ),
       };
     } catch (error) {
-      log.warn('Blockchain stats query failed (empty DB?)', error as Error);
+      log.warn("Blockchain stats query failed (empty DB?)", error as Error);
       return {
         totalTxCount: 0,
         totalVolume: 0,
-        assetDistribution: {}
+        assetDistribution: {},
       };
     }
   }
@@ -175,7 +214,7 @@ export class AnalyticsService {
 
     return results.map((r: RawTrendResult) => ({
       date: r.date,
-      value: Number(r.count)
+      value: Number(r.count),
     }));
   }
 
@@ -188,8 +227,11 @@ export class AnalyticsService {
 
     // Simple linear regression (y = mx + b)
     const n = history.length;
-    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-    
+    let sumX = 0,
+      sumY = 0,
+      sumXY = 0,
+      sumXX = 0;
+
     history.forEach((point, i) => {
       sumX += i;
       sumY += point.value;
@@ -207,8 +249,8 @@ export class AnalyticsService {
       const nextDate = new Date(lastDate);
       nextDate.setDate(lastDate.getDate() + i);
       forecast.push({
-        date: nextDate.toISOString().split('T')[0],
-        value: Math.max(0, m * (n + i - 1) + b)
+        date: nextDate.toISOString().split("T")[0],
+        value: Math.max(0, m * (n + i - 1) + b),
       });
     }
 

@@ -40,6 +40,7 @@ python generate_synthetic_data.py
 ```
 
 This creates:
+
 - `raw_transactions.csv` - Raw synthetic transactions
 - `processed_transactions.csv` - Feature-engineered data
 - `train_transactions.csv` - Training set
@@ -68,12 +69,14 @@ The API will be available at `http://localhost:8000`
 ## 📊 Features
 
 ### Data Generation
+
 - **Realistic blockchain transactions** with synthetic data
 - **Feature engineering** for ML models
 - **Class imbalance handling** for fraud detection
 - **Time-based splits** for temporal validation
 
 ### Model Training
+
 - **Multiple algorithms**: Gradient Boosting, Random Forest, Neural Networks
 - **Hyperparameter tuning** with GridSearchCV
 - **Cross-validation** and early stopping
@@ -81,12 +84,14 @@ The API will be available at `http://localhost:8000`
 - **ONNX export** for cross-platform deployment
 
 ### Evaluation
+
 - **Comprehensive metrics** for both regression and classification
 - **Business impact analysis** with cost calculations
 - **Visualization** with matplotlib and plotly
 - **Model comparison** tools
 
 ### Deployment
+
 - **FastAPI REST API** with authentication
 - **Prometheus metrics** for monitoring
 - **S3 integration** for model storage
@@ -106,11 +111,13 @@ Edit `config/ml_config.yaml` to customize:
 ## 📈 Model Performance
 
 ### Credit Scoring
+
 - **Target**: Predict credit scores (300-850)
 - **Metrics**: RMSE, MAE, R², correlation
 - **Business Goal**: ±50 point accuracy
 
 ### Fraud Detection
+
 - **Target**: Detect fraudulent transactions
 - **Metrics**: F1-score, ROC-AUC, precision, recall
 - **Business Goal**: Minimize false negatives
@@ -186,6 +193,7 @@ curl -X POST "http://localhost:8000/predict/batch" \
 Access metrics at `http://localhost:8000/metrics`
 
 Available metrics:
+
 - `model_requests_total` - Total requests per model
 - `model_request_duration_seconds` - Request latency
 - `model_accuracy` - Model accuracy
@@ -221,6 +229,7 @@ The API uses Bearer token authentication. Configure your tokens in production.
 ## 📦 Model Storage
 
 Models are stored in:
+
 - Local: `ml/models/`
 - S3: Configurable via `ml_config.yaml`
 
@@ -245,6 +254,7 @@ python metrics.py
 ## 📝 Logging
 
 Logs are configured for production monitoring:
+
 - Model loading/unloading
 - Prediction requests/responses
 - Error tracking
@@ -285,13 +295,13 @@ spec:
         app: chenaikit-ml-api
     spec:
       containers:
-      - name: ml-api
-        image: chenaikit-ml-api:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: MODEL_PATH
-          value: "/app/models"
+        - name: ml-api
+          image: chenaikit-ml-api:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MODEL_PATH
+              value: "/app/models"
 ```
 
 ## 🤝 Contributing
@@ -308,6 +318,7 @@ This project is licensed under the MIT License.
 ## 🆘 Support
 
 For issues and questions:
+
 - Create an issue on GitHub
 - Check the logs for error details
 - Review the configuration files

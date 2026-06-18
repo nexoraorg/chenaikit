@@ -1,5 +1,5 @@
-import { RealTimeFraudScorer } from './fraud/riskScorer';
-import { RiskResult, Transaction } from './fraud/types';
+import { RealTimeFraudScorer } from "./fraud/riskScorer";
+import { RiskResult, Transaction } from "./fraud/types";
 
 export class FraudDetector {
   private scorer = new RealTimeFraudScorer();

@@ -1,8 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
-import { ApiKeyService } from '../services/apiKeyService';
-import { UsageTrackingService } from '../services/usageTrackingService';
-import { AdvancedRateLimiter } from './advancedRateLimiter';
-import { log } from '../utils/logger';
+import { Request, Response, NextFunction } from "express";
+import { ApiKeyService } from "../services/apiKeyService";
+import { UsageTrackingService } from "../services/usageTrackingService";
+import { AdvancedRateLimiter } from "./advancedRateLimiter";
+import { log } from "../utils/logger";
 
 export interface TransformOptions {
   requestHeaders?: Record<string, string>;
@@ -20,9 +20,9 @@ export interface CircuitBreakerOptions {
 }
 
 export enum CircuitBreakerState {
-  CLOSED = 'CLOSED',
-  OPEN = 'OPEN',
-  HALF_OPEN = 'HALF_OPEN',
+  CLOSED = "CLOSED",
+  OPEN = "OPEN",
+  HALF_OPEN = "HALF_OPEN",
 }
 
 export class CircuitBreaker {
@@ -38,7 +38,7 @@ export class CircuitBreaker {
 
     if (this.state === CircuitBreakerState.OPEN) {
       if (now < this.nextAttempt) {
-        throw new Error('Circuit breaker is OPEN');
+        throw new Error("Circuit breaker is OPEN");
       } else {
         this.state = CircuitBreakerState.HALF_OPEN;
         this.failures = 0;
@@ -93,7 +93,7 @@ export class ApiGateway {
   constructor(
     private apiKeyService: ApiKeyService,
     private usageTrackingService: UsageTrackingService,
-    rateLimiter?: AdvancedRateLimiter
+    rateLimiter?: AdvancedRateLimiter,
   ) {
     this.rateLimiter = rateLimiter || new AdvancedRateLimiter();
   }
@@ -102,15 +102,19 @@ export class ApiGateway {
    * API key authentication middleware
    */
   authenticateApiKey() {
-    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    return async (
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ): Promise<void> => {
       // Bypass authentication in test environment
-      if (process.env.NODE_ENV === 'test') {
+      if (process.env.NODE_ENV === "test") {
         next();
         return;
       }
 
       try {
-        const apiKeyHeader = req.headers['x-api-key'] as string;
+        const apiKeyHeader = req.headers["x-api-key"] as string;
         const apiKeyQuery = req.query.api_key as string;
         const apiKey = apiKeyHeader || apiKeyQuery;
 
@@ -118,8 +122,8 @@ export class ApiGateway {
           res.status(401).json({
             success: false,
             error: {
-              code: 'API_KEY_REQUIRED',
-              message: 'API key is required',
+              code: "API_KEY_REQUIRED",
+              message: "API key is required",
               timestamp: new Date().toISOString(),
             },
           });
@@ -131,8 +135,8 @@ export class ApiGateway {
           res.status(401).json({
             success: false,
             error: {
-              code: 'INVALID_API_KEY',
-              message: 'Invalid or expired API key',
+              code: "INVALID_API_KEY",
+              message: "Invalid or expired API key",
               timestamp: new Date().toISOString(),
             },
           });
@@ -140,13 +144,13 @@ export class ApiGateway {
         }
 
         // Check IP restrictions
-        const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
+        const clientIp = req.ip || req.connection.remoteAddress || "unknown";
         if (!keyData.isIpAllowed(clientIp)) {
           res.status(403).json({
             success: false,
             error: {
-              code: 'IP_NOT_ALLOWED',
-              message: 'IP address not allowed for this API key',
+              code: "IP_NOT_ALLOWED",
+              message: "IP address not allowed for this API key",
               timestamp: new Date().toISOString(),
             },
           });
@@ -158,8 +162,8 @@ export class ApiGateway {
           res.status(403).json({
             success: false,
             error: {
-              code: 'PATH_NOT_ALLOWED',
-              message: 'Path not allowed for this API key',
+              code: "PATH_NOT_ALLOWED",
+              message: "Path not allowed for this API key",
               timestamp: new Date().toISOString(),
             },
           });
@@ -171,8 +175,8 @@ export class ApiGateway {
           res.status(429).json({
             success: false,
             error: {
-              code: 'QUOTA_EXCEEDED',
-              message: 'API quota exceeded',
+              code: "QUOTA_EXCEEDED",
+              message: "API quota exceeded",
               timestamp: new Date().toISOString(),
             },
           });
@@ -183,12 +187,12 @@ export class ApiGateway {
         (req as any).apiKey = keyData;
         next();
       } catch (error) {
-        log.error('API key authentication error', error as Error);
+        log.error("API key authentication error", error as Error);
         res.status(500).json({
           success: false,
           error: {
-            code: 'AUTHENTICATION_ERROR',
-            message: 'Authentication failed',
+            code: "AUTHENTICATION_ERROR",
+            message: "Authentication failed",
             timestamp: new Date().toISOString(),
           },
         });
@@ -219,11 +223,15 @@ export class ApiGateway {
 
         // Path rewriting
         if (options.pathRewrite) {
-          for (const [pattern, replacement] of Object.entries(options.pathRewrite)) {
+          for (const [pattern, replacement] of Object.entries(
+            options.pathRewrite,
+          )) {
             const regex = new RegExp(pattern);
             if (regex.test(req.path)) {
               const newPath = req.path.replace(regex, replacement);
-              req.url = newPath + (req.url.includes('?') ? '?' + req.url.split('?')[1] : '');
+              req.url =
+                newPath +
+                (req.url.includes("?") ? "?" + req.url.split("?")[1] : "");
               break;
             }
           }
@@ -231,12 +239,12 @@ export class ApiGateway {
 
         next();
       } catch (error) {
-        log.error('Request transformation error', error as Error);
+        log.error("Request transformation error", error as Error);
         res.status(400).json({
           success: false,
           error: {
-            code: 'TRANSFORMATION_ERROR',
-            message: 'Request transformation failed',
+            code: "TRANSFORMATION_ERROR",
+            message: "Request transformation failed",
             timestamp: new Date().toISOString(),
           },
         });
@@ -260,7 +268,7 @@ export class ApiGateway {
         res.send = function (data: unknown): Response {
           try {
             let parsedData = data;
-            if (typeof data === 'string') {
+            if (typeof data === "string") {
               parsedData = JSON.parse(data);
             }
             const transformedData = options.responseBodyTransform!(parsedData);
@@ -302,12 +310,12 @@ export class ApiGateway {
                     apiKey.id,
                     responseTime,
                     res.statusCode,
-                    responseSize
-                  )
+                    responseSize,
+                  ),
                 ),
               ]);
             } catch (error) {
-              log.error('Usage tracking error', error as Error);
+              log.error("Usage tracking error", error as Error);
             }
           });
         }
@@ -332,17 +340,17 @@ export class ApiGateway {
 
     return (req: Request, res: Response, next: NextFunction): void => {
       const state = breaker.getState();
-      
+
       // Add circuit breaker status headers
-      res.set('X-Circuit-Breaker-State', state);
-      res.set('X-Circuit-Breaker-Failures', breaker.getFailures().toString());
+      res.set("X-Circuit-Breaker-State", state);
+      res.set("X-Circuit-Breaker-Failures", breaker.getFailures().toString());
 
       if (state === CircuitBreakerState.OPEN) {
         res.status(503).json({
           success: false,
           error: {
-            code: 'SERVICE_UNAVAILABLE',
-            message: 'Service temporarily unavailable due to high error rate',
+            code: "SERVICE_UNAVAILABLE",
+            message: "Service temporarily unavailable due to high error rate",
             circuitBreakerState: state,
             timestamp: new Date().toISOString(),
           },
@@ -351,53 +359,60 @@ export class ApiGateway {
       }
 
       // Wrap the next function in circuit breaker
-      breaker.execute(async () => {
-        return new Promise<void>((resolve, reject) => {
-          const originalNext = next;
-          next = (error?: unknown) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve();
-            }
-          };
-          originalNext();
-        });
-      }).catch((error: Error) => {
-        log.error('Circuit breaker caught error', {
-          serviceName,
-          state: breaker.getState(),
-          error,
-        });
-
-        if (breaker.getState() === CircuitBreakerState.OPEN) {
-          res.status(503).json({
-            success: false,
-            error: {
-              code: 'SERVICE_UNAVAILABLE',
-              message: 'Service temporarily unavailable due to high error rate',
-              circuitBreakerState: breaker.getState(),
-              timestamp: new Date().toISOString(),
-            },
+      breaker
+        .execute(async () => {
+          return new Promise<void>((resolve, reject) => {
+            const originalNext = next;
+            next = (error?: unknown) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve();
+              }
+            };
+            originalNext();
           });
-        } else {
-          next(error);
-        }
-      });
+        })
+        .catch((error: Error) => {
+          log.error("Circuit breaker caught error", {
+            serviceName,
+            state: breaker.getState(),
+            error,
+          });
+
+          if (breaker.getState() === CircuitBreakerState.OPEN) {
+            res.status(503).json({
+              success: false,
+              error: {
+                code: "SERVICE_UNAVAILABLE",
+                message:
+                  "Service temporarily unavailable due to high error rate",
+                circuitBreakerState: breaker.getState(),
+                timestamp: new Date().toISOString(),
+              },
+            });
+          } else {
+            next(error);
+          }
+        });
     };
   }
 
   /**
    * Combined API gateway middleware
    */
-  gateway(options: {
-    enableAuth?: boolean;
-    enableRateLimit?: boolean;
-    enableUsageTracking?: boolean;
-    transform?: TransformOptions;
-    circuitBreaker?: { serviceName: string; options: CircuitBreakerOptions };
-  } = {}) {
-    const middlewares: Array<(req: Request, res: Response, next: NextFunction) => void> = [];
+  gateway(
+    options: {
+      enableAuth?: boolean;
+      enableRateLimit?: boolean;
+      enableUsageTracking?: boolean;
+      transform?: TransformOptions;
+      circuitBreaker?: { serviceName: string; options: CircuitBreakerOptions };
+    } = {},
+  ) {
+    const middlewares: Array<
+      (req: Request, res: Response, next: NextFunction) => void
+    > = [];
 
     // Add authentication
     if (options.enableAuth !== false) {
@@ -416,7 +431,12 @@ export class ApiGateway {
 
     // Add circuit breaker
     if (options.circuitBreaker) {
-      middlewares.push(this.circuitBreaker(options.circuitBreaker.serviceName, options.circuitBreaker.options));
+      middlewares.push(
+        this.circuitBreaker(
+          options.circuitBreaker.serviceName,
+          options.circuitBreaker.options,
+        ),
+      );
     }
 
     // Add response transformation
@@ -435,9 +455,12 @@ export class ApiGateway {
   /**
    * Get circuit breaker status
    */
-  getCircuitBreakerStatus(): Record<string, { state: string; failures: number }> {
+  getCircuitBreakerStatus(): Record<
+    string,
+    { state: string; failures: number }
+  > {
     const status: Record<string, { state: string; failures: number }> = {};
-    
+
     for (const [name, breaker] of this.circuitBreakers.entries()) {
       status[name] = {
         state: breaker.getState(),
@@ -455,31 +478,36 @@ export class ApiGateway {
     for (const breaker of this.circuitBreakers.values()) {
       breaker.reset();
     }
-    log.info('All circuit breakers reset');
+    log.info("All circuit breakers reset");
   }
 
   /**
    * Health check for the API gateway
    */
   async healthCheck(): Promise<{
-    status: 'healthy' | 'degraded' | 'unhealthy';
+    status: "healthy" | "degraded" | "unhealthy";
     rateLimiter: boolean;
     circuitBreakers: Record<string, string>;
     timestamp: string;
   }> {
     const circuitBreakerStatus = this.getCircuitBreakerStatus();
-    const openBreakers = Object.values(circuitBreakerStatus).filter(cb => cb.state === 'OPEN');
-    
-    let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+    const openBreakers = Object.values(circuitBreakerStatus).filter(
+      (cb) => cb.state === "OPEN",
+    );
+
+    let status: "healthy" | "degraded" | "unhealthy" = "healthy";
     if (openBreakers.length > 0) {
-      status = openBreakers.length > 2 ? 'unhealthy' : 'degraded';
+      status = openBreakers.length > 2 ? "unhealthy" : "degraded";
     }
 
     return {
       status,
       rateLimiter: true, // Could implement actual health check
       circuitBreakers: Object.fromEntries(
-        Object.entries(circuitBreakerStatus).map(([name, status]) => [name, status.state])
+        Object.entries(circuitBreakerStatus).map(([name, status]) => [
+          name,
+          status.state,
+        ]),
       ),
       timestamp: new Date().toISOString(),
     };
