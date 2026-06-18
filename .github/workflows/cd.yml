@@ -1,0 +1,266 @@
+name: CD Pipeline
+
+# Continuous Delivery for the ChenAIKit backend.
+#
+# Flow:
+#   push to develop          -> build image -> deploy to "dev"
+#   push to main             -> build image -> deploy to "staging" -> (manual gate) -> deploy to "prod"
+#   git tag v*               -> build image -> deploy to "prod"
+#   workflow_dispatch        -> deploy a chosen tag to a chosen environment, or
+#                               run a rollback for an environment
+#
+# Production uses a GitHub Environment ("production") so required reviewers /
+# protection rules gate the deployment. Rollback is a manual dispatch action.
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: deploy
+        type: choice
+        options: [deploy, rollback]
+      environment:
+        description: 'Target environment'
+        required: true
+        default: staging
+        type: choice
+        options: [dev, staging, prod]
+      image_tag:
+        description: 'Image tag to deploy/rollback to (default: commit SHA for deploy, previous image for rollback)'
+        required: false
+        type: string
+
+concurrency:
+  # Never run two deployments to the same ref at once; let the newest win.
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository }}-backend
+  NODE_VERSION: '20'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Build the backend image once and push it to GHCR. All deploy jobs reuse it.
+  # ---------------------------------------------------------------------------
+  build-image:
+    name: Build & Push Image
+    runs-on: ubuntu-latest
+    # Skip building when the dispatch action is a rollback (we redeploy an
+    # already-published image instead).
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.action != 'rollback'
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: meta
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            TAG="${{ github.event.inputs.image_tag }}"
+          else
+            TAG="$(git rev-parse --short HEAD)"
+          fi
+          echo "image_tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Resolved image tag: ${TAG}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+            ${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # Deploy to dev: pushes to develop, or explicit dispatch.
+  # ---------------------------------------------------------------------------
+  deploy-dev:
+    name: Deploy to dev
+    runs-on: ubuntu-latest
+    needs: build-image
+    if: |
+      github.ref == 'refs/heads/develop' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy' && github.event.inputs.environment == 'dev')
+    environment:
+      name: dev
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        run: bash backend/scripts/deploy.sh dev "${{ needs.build-image.outputs.image_tag }}"
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          REGISTRY: ghcr.io
+          REGISTRY_USERNAME: ${{ github.actor }}
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          SKIP_BUILD: 'true'
+          DEPLOY_HOST: ${{ secrets.DEV_DEPLOY_HOST }}
+          HEALTHCHECK_URL: ${{ secrets.DEV_HEALTHCHECK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ---------------------------------------------------------------------------
+  # Deploy to staging: pushes to main, or explicit dispatch.
+  # ---------------------------------------------------------------------------
+  deploy-staging:
+    name: Deploy to staging
+    runs-on: ubuntu-latest
+    needs: build-image
+    if: |
+      github.ref == 'refs/heads/main' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy' && github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: ${{ secrets.STAGING_HEALTHCHECK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        run: bash backend/scripts/deploy.sh staging "${{ needs.build-image.outputs.image_tag }}"
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          REGISTRY: ghcr.io
+          REGISTRY_USERNAME: ${{ github.actor }}
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          SKIP_BUILD: 'true'
+          DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
+          HEALTHCHECK_URL: ${{ secrets.STAGING_HEALTHCHECK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ---------------------------------------------------------------------------
+  # Promote to production. Requires the protected "production" environment, so
+  # configured reviewers must approve before this job runs. Triggered after a
+  # successful staging deploy on main, on a version tag, or via dispatch.
+  # ---------------------------------------------------------------------------
+  deploy-prod:
+    name: Deploy to prod
+    runs-on: ubuntu-latest
+    needs: [build-image, deploy-staging]
+    # deploy-staging is skipped for tag/dispatch flows; always() lets prod still
+    # run as long as the build succeeded and staging did not fail.
+    if: |
+      always() &&
+      needs.build-image.result == 'success' &&
+      (needs.deploy-staging.result == 'success' || needs.deploy-staging.result == 'skipped') &&
+      (
+        github.ref == 'refs/heads/main' ||
+        startsWith(github.ref, 'refs/tags/v') ||
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy' && github.event.inputs.environment == 'prod')
+      )
+    environment:
+      name: production
+      url: ${{ secrets.PROD_HEALTHCHECK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        run: bash backend/scripts/deploy.sh prod "${{ needs.build-image.outputs.image_tag }}"
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          REGISTRY: ghcr.io
+          REGISTRY_USERNAME: ${{ github.actor }}
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          SKIP_BUILD: 'true'
+          DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
+          HEALTHCHECK_URL: ${{ secrets.PROD_HEALTHCHECK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ---------------------------------------------------------------------------
+  # Post-deploy monitoring smoke check against whichever environments deployed.
+  # ---------------------------------------------------------------------------
+  monitoring:
+    name: Post-deploy monitoring
+    runs-on: ubuntu-latest
+    needs: [deploy-dev, deploy-staging, deploy-prod]
+    if: always() && (needs.deploy-dev.result == 'success' || needs.deploy-staging.result == 'success' || needs.deploy-prod.result == 'success')
+    steps:
+      - name: Probe health & metrics endpoints
+        run: |
+          probe() {
+            local name="$1" base="$2"
+            [ -z "${base}" ] && { echo "skip ${name}: no URL configured"; return 0; }
+            echo "Probing ${name} -> ${base}"
+            curl -fsS --retry 5 --retry-delay 5 "${base}" >/dev/null \
+              && echo "${name} health OK" \
+              || { echo "::warning::${name} health probe failed"; }
+          }
+          probe staging "${{ secrets.STAGING_HEALTHCHECK_URL }}"
+          probe prod "${{ secrets.PROD_HEALTHCHECK_URL }}"
+
+  # ---------------------------------------------------------------------------
+  # Manual rollback via workflow_dispatch (action = rollback).
+  # ---------------------------------------------------------------------------
+  rollback:
+    name: Rollback
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'rollback'
+    environment:
+      name: ${{ github.event.inputs.environment == 'prod' && 'production' || github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Roll back
+        run: |
+          TARGET=""
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            TARGET="${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}"
+          fi
+          bash backend/scripts/rollback.sh "${{ github.event.inputs.environment }}" "${TARGET}"
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          DEPLOY_HOST: ${{ secrets[format('{0}_DEPLOY_HOST', github.event.inputs.environment)] }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ---------------------------------------------------------------------------
+  # Aggregate notification for the overall CD run outcome.
+  # ---------------------------------------------------------------------------
+  notify:
+    name: Notify result
+    runs-on: ubuntu-latest
+    needs: [deploy-dev, deploy-staging, deploy-prod, rollback]
+    if: always() && github.event_name != 'pull_request'
+    steps:
+      - name: Send Slack summary
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "${SLACK_WEBHOOK_URL}" ]; then
+            echo "SLACK_WEBHOOK_URL not configured - skipping notification"
+            exit 0
+          fi
+          STATUS="success"
+          for r in "${{ needs.deploy-dev.result }}" "${{ needs.deploy-staging.result }}" "${{ needs.deploy-prod.result }}" "${{ needs.rollback.result }}"; do
+            if [ "$r" = "failure" ]; then STATUS="failure"; fi
+          done
+          EMOJI=":white_check_mark:"; [ "$STATUS" = "failure" ] && EMOJI=":x:"
+          curl -fsS -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"${EMOJI} *ChenAIKit CD* on \`${{ github.ref_name }}\` finished with status: ${STATUS}\"}" \
+            "${SLACK_WEBHOOK_URL}" || echo "Slack notify skipped/failed"

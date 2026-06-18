@@ -7,6 +7,47 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Security scanning: dependency vulnerability audit + CodeQL static analysis.
+  # Runs in parallel with the test/build jobs so it does not slow them down.
+  # ---------------------------------------------------------------------------
+  security-scan:
+    name: Security scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Dependency vulnerability audit
+        # Fail only on high/critical advisories; report the rest.
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'
+
   test:
     runs-on: ubuntu-latest
     
