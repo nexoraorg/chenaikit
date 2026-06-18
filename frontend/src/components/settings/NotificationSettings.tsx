@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -43,6 +43,19 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    setLocalPrefs({
+      emailNotifications: preferences.emailNotifications ?? true,
+      pushNotifications: preferences.pushNotifications ?? true,
+      transactionAlerts: preferences.transactionAlerts ?? true,
+      scoreChanges: preferences.scoreChanges ?? true,
+      marketingEmails: preferences.marketingEmails ?? false,
+      securityAlerts: preferences.securityAlerts ?? true,
+      weeklyReport: preferences.weeklyReport ?? false,
+      priceAlerts: preferences.priceAlerts ?? true
+    });
+  }, [preferences]);
 
   const handleToggle = (key: keyof typeof localPrefs) => {
     setLocalPrefs(prev => ({ ...prev, [key]: !prev[key] }));

@@ -50,17 +50,19 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     if (!file) return;
 
     setIsUploading(true);
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
         const base64 = reader.result as string;
         await onUpdateProfile({ avatar: base64 });
+      } finally {
         setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
+      }
+    };
+    reader.onerror = () => {
       setIsUploading(false);
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveEdit = async () => {

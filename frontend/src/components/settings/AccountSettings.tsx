@@ -8,7 +8,11 @@ import {
   CardContent,
   Grid,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { ValidationRules } from '@chenaikit/core';
@@ -45,7 +49,9 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
   } = useFormValidation({
     initialValues: {
       name: user.name || '',
-      email: user.email
+      email: user.email,
+      language: user.language || 'en',
+      theme: user.theme || 'system'
     },
     validationRules: {
       email: ValidationRules.email(),
@@ -126,7 +132,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                     fullWidth
                     label="Language"
                     name="language"
-                    value={user.language || 'en'}
+                    value={values.language}
                     onChange={(e) => handleChange('language', e.target.value)}
                     SelectProps={{ native: true }}
                   >
@@ -141,7 +147,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                     fullWidth
                     label="Theme"
                     name="theme"
-                    value={user.theme || 'system'}
+                    value={values.theme}
                     onChange={(e) => handleChange('theme', e.target.value)}
                     SelectProps={{ native: true }}
                   >
@@ -186,63 +192,36 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
         </CardContent>
       </Card>
 
-      {deleteConfirmOpen && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999
-          }}
-          onClick={() => setDeleteConfirmOpen(false)}
-        >
-          <Box
-            sx={{
-              backgroundColor: 'white',
-              borderRadius: 2,
-              p: 4,
-              maxWidth: 400,
-              width: '100%',
-              mx: 2
-            }}
-            onClick={(e) => e.stopPropagation()}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+        <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>
+          Delete Account
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 3, color: '#475569' }}>
+            This action cannot be undone. To confirm, please type your email address:{' '}
+            <strong>{user.email}</strong>
+          </Typography>
+          <TextField
+            fullWidth
+            label="Confirm Email"
+            value={deleteEmail}
+            onChange={(e) => setDeleteEmail(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={deleteEmail !== user.email || isSaving}
+            onClick={handleDeleteAccount}
           >
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: 'error.main' }}>
-              Delete Account
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 3, color: '#475569' }}>
-              This action cannot be undone. To confirm, please type your email address:{' '}
-              <strong>{user.email}</strong>
-            </Typography>
-            <TextField
-              fullWidth
-              label="Confirm Email"
-              value={deleteEmail}
-              onChange={(e) => setDeleteEmail(e.target.value)}
-              sx={{ mb: 3 }}
-            />
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button onClick={() => setDeleteConfirmOpen(false)} disabled={isSaving}>
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                color="error"
-                disabled={deleteEmail !== user.email || isSaving}
-                onClick={handleDeleteAccount}
-              >
-                {isSaving ? 'Deleting...' : 'Delete Forever'}
-              </Button>
-            </Box>
-          </Box>
-        </Box>
-      )}
+            {isSaving ? 'Deleting...' : 'Delete Forever'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

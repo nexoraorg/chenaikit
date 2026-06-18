@@ -72,9 +72,11 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordMatchError, setPasswordMatchError] = useState(false);
   const [twoFactorDialogOpen, setTwoFactorDialogOpen] = useState(false);
   const [revokeAllDialogOpen, setRevokeAllDialogOpen] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
 
   const {
     values,
@@ -96,13 +98,14 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
       confirmPassword: ValidationRules.required('Please confirm your password')
     },
     onSubmit: async (formValues: Record<string, string>) => {
+      if (formValues.newPassword !== formValues.confirmPassword) {
+        setPasswordMatchError(true);
+        return;
+      }
+      setPasswordMatchError(false);
       setIsChangingPassword(true);
       setPasswordSuccess(false);
       try {
-        if (formValues.newPassword !== formValues.confirmPassword) {
-          setPasswordSuccess(false);
-          return;
-        }
         await onChangePassword(formValues.currentPassword, formValues.newPassword);
         setPasswordSuccess(true);
       } finally {
@@ -199,10 +202,13 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={values.confirmPassword}
-                  onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                  onChange={(e) => {
+                    handleChange('confirmPassword', e.target.value);
+                    setPasswordMatchError(false);
+                  }}
                   onBlur={() => handleBlur('confirmPassword')}
-                  error={touched.confirmPassword && !!errors.confirmPassword}
-                  helperText={touched.confirmPassword && errors.confirmPassword}
+                  error={(touched.confirmPassword && !!errors.confirmPassword) || passwordMatchError}
+                  helperText={(touched.confirmPassword && errors.confirmPassword) || (passwordMatchError ? 'Passwords do not match' : '')}
                   InputProps={{
                     endAdornment: (
                       <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge="end">
@@ -296,10 +302,14 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
                     !session.current && (
                       <IconButton
                         edge="end"
-                        onClick={() => onRevokeSession(session.id)}
+                        onClick={() => {
+                          setRevokingSessionId(session.id);
+                          onRevokeSession(session.id).finally(() => setRevokingSessionId(null));
+                        }}
+                        disabled={revokingSessionId === session.id}
                         title="Revoke session"
                       >
-                        <DeleteIcon />
+                        {revokingSessionId === session.id ? <CircularProgress size={20} /> : <DeleteIcon />}
                       </IconButton>
                     )
                   }

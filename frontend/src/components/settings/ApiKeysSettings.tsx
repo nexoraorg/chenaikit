@@ -16,7 +16,9 @@ import {
   DialogContent,
   DialogActions,
   Alert,
-  InputAdornment
+  InputAdornment,
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
 import {
   VpnKey as VpnKeyIcon,
@@ -306,36 +308,16 @@ export const ApiKeysSettings: React.FC<ApiKeysSettingsProps> = ({
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {AVAILABLE_PERMISSIONS.map((perm) => (
-                  <Box
+                  <FormControlLabel
                     key={perm}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => togglePermission(perm)}
-                  >
-                    <Box
-                      sx={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 1,
-                        border: '2px solid',
-                        borderColor: newKeyPermissions.includes(perm) ? 'primary.main' : '#cbd5e1',
-                        backgroundColor: newKeyPermissions.includes(perm) ? 'primary.main' : 'transparent',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {newKeyPermissions.includes(perm) && (
-                        <Box sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: 'white' }} />
-                      )}
-                    </Box>
-                    <Typography variant="body2">{perm}</Typography>
-                  </Box>
+                    control={
+                      <Checkbox
+                        checked={newKeyPermissions.includes(perm)}
+                        onChange={() => togglePermission(perm)}
+                      />
+                    }
+                    label={perm}
+                  />
                 ))}
               </Box>
             </Box>
