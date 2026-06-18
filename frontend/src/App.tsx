@@ -1,20 +1,65 @@
 import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Box, Button, Typography } from '@mui/material';
+import { Logout as LogoutIcon, AccountCircle } from '@mui/icons-material';
 import FormValidationExample from './components/FormValidationExample';
 import DataVisualizationExample from './components/DataVisualizationExample';
 import { AnalyticsDashboard } from './components';
+import { AuthProvider, useAuth } from './components/auth/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 import './components/FormValidation.css';
 
-const App: React.FC = () => {
-  const [activeDemo, setActiveDemo] = useState<'forms' | 'visualization' | 'analytics'>('analytics');
+const DashboardShell: React.FC = () => {
+  const [activeDemo, setActiveDemo] = useState<'analytics' | 'forms' | 'visualization'>('analytics');
+  const { user, logout } = useAuth();
 
   return (
     <div className="App">
       <header style={{ 
         background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', 
         color: 'white', 
-        padding: '40px 20px', 
-        textAlign: 'center' 
+        padding: '30px 20px', 
+        textAlign: 'center',
+        position: 'relative'
       }}>
+        {user && (
+          <Box sx={{ 
+            position: { xs: 'relative', sm: 'absolute' }, 
+            top: 20, 
+            right: 20, 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1.5,
+            justifyContent: 'center',
+            mb: { xs: 2, sm: 0 }
+          }}>
+            <AccountCircle sx={{ color: '#38bdf8' }} />
+            <Typography variant="body2" sx={{ fontWeight: 500, color: '#e2e8f0' }}>
+              {user.email}
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={logout}
+              startIcon={<LogoutIcon />}
+              sx={{
+                color: 'white',
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                textTransform: 'none',
+                borderRadius: '8px',
+                '&:hover': {
+                  borderColor: 'white',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
+            >
+              Sign Out
+            </Button>
+          </Box>
+        )}
+
         <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>
           ChenaiKit - BI & Analytics Dashboard
         </h1>
@@ -91,6 +136,28 @@ const App: React.FC = () => {
         </p>
       </footer>
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <DashboardShell />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 };
 

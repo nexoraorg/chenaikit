@@ -86,7 +86,7 @@ export class AuthController {
     const refreshTokenRaw = crypto.randomBytes(64).toString('hex');
     const refreshTokenHash = await hashPassword(refreshTokenRaw);
 
-    await prisma.refreshToken.create({
+    const createdToken = await prisma.refreshToken.create({
       data: {
         tokenHash: refreshTokenHash,
         userId: user.id,
@@ -94,7 +94,7 @@ export class AuthController {
       },
     });
 
-    res.json({ accessToken, refreshToken: refreshTokenRaw });
+    res.json({ accessToken, refreshToken: `${createdToken.id}.${refreshTokenRaw}` });
   }
 
   async refreshToken(req: Request, res: Response) {
@@ -142,6 +142,9 @@ export class AuthController {
       role: stored.user.role,
     };
     const accessToken = generateAccessToken(payload);
-    res.json({ accessToken });
+    res.json({
+      accessToken,
+      refreshToken: `${stored.id}.${newRefreshTokenRaw}`
+    });
   }
 }
