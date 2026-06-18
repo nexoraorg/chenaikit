@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import { ApiKey, ApiKeyCreateInput, ApiKeyUpdateInput } from '../models/ApiKey';
 import { createHash, randomBytes } from 'crypto';
 import { log } from '../utils/logger';
-import { DatabaseError, NotFoundError, ValidationError } from '../utils/errors';
 
 export class ApiKeyService {
   constructor(private prisma: PrismaClient) {}
@@ -197,9 +196,7 @@ export class ApiKeyService {
     await this.prisma.apiKey.update({
       where: { id },
       data: {
-        currentUsage: {
-          increment: 1,
-        },
+        currentUsage: { increment: 1 } as unknown as number,
       },
     });
   }

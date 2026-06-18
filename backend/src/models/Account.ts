@@ -15,10 +15,10 @@ export class Account {
   @Column({ type: 'varchar', length: 255, nullable: true })
   nickname?: string;
 
-  @ManyToOne(() => User, user => user.accounts, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user: User) => user.accounts, { onDelete: 'CASCADE' })
   user!: User;
 
-  @OneToMany(() => Transaction, transaction => transaction.account)
+  @OneToMany(() => Transaction, (transaction: Transaction) => transaction.account)
   transactions!: Transaction[];
 
   @CreateDateColumn()

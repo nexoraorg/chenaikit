@@ -24,7 +24,7 @@ export class Transaction {
   @Column({ type: "timestamp" })
   timestamp!: Date;
 
-  @ManyToOne(() => Account, account => account.transactions, { onDelete: "CASCADE" })
+  @ManyToOne(() => Account, (account: Account) => account.transactions, { onDelete: "CASCADE" })
   account!: Account;
 
   @CreateDateColumn()

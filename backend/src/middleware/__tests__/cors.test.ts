@@ -12,6 +12,7 @@ const baseConfig: CorsConfig = {
   exposedHeaders: ['X-Request-ID'],
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const makeReqRes = (origin?: string) => {
   const headers: Record<string, string> = {};
   const req = {

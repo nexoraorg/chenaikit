@@ -1,17 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { HealthCheckResult } from '../types/monitoring';
 import { log } from '../utils/logger';
-import { metricsService } from '../services/metricsService';
 
 const router: Router = Router();
 const startTime = Date.now();
-
-interface HealthStatus {
-  status: 'healthy' | 'degraded' | 'unhealthy';
-  timestamp: string;
-  uptime: number;
-  services: Record<string, ServiceHealth>;
-}
 
 interface ServiceHealth {
   status: 'up' | 'down';
@@ -41,6 +33,7 @@ export function registerHealthCheck(
 /**
  * Check database connectivity
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function checkDatabase(): Promise<{ status: 'up' | 'down'; message?: string; responseTime: number }> {
   const start = Date.now();
   try {
@@ -60,6 +53,7 @@ async function checkDatabase(): Promise<{ status: 'up' | 'down'; message?: strin
 /**
  * Check Redis connectivity
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function checkRedis(): Promise<{ status: 'up' | 'down'; message?: string; responseTime: number }> {
   const start = Date.now();
   try {

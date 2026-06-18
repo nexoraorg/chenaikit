@@ -50,12 +50,15 @@ export function createRedisClient(): RedisClient {
   const client = new Redis(connectionOptions);
 
   client.on('error', (err: unknown) => {
+    // eslint-disable-next-line no-console
     console.error('[redis] connection error', err);
   });
   client.on('connect', () => {
+    // eslint-disable-next-line no-console
     console.log('[redis] connected');
   });
   client.on('reconnecting', () => {
+    // eslint-disable-next-line no-console
     console.log('[redis] reconnecting');
   });
 

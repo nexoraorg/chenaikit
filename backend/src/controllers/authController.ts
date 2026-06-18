@@ -136,10 +136,15 @@ export class AuthController {
       },
     });
 
+    const user = stored.user;
+    if (!user) {
+      throw new AuthenticationError('User not found');
+    }
+
     const payload: UserPayload = {
-      id: stored.user.id,
-      email: stored.user.email,
-      role: stored.user.role,
+      id: user.id,
+      email: user.email,
+      role: user.role,
     };
     const accessToken = generateAccessToken(payload);
     res.json({ accessToken });

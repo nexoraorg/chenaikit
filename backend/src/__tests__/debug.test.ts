@@ -7,8 +7,10 @@ describe('Debug Analytics API', () => {
       .get('/api/v1/analytics/dashboard')
       .query({ days: 30 });
 
+    /* eslint-disable no-console */
     console.log('DEBUG Response Status:', response.status);
     console.log('DEBUG Response Body:', JSON.stringify(response.body, null, 2));
+    /* eslint-enable no-console */
     
     expect(response.status).toBe(200);
   }, 30000);

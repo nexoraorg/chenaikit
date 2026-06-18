@@ -23,7 +23,10 @@ export function cacheMiddleware<T = unknown>(options: CacheMiddlewareOptions<T>)
         const payload = (options.serialize ? options.serialize(body as T) : body) as any;
         cache
           .set(key, payload, { ttlSeconds: options.ttlSeconds })
-          .catch((err) => console.warn('[cache] set failed', err));
+          .catch((err) => {
+            // eslint-disable-next-line no-console
+            console.warn('[cache] set failed', err);
+          });
         res.setHeader('X-Cache', 'MISS');
         return originalJson(body);
       }) as typeof res.json;

@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Request } from 'express';
+import { log } from '../utils/logger';
 
 export class UsageTrackingService {
   constructor(private prisma: PrismaClient) {}
@@ -79,7 +80,7 @@ export class UsageTrackingService {
           where: whereClause,
           select: { apiKeyId: true },
           distinct: ['apiKeyId'],
-        }).then(results => results.length),
+        }).then((results: { apiKeyId: string }[]) => results.length),
         this.prisma.apiUsage.aggregate({
           where: whereClause,
           _avg: { responseTime: true },
@@ -142,7 +143,7 @@ export class UsageTrackingService {
         tierDistribution,
       };
     } catch (error: any) {
-      console.error('Failed to get analytics', error);
+      log.error('Failed to get analytics', error as Error);
       throw new Error('Failed to get analytics');
     }
   }
@@ -170,7 +171,7 @@ export class UsageTrackingService {
         return acc;
       }, {} as Record<string, number>);
     } catch (error: any) {
-      console.error('Failed to get tier distribution', error);
+      log.error('Failed to get tier distribution', error as Error);
       return {};
     }
   }
@@ -247,7 +248,7 @@ export class UsageTrackingService {
         })),
       };
     } catch (error: any) {
-      console.error('Failed to get API key usage', error);
+      log.error('Failed to get API key usage', error as Error);
       throw new Error('Failed to get API key usage');
     }
   }
@@ -292,7 +293,7 @@ export class UsageTrackingService {
           },
           select: { apiKeyId: true },
           distinct: ['apiKeyId'],
-        }).then(results => results.length),
+        }).then((results: { apiKeyId: string }[]) => results.length),
         this.prisma.apiUsage.aggregate({
           where: {
             timestamp: { gte: oneMinuteAgo },
@@ -311,7 +312,7 @@ export class UsageTrackingService {
         },
       });
 
-      const errorRate = recentMetrics._count > 0 ? (errorCount / recentMetrics._count) * 100 : 0;
+      const errorRate = recentMetrics._count > 0 ? (errorCount / (recentMetrics._count as number)) * 100 : 0;
 
       return {
         requestsLastMinute,
@@ -321,7 +322,7 @@ export class UsageTrackingService {
         errorRate,
       };
     } catch (error: any) {
-      console.error('Failed to get real-time metrics', error);
+      log.error('Failed to get real-time metrics', error as Error);
       throw new Error('Failed to get real-time metrics');
     }
   }
@@ -342,14 +343,14 @@ export class UsageTrackingService {
         },
       });
 
-      console.info('Cleaned up old usage records', {
+      log.info('Cleaned up old usage records', {
         count: result.count,
         cutoffDate,
       });
 
       return result.count;
     } catch (error: any) {
-      console.error('Failed to cleanup old usage records', error);
+      log.error('Failed to cleanup old usage records', error as Error);
       throw new Error('Failed to cleanup old usage records');
     }
   }
@@ -397,7 +398,7 @@ export class UsageTrackingService {
         periodEnd: new Date(item.periodEnd),
       }));
     } catch (error: any) {
-      console.error('Failed to export usage data', error);
+      log.error('Failed to export usage data', error as Error);
       throw new Error('Failed to export usage data');
     }
   }

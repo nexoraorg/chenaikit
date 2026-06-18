@@ -12,12 +12,15 @@ import accountRoutes from '../accounts';
 import authRoutes from '../auth';
 import { createFeatureFlagRouter } from '../featureFlags';
 import { generateCreditScore, generateFraudResult, toCreditScoreV2, toFraudResultV2 } from '../shared/scoring';
+import { createWebhookRouter } from '../webhooks';
+import { prisma } from '../../prisma/client';
 
 const router: ExpressRouter = Router();
 
 router.use('/accounts', accountRoutes);
 router.use('/auth', authRoutes);
 router.use('/feature-flags', createFeatureFlagRouter());
+router.use('/webhooks', createWebhookRouter(prisma));
 
 // GET /credit-score - nested v2 contract
 router.get('/credit-score', (_req, res) => {

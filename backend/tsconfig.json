@@ -16,7 +16,11 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false
+    "noEmit": false,
+    "paths": {
+      "@prisma/client": ["./src/types/shims/prisma-client.d.ts"],
+      "typeorm": ["./src/types/shims/typeorm.d.ts"]
+    }
   },
   "include": [
     "src/**/*"

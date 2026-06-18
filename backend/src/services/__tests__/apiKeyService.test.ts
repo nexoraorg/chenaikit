@@ -1,4 +1,5 @@
 import { ApiKeyService } from '../apiKeyService';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ApiKeyCreateInput, ApiKeyUpdateInput, ApiTier } from '../../models/ApiKey';
 
 // Create a mock interface that matches PrismaClient structure
