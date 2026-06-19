@@ -19,7 +19,9 @@ import authRoutes from './routes/auth';
 import { UserPayload } from './types/auth';
 import { ensureRedisConnection } from './config/redis';
 import accountRoutes from './routes/accounts';
+import fileRoutes from './routes/files';
 import { PrismaClient } from '@prisma/client';
+import { FileStorageService } from './services/fileStorageService';
 import { ApiKeyService } from './services/apiKeyService';
 import { UsageTrackingService } from './services/usageTrackingService';
 import { ApiGateway } from './middleware/apiGateway';
@@ -38,6 +40,7 @@ app.use(requestLoggingMiddleware);
 app.use('/api', healthRouter);
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', accountRoutes);
+app.use('/api/files', fileRoutes);
 // app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
 
 // Gateway-protected endpoints
@@ -103,6 +106,10 @@ export const startServer = async (): Promise<void> => {
   const usageTrackingService = new UsageTrackingService(prisma);
   const rateLimiter = createTieredRateLimiter(redis);
   const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
+  
+  // Initialize file storage service and set it on app
+  const fileStorageService = new FileStorageService(prisma);
+  app.set('fileStorageService', fileStorageService);
 
   // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
 
