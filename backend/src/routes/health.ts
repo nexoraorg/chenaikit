@@ -31,46 +31,6 @@ export function registerHealthCheck(
 }
 
 /**
- * Check database connectivity
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function checkDatabase(): Promise<{ status: 'up' | 'down'; message?: string; responseTime: number }> {
-  const start = Date.now();
-  try {
-    const responseTime = Date.now() - start;
-    return { status: 'up', responseTime };
-  } catch (error) {
-    const err = error as Error;
-    const responseTime = Date.now() - start;
-    return {
-      status: 'down',
-      message: err.message,
-      responseTime
-    };
-  }
-}
-
-/**
- * Check Redis connectivity
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function checkRedis(): Promise<{ status: 'up' | 'down'; message?: string; responseTime: number }> {
-  const start = Date.now();
-  try {
-    const responseTime = Date.now() - start;
-    return { status: 'up', responseTime };
-  } catch (error) {
-    const err = error as Error;
-    const responseTime = Date.now() - start;
-    return {
-      status: 'down',
-      message: err.message,
-      responseTime
-    };
-  }
-}
-
-/**
  * Check system resources
  */
 function checkSystemResources(): { status: 'up' | 'degraded'; details: any } {

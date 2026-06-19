@@ -111,8 +111,20 @@ export class ApiKey {
   isPathAllowed(path: string): boolean {
     if (this.allowedPaths.length === 0) return true;
     return this.allowedPaths.some(pattern => {
-      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-      return regex.test(path);
+      // Avoid new RegExp(userSuppliedPattern) — ReDoS risk (CodeQL: user-controlled regex).
+      // Patterns support only a single '*' wildcard (prefix or suffix match).
+      // Sanitise the pattern to a safe literal comparison.
+      const starIdx = pattern.indexOf('*');
+      if (starIdx === -1) {
+        // Exact match
+        return path === pattern;
+      }
+      const prefix = pattern.slice(0, starIdx);
+      const suffix = pattern.slice(starIdx + 1);
+      // Reject patterns with more than one wildcard — they aren't needed and
+      // would require regex evaluation to handle correctly.
+      if (suffix.includes('*')) return false;
+      return path.startsWith(prefix) && path.endsWith(suffix);
     });
   }
 

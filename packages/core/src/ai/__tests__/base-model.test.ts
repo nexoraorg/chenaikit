@@ -131,13 +131,13 @@ describe('AIModel Base Class', () => {
   });
 
   describe('Rate Limiting', () => {
-    it.skip('should track rate limit status', () => {
+    it('should track rate limit status', () => {
       const status = model.getRateLimitStatus();
-      expect(status).toEqual({
-        current: 0,
-        max: 60,
-        resetTime: 60000,
-      });
+      expect(status).not.toBeNull();
+      expect(status!.current).toBe(0);
+      expect(status!.max).toBe(60);
+      expect(status!.resetTime).toBeGreaterThanOrEqual(0);
+      expect(status!.resetTime).toBeLessThanOrEqual(60000);
     });
 
     it('should return null when rate limiting is disabled', () => {

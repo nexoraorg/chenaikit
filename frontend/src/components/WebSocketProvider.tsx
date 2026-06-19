@@ -158,7 +158,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }
     
     // For now, this is a placeholder for future WebSocket implementation
-    console.log('Sending data:', data);
+    void data; // data will be used when WebSocket is fully implemented
   }, [state.isConnected, t]);
 
   // Update metrics periodically
@@ -171,8 +171,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       try {
         const dashboardData = await monitorRef.current!.getDashboardData();
         setMetrics(dashboardData.overview.realTimeMetrics);
-      } catch (error) {
-        console.error('Error updating metrics:', error);
+      } catch (_error) {
+        // Metrics update failed silently; next tick will retry
       }
     }, 5000); // Update every 5 seconds
 
@@ -182,8 +182,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   // Auto-connect on mount
   useEffect(() => {
     if (autoConnect) {
-      connect().catch(error => {
-        console.error('Auto-connect failed:', error);
+      connect().catch(() => {
+        // Auto-connect failure is non-fatal; components can retry via connect()
       });
     }
 
@@ -222,7 +222,7 @@ export const useWebSocket = (): WebSocketContextType => {
  * Hook for managing connection status with exponential backoff
  */
 export const useWebSocketWithBackoff = (options: Partial<WebSocketProviderProps> = {}) => {
-  const [backoffDelay, setBackoffDelay] = useState(1000);
+  const [backoffDelay] = useState(1000);
   const ws = useWebSocket();
 
   const connectWithBackoff = useCallback(async () => {

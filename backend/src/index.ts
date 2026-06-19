@@ -10,6 +10,7 @@ if (process.env.SENTRY_DSN) {
 }
 
 import express, { Request, Response } from 'express';
+import { log } from './utils/logger';
 import { requestLoggingMiddleware } from './middleware/logging';
 import healthRouter from './routes/health';
 import { metricsService, metricsMiddleware } from './services/metricsService';
@@ -132,30 +133,26 @@ export const startServer = async (): Promise<void> => {
   process.on('SIGTERM', shutdown);
 
   app.listen(PORT, async () => {
-    /* eslint-disable no-console */
-    console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
-    console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
+    log.info(`ChenAIKit Backend running on port ${PORT}`);
+    log.info(`Health check: http://localhost:${PORT}/api/health`);
+    log.info(`Metrics:      http://localhost:${PORT}/metrics`);
 
     // Start webhook retry worker — recovers stuck deliveries after restarts
     retryWorkerTimer = startWebhookRetryWorker(webhookService, prisma);
-    console.log('🪝  Webhook retry worker started');
+    log.info('Webhook retry worker started');
 
     try {
       await ensureRedisConnection();
-      console.log('🧠 Redis cache ready');
+      log.info('Redis cache ready');
     } catch (_err) {
-      console.warn('⚠️  Redis not available. Continuing without cache.');
+      log.warn('Redis not available. Continuing without cache.');
     }
-    /* eslint-enable no-console */
   });
 };
 
 if (require.main === module) {
   startServer().catch((error) => {
-    // eslint-disable-next-line no-console
-    console.error('Failed to start server', error);
+    log.error('Failed to start server', error as Error);
     process.exit(1);
   });
 }

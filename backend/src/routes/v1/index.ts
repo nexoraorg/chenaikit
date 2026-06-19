@@ -15,6 +15,7 @@ import { createFeatureFlagRouter } from '../featureFlags';
 import { generateCreditScore, generateFraudResult, toCreditScoreV1, toFraudResultV1 } from '../shared/scoring';
 import { createWebhookRouter } from '../webhooks';
 import { prisma } from '../../prisma/client';
+import { generalRateLimit } from '../middleware/rateLimiter';
 
 const router: ExpressRouter = Router();
 
@@ -24,12 +25,12 @@ router.use('/feature-flags', createFeatureFlagRouter());
 router.use('/webhooks', createWebhookRouter(prisma));
 
 // GET /credit-score - flat v1 contract
-router.get('/credit-score', (_req, res) => {
+router.get('/credit-score', generalRateLimit.middleware(), (_req, res) => {
   res.json({ success: true, data: toCreditScoreV1(generateCreditScore()) });
 });
 
 // GET /fraud/detect - flat v1 contract
-router.get('/fraud/detect', (_req, res) => {
+router.get('/fraud/detect', generalRateLimit.middleware(), (_req, res) => {
   res.json({ success: true, data: toFraudResultV1(generateFraudResult()) });
 });
 

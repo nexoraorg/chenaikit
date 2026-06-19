@@ -1,4 +1,5 @@
 import Redis, { Redis as RedisClient } from 'ioredis';
+import { log } from '../utils/logger';
 
 export interface RedisConfigOptions {
   host: string;
@@ -50,16 +51,13 @@ export function createRedisClient(): RedisClient {
   const client = new Redis(connectionOptions);
 
   client.on('error', (err: unknown) => {
-    // eslint-disable-next-line no-console
-    console.error('[redis] connection error', err);
+    log.error('[redis] connection error', err as Error);
   });
   client.on('connect', () => {
-    // eslint-disable-next-line no-console
-    console.log('[redis] connected');
+    log.info('[redis] connected');
   });
   client.on('reconnecting', () => {
-    // eslint-disable-next-line no-console
-    console.log('[redis] reconnecting');
+    log.info('[redis] reconnecting');
   });
 
   cachedClient = client;

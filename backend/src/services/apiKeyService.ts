@@ -196,7 +196,9 @@ export class ApiKeyService {
     await this.prisma.apiKey.update({
       where: { id },
       data: {
-        currentUsage: { increment: 1 } as unknown as number,
+        currentUsage: {
+          increment: 1,
+        },
       },
     });
   }

@@ -1,4 +1,5 @@
 import { MonitoringConfig } from '../types/monitoring';
+import { log } from '../utils/logger';
 
 // Helper function to get boolean from env
 const getBooleanFromEnv = (key: string, defaultValue: boolean = false): boolean => {
@@ -87,14 +88,12 @@ export function validateEnvironment(): void {
   }
 
   // Log warnings and errors
-  /* eslint-disable no-console */
-  warnings.forEach(warning => console.warn(`⚠️  ${warning}`));
-  errors.forEach(error => console.error(`❌ ${error}`));
+  warnings.forEach(warning => log.warn(warning));
+  errors.forEach(error => log.error(error, new Error(error)));
 
   if (warnings.length > 0 || errors.length > 0) {
-    console.log('\n📋 See .env.example for all available configuration options');
+    log.info('See .env.example for all available configuration options');
   }
-  /* eslint-enable no-console */
 }
 
 let shutdownFn: (() => Promise<void>) | null = null;
@@ -112,8 +111,7 @@ export async function initializeMonitoring() {
       });
     }
   } catch (e: any) {
-    // eslint-disable-next-line no-console
-    console.warn('Sentry init skipped or failed', { error: e?.message });
+    log.warn('Sentry init skipped or failed', { error: e?.message });
   }
 
   // Initialize OpenTelemetry (optional)
@@ -139,8 +137,7 @@ export async function initializeMonitoring() {
       };
     }
   } catch (e: any) {
-    // eslint-disable-next-line no-console
-    console.warn('OpenTelemetry init skipped or failed', { error: e?.message });
+    log.warn('OpenTelemetry init skipped or failed', { error: e?.message });
   }
 }
 
