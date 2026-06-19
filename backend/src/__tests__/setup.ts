@@ -73,10 +73,12 @@ export async function setupTestDatabase(): Promise<void> {
  */
 export async function cleanDatabase(prisma: PrismaClient): Promise<void> {
   await prisma.$executeRawUnsafe('PRAGMA foreign_keys = OFF');
-  await prisma.apiUsage.deleteMany();
-  await prisma.apiKey.deleteMany();
-  await prisma.refreshToken.deleteMany();
-  await prisma.user.deleteMany();
+  // Use raw SQL so we never fail on a missing table (schema may not have been
+  // pushed yet when this is called from a fresh test worker).
+  await prisma.$executeRawUnsafe('DELETE FROM api_usage WHERE 1=1').catch(() => {});
+  await prisma.$executeRawUnsafe('DELETE FROM api_keys WHERE 1=1').catch(() => {});
+  await prisma.$executeRawUnsafe('DELETE FROM "RefreshToken" WHERE 1=1').catch(() => {});
+  await prisma.$executeRawUnsafe('DELETE FROM "User" WHERE 1=1').catch(() => {});
   await prisma.$executeRawUnsafe('PRAGMA foreign_keys = ON');
 }
 

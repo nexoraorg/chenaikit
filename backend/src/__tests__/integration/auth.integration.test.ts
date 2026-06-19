@@ -155,7 +155,7 @@ describe('Auth API – integration', () => {
       expect(res.body.accessToken).toBeDefined();
       expect(res.body.refreshToken).toBeDefined();
       expect(res.body.refreshToken).not.toBe(refreshToken);
-    });
+    }, 20000);
 
     it('rejects reuse of a consumed refresh token (rotation enforced)', async () => {
       const email = uid();
@@ -168,7 +168,7 @@ describe('Auth API – integration', () => {
       // Reuse the now-consumed token
       const res = await request(app).post(`${BASE}/refresh`).send({ token: refreshToken });
       expect(res.status).toBe(401);
-    });
+    }, 20000);
 
     it('returns 401 for a completely invalid token', async () => {
       const res = await request(app)

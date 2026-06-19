@@ -138,11 +138,16 @@ describe('Error scenarios – integration', () => {
 
   describe('409 Conflict', () => {
     it('returns 409 when registering a duplicate email', async () => {
-      const email = `conflict-${Date.now()}@example.com`;
-      await request(app)
+      // Use a unique email and register it fresh — no dependency on prior state
+      const email = `conflict-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
+
+      // First registration must succeed
+      const first = await request(app)
         .post('/api/v1/auth/register')
         .send({ email, password: 'SecurePass123' });
+      expect(first.status).toBe(201);
 
+      // Second registration with same email must conflict
       const res = await request(app)
         .post('/api/v1/auth/register')
         .send({ email, password: 'SecurePass123' });
