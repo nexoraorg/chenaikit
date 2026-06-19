@@ -11,7 +11,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
     "test": "jest",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint src/**/*.ts",
+    "migrate": "ts-node src/scripts/migrate.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
