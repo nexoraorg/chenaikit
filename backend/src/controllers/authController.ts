@@ -6,10 +6,8 @@ import { UserPayload } from '../types/auth';
 import crypto from 'crypto';
 import { z } from 'zod';
 import {
-  ValidationError,
   AuthenticationError,
-  ConflictError,
-  NotFoundError
+  ConflictError
 } from '../utils/errors';
 
 const durationToMs = (input: string): number => {
@@ -57,105 +55,96 @@ const refreshSchema = z.object({
 
 export class AuthController {
   async register(req: Request, res: Response) {
-    try {
-      const { email, password, role } = registerSchema.parse(req.body);
-      const existing = await prisma.user.findFirst({ where: { email, deletedAt: null } });
-      if (existing) {
-        throw new ConflictError('Email already registered', { email });
-      }
-
-      const hashed = await hashPassword(password);
-      const user = await prisma.user.create({
-        data: { email, password: hashed, role: role || 'user' },
-      });
-
-      res.status(201).json({ message: 'User registered', userId: user.id });
-    } catch (err) {
-      throw err; // Let the error handler middleware handle it
+    const { email, password, role } = registerSchema.parse(req.body);
+    const existing = await prisma.user.findFirst({ where: { email, deletedAt: null } });
+    if (existing) {
+      throw new ConflictError('Email already registered', { email });
     }
+
+    const hashed = await hashPassword(password);
+    const user = await prisma.user.create({
+      data: { email, password: hashed, role: role || 'user' },
+    });
+
+    res.status(201).json({ message: 'User registered', userId: user.id });
   }
 
   async login(req: Request, res: Response) {
-    try {
-      const { email, password } = loginSchema.parse(req.body);
-      const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
-      if (!user) {
-        throw new AuthenticationError('Invalid credentials');
-      }
-
-      const valid = await comparePassword(password, user.password);
-      if (!valid) {
-        throw new AuthenticationError('Invalid credentials');
-      }
-
-      const payload: UserPayload = { id: user.id, email: user.email, role: user.role };
-      const accessToken = generateAccessToken(payload);
-      const refreshTokenRaw = crypto.randomBytes(64).toString('hex');
-      const refreshTokenHash = await hashPassword(refreshTokenRaw);
-
-      const stored = await prisma.refreshToken.create({
-        data: {
-          tokenHash: refreshTokenHash,
-          userId: user.id,
-          expiresAt: new Date(Date.now() + getRefreshTokenTtlMs()),
-        },
-      });
-
-      res.json({ accessToken, refreshToken: refreshTokenRaw });
-    } catch (err) {
-      throw err; // Let the error handler middleware handle it
+    const { email, password } = loginSchema.parse(req.body);
+    const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
+    if (!user) {
+      throw new AuthenticationError('Invalid credentials');
     }
+
+    const valid = await comparePassword(password, user.password);
+    if (!valid) {
+      throw new AuthenticationError('Invalid credentials');
+    }
+
+    const payload: UserPayload = { id: user.id, email: user.email, role: user.role };
+    const accessToken = generateAccessToken(payload);
+    const refreshTokenRaw = crypto.randomBytes(64).toString('hex');
+    const refreshTokenHash = await hashPassword(refreshTokenRaw);
+
+    const createdToken = await prisma.refreshToken.create({
+      data: {
+        tokenHash: refreshTokenHash,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + getRefreshTokenTtlMs()),
+      },
+    });
+
+    res.json({ accessToken, refreshToken: `${createdToken.id}.${refreshTokenRaw}` });
   }
 
   async refreshToken(req: Request, res: Response) {
-    try {
-      const { token } = refreshSchema.parse(req.body);
-      const [idPart, tokenPart] = token.split('.', 2);
+    const { token } = refreshSchema.parse(req.body);
+    const [idPart, tokenPart] = token.split('.', 2);
 
-      const id = Number(idPart);
-      if (!Number.isFinite(id) || !tokenPart) {
-        throw new AuthenticationError('Invalid refresh token');
-      }
-
-      const stored = await prisma.refreshToken.findUnique({ where: { id }, include: { user: true } });
-      if (!stored) {
-        throw new AuthenticationError('Invalid refresh token');
-      }
-      if (stored.expiresAt < new Date()) {
-        throw new AuthenticationError('Refresh token expired');
-      }
-
-      const matches = await comparePassword(tokenPart, stored.tokenHash);
-      if (!matches) {
-        throw new AuthenticationError('Invalid refresh token');
-      }
-
-      if (stored.user?.deletedAt) {
-        await prisma.refreshToken.deleteMany({ where: { userId: stored.user.id } });
-        throw new AuthenticationError('Account disabled');
-      }
-
-      // Rotate refresh token on successful use
-      const newRefreshTokenRaw = crypto.randomBytes(64).toString('hex');
-      const newRefreshTokenHash = await hashPassword(newRefreshTokenRaw);
-
-      await prisma.refreshToken.update({
-        where: { id: stored.id },
-        data: {
-          tokenHash: newRefreshTokenHash,
-          expiresAt: new Date(Date.now() + getRefreshTokenTtlMs()),
-        },
-      });
-
-      const payload: UserPayload = {
-        id: stored.user.id,
-        email: stored.user.email,
-        role: stored.user.role,
-      };
-      const accessToken = generateAccessToken(payload);
-      res.json({ accessToken });
-    } catch (err) {
-      throw err; // Let the error handler middleware handle it
+    const id = Number(idPart);
+    if (!Number.isFinite(id) || !tokenPart) {
+      throw new AuthenticationError('Invalid refresh token');
     }
+
+    const stored = await prisma.refreshToken.findUnique({ where: { id }, include: { user: true } });
+    if (!stored) {
+      throw new AuthenticationError('Invalid refresh token');
+    }
+    if (stored.expiresAt < new Date()) {
+      throw new AuthenticationError('Refresh token expired');
+    }
+
+    const matches = await comparePassword(tokenPart, stored.tokenHash);
+    if (!matches) {
+      throw new AuthenticationError('Invalid refresh token');
+    }
+
+    if (stored.user?.deletedAt) {
+      await prisma.refreshToken.deleteMany({ where: { userId: stored.user.id } });
+      throw new AuthenticationError('Account disabled');
+    }
+
+    // Rotate refresh token on successful use
+    const newRefreshTokenRaw = crypto.randomBytes(64).toString('hex');
+    const newRefreshTokenHash = await hashPassword(newRefreshTokenRaw);
+
+    await prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: {
+        tokenHash: newRefreshTokenHash,
+        expiresAt: new Date(Date.now() + getRefreshTokenTtlMs()),
+      },
+    });
+
+    const payload: UserPayload = {
+      id: stored.user.id,
+      email: stored.user.email,
+      role: stored.user.role,
+    };
+    const accessToken = generateAccessToken(payload);
+    res.json({
+      accessToken,
+      refreshToken: `${stored.id}.${newRefreshTokenRaw}`
+    });
   }
 }

@@ -25,8 +25,7 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   // Log the error
-  log.error('Error occurred', {
-    error: error.message,
+  log.error(error.message, {
     stack: error.stack,
     path: req.path,
     method: req.method,
@@ -121,13 +120,14 @@ function convertToAppError(error: Error): AppError {
  */
 function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): AppError {
   switch (error.code) {
-    case 'P2002':
+    case 'P2002': {
       // Unique constraint violation
       const fields = error.meta?.target as string[] || [];
       return new ValidationError(
         `A record with this ${fields.join(', ')} already exists`,
         { fields, code: error.code }
       );
+    }
 
     case 'P2025':
       // Record not found
