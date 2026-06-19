@@ -30,10 +30,13 @@ import Redis from 'ioredis';
 import { applySecurityMiddleware } from './middleware/security';
 import { loadVaultSecrets } from './config/secrets';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { compressionMiddleware, addCompressionHeaders } from './middleware/compression';
 
 const app: express.Application = express();
 
 applySecurityMiddleware(app);
+app.use(addCompressionHeaders);
+app.use(compressionMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
