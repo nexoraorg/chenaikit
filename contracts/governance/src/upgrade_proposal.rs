@@ -8,7 +8,7 @@ use crate::types::GovernanceError;
 
 /// Upgrade proposal types
 #[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u32)]
 pub enum UpgradeType {
     ContractUpgrade = 0,  // Standard WASM upgrade

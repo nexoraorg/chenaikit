@@ -29,8 +29,8 @@ const mockPrisma: MockPrismaClient = {
   $queryRaw: jest.fn(),
 };
 
-jest.mock('../../generated/prisma', () => ({
-  PrismaClient: jest.fn(() => mockPrisma),
+jest.mock('../../prisma/client', () => ({
+  prisma: mockPrisma,
 }));
 
 jest.mock('../../utils/logger');

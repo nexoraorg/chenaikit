@@ -75,7 +75,6 @@ export const AnalyticsDashboard: React.FC = () => {
       setError(null);
     } catch (err: any) {
       setError('Failed to fetch analytics data. Please ensure the backend is running.');
-      console.error(err);
     } finally {
       setLoading(false);
     }

@@ -1,8 +1,8 @@
 #![no_std]
 
 use soroban_sdk::{
-    contractimpl, panic_with_error, symbol, token, Address, BytesN, Env, IntoVal, Map, Storage,
-    TokenIdentifier, Vec,
+    contract, contractimpl, contracttype, panic_with_error, symbol_short, Address, BytesN, Env, IntoVal, Map, storage,
+    Vec,
 };
 
 /// Errors for the SkillTree contract.
