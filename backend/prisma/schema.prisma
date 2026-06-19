@@ -17,6 +17,7 @@ model User {
   deletedAt     DateTime?
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
+  auditLogs     AuditLog[]
 
   @@index([createdAt])
 }
@@ -38,18 +39,26 @@ model ApiKey {
   id            String   @id @default(cuid())
   keyHash       String   @unique
   name          String
+  prefix        String   @default("ak_live_")
+  type          String   @default("READ_WRITE") // READ_ONLY, READ_WRITE, ADMIN, SCOPED, TEMPORARY
+  status        String   @default("ACTIVE") // ACTIVE, REVOKED, EXPIRED, INACTIVE
+  permissions   String   @default("[]") // JSON string array
+  scopes        String   @default("[]") // JSON string array
   tier          String   @default("FREE") // FREE, PRO, ENTERPRISE
   userId        String?
   user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   isActive      Boolean  @default(true)
-  allowedIps    String   @default("") // JSON string array of allowed IP addresses
-  allowedPaths  String   @default("") // JSON string array of allowed path patterns
+  allowedIps    String   @default("[]") // JSON string array of allowed IP addresses
+  allowedPaths  String   @default("[]") // JSON string array of allowed path patterns
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   expiresAt     DateTime?
-  lastUsedAt    DateTime @default(now())
+  lastUsedAt    DateTime?
   usageQuota    Int?     // Monthly quota if applicable
-  currentUsage  Int      @default(0)
+  usageCount    Int      @default(0)
+  successCount  Int      @default(0)
+  failureCount  Int      @default(0)
+  rotatedFrom   String?
   usageResetAt  DateTime @default(now())
   deletedAt     DateTime?
   
@@ -57,7 +66,7 @@ model ApiKey {
   usageLogs     ApiUsage[]
   
   @@map("api_keys")
-  @@index([userId, isActive])
+  @@index([userId, status])
   @@index([expiresAt])
   @@index([lastUsedAt])
 }
@@ -83,6 +92,23 @@ model ApiUsage {
   @@index([endpoint, timestamp])
   @@index([statusCode, timestamp])
   @@index([ip, timestamp])
+  @@index([timestamp])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  entityType  String   // e.g., "ApiKey"
+  entityId    String
+  action      String   // e.g., "CREATED", "ROTATED", "REVOKED"
+  metadata    String   @default("{}") // JSON string
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ip          String?
+  timestamp   DateTime @default(now())
+
+  @@map("audit_logs")
+  @@index([entityType, entityId])
+  @@index([userId])
   @@index([timestamp])
 }
 
