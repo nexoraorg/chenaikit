@@ -301,7 +301,7 @@ export class MockDataGenerator {
 
     return {
       transactionId: transaction.id,
-      category: riskScore > 70 ? 'suspicious' : 'normal',
+      category: riskScore > 70 ? 'suspicious' as any : 'normal' as any,
       riskScore,
       flags,
       confidence: 0.8 + Math.random() * 0.2,
