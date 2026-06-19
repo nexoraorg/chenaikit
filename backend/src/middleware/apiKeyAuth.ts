@@ -109,12 +109,14 @@ export const apiKeyAuth = async (req: Request, res: Response, next: NextFunction
 
     next();
   } catch (error) {
-    log.error('API key authentication error', { error });
+    log.error('API key authentication error', { error: error as Error });
+    console.error('Detailed API key auth error:', error);
     return res.status(500).json({
       success: false,
       error: {
         code: 'INTERNAL_SERVER_ERROR',
-        message: 'An error occurred during API key authentication'
+        message: 'An error occurred during API key authentication',
+        details: error instanceof Error ? error.message : String(error)
       }
     });
   }

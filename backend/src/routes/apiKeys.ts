@@ -4,10 +4,28 @@ import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/auth';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { maskApiKey } from '../utils/keyUtils';
+import { z } from 'zod';
 
 const router: ExpressRouter = Router();
 const prisma = new PrismaClient();
 const apiKeyService = new ApiKeyService(prisma);
+
+const CreateKeySchema = z.object({
+  name: z.string().min(1).max(100),
+  tier: z.enum(['FREE', 'PRO', 'ENTERPRISE']).optional(),
+  type: z.enum(['READ_ONLY', 'READ_WRITE', 'ADMIN', 'SCOPED', 'TEMPORARY']).optional(),
+  allowedIps: z.array(z.string().ip()).optional(),
+  allowedPaths: z.array(z.string().max(128)).optional(),
+  expiresAt: z.string().datetime().optional(),
+  usageQuota: z.number().positive().optional(),
+  permissions: z.array(z.string()).optional(),
+  scopes: z.array(z.string()).optional(),
+});
+
+const UpdateKeySchema = CreateKeySchema.partial().extend({
+  status: z.enum(['ACTIVE', 'REVOKED', 'EXPIRED', 'INACTIVE']).optional(),
+  isActive: z.boolean().optional(),
+});
 
 /**
  * List all API keys for the authenticated user
@@ -45,9 +63,12 @@ router.post('/', authenticate, async (req, res, next) => {
   try {
     if (!req.user) throw new ValidationError('User not authenticated');
     
-    const { name, tier, type, allowedIps, allowedPaths, expiresAt, usageQuota, permissions, scopes } = req.body;
-    
-    if (!name) throw new ValidationError('Name is required');
+    const validation = CreateKeySchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ValidationError(`Invalid input: ${validation.error.message}`);
+    }
+
+    const { name, tier, type, allowedIps, allowedPaths, expiresAt, usageQuota, permissions, scopes } = validation.data;
 
     const { apiKey, plainKey } = await apiKeyService.createApiKey({
       name,
@@ -83,11 +104,44 @@ router.post('/', authenticate, async (req, res, next) => {
 });
 
 /**
+ * Get API key usage analytics
+ */
+router.get('/:id/usage', authenticate, async (req, res, next) => {
+  try {
+    const id = z.string().cuid().safeParse(req.params.id);
+    if (!id.success) throw new ValidationError('Invalid ID format');
+
+    const existingKey = await apiKeyService.getApiKeyById(id.data);
+    
+    if (!existingKey || (req.user?.role !== 'admin' && existingKey.userId !== req.user?.id)) {
+      throw new NotFoundError('API key not found');
+    }
+
+    const { startDate, endDate } = req.query;
+    const usage = await apiKeyService.getApiKeyUsage(
+      id.data,
+      startDate ? new Date(startDate as string) : undefined,
+      endDate ? new Date(endDate as string) : undefined
+    );
+
+    res.json({
+      success: true,
+      data: usage
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * Get a specific API key (masked)
  */
 router.get('/:id', authenticate, async (req, res, next) => {
   try {
-    const apiKey = await apiKeyService.getApiKeyById(req.params.id);
+    const id = z.string().cuid().safeParse(req.params.id);
+    if (!id.success) throw new ValidationError('Invalid ID format');
+
+    const apiKey = await apiKeyService.getApiKeyById(id.data);
     
     if (!apiKey || (req.user?.role !== 'admin' && apiKey.userId !== req.user?.id)) {
       throw new NotFoundError('API key not found');
@@ -125,13 +179,24 @@ router.get('/:id', authenticate, async (req, res, next) => {
  */
 router.patch('/:id', authenticate, async (req, res, next) => {
   try {
-    const existingKey = await apiKeyService.getApiKeyById(req.params.id);
+    const id = z.string().cuid().safeParse(req.params.id);
+    if (!id.success) throw new ValidationError('Invalid ID format');
+
+    const validation = UpdateKeySchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ValidationError(`Invalid input: ${validation.error.message}`);
+    }
+
+    const existingKey = await apiKeyService.getApiKeyById(id.data);
     
     if (!existingKey || (req.user?.role !== 'admin' && existingKey.userId !== req.user?.id)) {
       throw new NotFoundError('API key not found');
     }
 
-    const updatedKey = await apiKeyService.updateApiKey(req.params.id, req.body);
+    const updatedKey = await apiKeyService.updateApiKey(id.data, {
+      ...validation.data,
+      expiresAt: validation.data.expiresAt ? new Date(validation.data.expiresAt) : undefined,
+    });
 
     res.json({
       success: true,

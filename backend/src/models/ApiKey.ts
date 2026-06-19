@@ -74,6 +74,7 @@ export interface ApiTierConfig {
 export class ApiKey {
   constructor(
     public id: string,
+    public publicId: string,
     public keyHash: string,
     public name: string,
     public prefix: string,
@@ -101,6 +102,7 @@ export class ApiKey {
   static fromPrisma(prismaApiKey: PrismaApiKey): ApiKey {
     return new ApiKey(
       prismaApiKey.id,
+      prismaApiKey.publicId,
       prismaApiKey.keyHash,
       prismaApiKey.name,
       prismaApiKey.prefix,
@@ -146,8 +148,20 @@ export class ApiKey {
 
   isPathAllowed(path: string): boolean {
     if (this.allowedPaths.length === 0) return true;
+    
+    // Security: Limit path complexity to prevent ReDoS
+    if (path.length > 512) return false;
+
     return this.allowedPaths.some(pattern => {
-      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+      // Security: Prevent extremely long patterns or too many wildcards
+      if (!pattern || pattern.length > 128) return false;
+      const wildcardCount = (pattern.match(/\*/g) || []).length;
+      if (wildcardCount > 3) return false; // Further restricted wildcards
+
+      // Escape regex special characters and replace * with .*
+      // We use a restricted set of characters to further prevent ReDoS
+      const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`^${escaped.replace(/\*/g, '[^/]*')}$`); // Only match within a path segment
       return regex.test(path);
     });
   }

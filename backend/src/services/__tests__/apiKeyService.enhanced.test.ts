@@ -47,13 +47,15 @@ describe('ApiKeyService Enhanced', () => {
       };
 
       (generateApiKey as jest.Mock).mockResolvedValue({
-        key: 'ak_live_testkey123',
+        key: 'ak_live_test-public-id-test-key-secret',
         hash: '$argon2id$v=19$m=65536,t=3,p=4$encodedhash',
-        prefix: 'ak_live_'
+        prefix: 'ak_live_',
+        publicId: 'test-public-id'
       });
 
       mockPrisma.apiKey.create.mockResolvedValue({
         id: 'key-1',
+        publicId: 'test-public-id',
         keyHash: '$argon2id$v=19$m=65536,t=3,p=4$encodedhash',
         name: 'Elite Key',
         prefix: 'ak_live_',
@@ -88,28 +90,42 @@ describe('ApiKeyService Enhanced', () => {
           entityId: 'key-1'
         })
       }));
-      expect(result.plainKey).toBe('ak_live_testkey123');
+      expect(result.plainKey).toBe('ak_live_test-public-id-test-key-secret');
     });
   });
 
   describe('validateApiKey', () => {
     it('should validate an API key correctly using Argon2', async () => {
-      const testKey = 'ak_live_valid';
+      const testKey = 'ak_live_test-public-id-test-key-secret';
       
-      mockPrisma.apiKey.findMany.mockResolvedValue([
+      mockPrisma.apiKey.findUnique.mockResolvedValue(
         {
           id: 'key-1',
+          publicId: 'test-public-id',
           keyHash: 'hash-1',
           prefix: 'ak_live_',
+          type: 'READ_WRITE',
           status: 'ACTIVE',
           isActive: true,
           deletedAt: null,
           permissions: '[]',
           scopes: '[]',
           allowedIps: '[]',
-          allowedPaths: '[]'
+          allowedPaths: '[]',
+          tier: 'FREE',
+          userId: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          expiresAt: null,
+          lastUsedAt: null,
+          usageQuota: null,
+          usageCount: 0,
+          successCount:0,
+          failureCount:0,
+          rotatedFrom: null,
+          usageResetAt: new Date(),
         }
-      ]);
+      );
 
       (verifyApiKey as jest.Mock).mockResolvedValue(true);
       mockPrisma.apiKey.update.mockResolvedValue({});
@@ -122,11 +138,35 @@ describe('ApiKeyService Enhanced', () => {
     });
 
     it('should return null for invalid key', async () => {
-      const testKey = 'ak_live_invalid';
+      const testKey = 'ak_live_test-public-id-invalid-key-secret';
       
-      mockPrisma.apiKey.findMany.mockResolvedValue([
-        { id: 'key-1', keyHash: 'hash-1', prefix: 'ak_live_', status: 'ACTIVE', isActive: true }
-      ]);
+      mockPrisma.apiKey.findUnique.mockResolvedValue(
+        { 
+          id: 'key-1',
+          publicId: 'test-public-id',
+          keyHash: 'hash-1',
+          prefix: 'ak_live_',
+          status: 'ACTIVE',
+          isActive: true,
+          deletedAt: null,
+          permissions: '[]',
+          scopes: '[]',
+          allowedIps: '[]',
+          allowedPaths: '[]',
+          tier: 'FREE',
+          userId: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          expiresAt: null,
+          lastUsedAt: null,
+          usageQuota: null,
+          usageCount:0,
+          successCount:0,
+          failureCount:0,
+          rotatedFrom:null,
+          usageResetAt: new Date()
+        }
+      );
 
       (verifyApiKey as jest.Mock).mockResolvedValue(false);
 

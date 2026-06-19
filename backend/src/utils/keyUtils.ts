@@ -5,17 +5,21 @@ export interface GeneratedKey {
   key: string;
   hash: string;
   prefix: string;
+  publicId: string;
 }
 
 /**
- * Generate a cryptographically secure API key with a prefix.
- * Default prefix is 'ak_live_'.
+ * Generate a cryptographically secure API key with a prefix and public ID.
+ * Format: prefix_publicId_secretPart
  */
 export async function generateApiKey(prefix: string = 'ak_live_'): Promise<GeneratedKey> {
-  // Generate 32 bytes of random data for the key itself
-  const buffer = randomBytes(32);
-  const keyBody = buffer.toString('hex');
-  const key = `${prefix}${keyBody}`;
+  // Public ID part (12 characters) - used for database lookup
+  const publicId = randomBytes(6).toString('hex');
+  
+  // Secret part (32 bytes)
+  const secretPart = randomBytes(32).toString('hex');
+  
+  const key = `${prefix}${publicId}_${secretPart}`;
   
   // Hash the key using argon2
   const hash = await argon2.hash(key);
@@ -23,7 +27,8 @@ export async function generateApiKey(prefix: string = 'ak_live_'): Promise<Gener
   return {
     key,
     hash,
-    prefix
+    prefix,
+    publicId
   };
 }
 

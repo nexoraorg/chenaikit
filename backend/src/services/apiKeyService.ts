@@ -12,11 +12,12 @@ export class ApiKeyService {
    */
   async createApiKey(input: ApiKeyCreateInput): Promise<{ apiKey: ApiKey; plainKey: string }> {
     const prefix = input.type === 'TEMPORARY' ? 'ak_test_' : 'ak_live_';
-    const { key, hash } = await generateApiKey(prefix);
+    const { key, hash, publicId } = await generateApiKey(prefix);
     
     const prismaApiKey = await this.prisma.apiKey.create({
       data: {
         keyHash: hash,
+        publicId: publicId,
         name: input.name,
         prefix: prefix,
         type: input.type || 'READ_WRITE',
@@ -70,43 +71,39 @@ export class ApiKeyService {
    * This is optimized for performance as it's called on every request.
    */
   async validateApiKey(key: string): Promise<ApiKey | null> {
-    // We can't query by hash directly with Argon2 because it's non-deterministic.
-    // However, we can use the prefix or a hint if we had one.
-    // For now, we fetch all active keys for a hint of the key's existence if possible, 
-    // or we fetch keys matching the prefix.
+    // Format: prefix_publicId_secretPart
+    const parts = key.split('_');
+    if (parts.length < 3) return null;
     
-    const prefixMatch = key.match(/^(ak_[a-z]+_)/);
-    const prefix = prefixMatch ? prefixMatch[1] : null;
+    const prefix = `${parts[0]}_${parts[1]}_`;
+    const publicId = parts[2];
 
-    if (!prefix) return null;
-
-    // Fetch active keys with this prefix. 
-    // In a real production system, we might use a faster lookup (e.g. Redis) 
-    // or store a deterministic part of the key (like a public ID) to find the hash.
-    const prismaApiKeys = await this.prisma.apiKey.findMany({
+    // Find the key by publicId (optimized lookup)
+    const prismaApiKey = await this.prisma.apiKey.findUnique({
       where: {
-        prefix: prefix,
-        status: 'ACTIVE',
+        publicId: publicId,
         isActive: true,
         deletedAt: null,
       },
     });
 
-    for (const prismaKey of prismaApiKeys) {
-      if (await verifyApiKey(key, prismaKey.keyHash)) {
-        const apiKey = ApiKey.fromPrisma(prismaKey);
+    if (!prismaApiKey || prismaApiKey.status !== 'ACTIVE') {
+      return null;
+    }
 
-        // Check if key is expired
-        if (apiKey.isExpired()) {
-          await this.updateApiKeyStatus(apiKey.id, 'EXPIRED');
-          return null;
-        }
+    if (await verifyApiKey(key, prismaApiKey.keyHash)) {
+      const apiKey = ApiKey.fromPrisma(prismaApiKey);
 
-        // Update last used timestamp
-        await this.updateLastUsed(apiKey.id);
-
-        return apiKey;
+      // Check if key is expired
+      if (apiKey.isExpired()) {
+        await this.updateApiKeyStatus(apiKey.id, 'EXPIRED');
+        return null;
       }
+
+      // Update last used timestamp
+      await this.updateLastUsed(apiKey.id);
+
+      return apiKey;
     }
 
     return null;
@@ -120,24 +117,24 @@ export class ApiKeyService {
      if (!oldKey) throw new NotFoundError('API key not found');
  
      // Create a new key with same properties
-     const { apiKey: newKey, plainKey } = await this.createApiKey({
-       name: `${oldKey.name} (Rotated)`,
-       tier: oldKey.tier,
-       type: oldKey.type,
-       userId: oldKey.userId || undefined,
-       allowedIps: oldKey.allowedIps,
-       allowedPaths: oldKey.allowedPaths,
-       permissions: oldKey.permissions,
-       scopes: oldKey.scopes,
-       expiresAt: oldKey.expiresAt || undefined,
-       usageQuota: oldKey.usageQuota || undefined,
-     });
+    const { apiKey: newKey, plainKey } = await this.createApiKey({
+      name: `${oldKey.name} (Rotated)`,
+      tier: oldKey.tier,
+      type: oldKey.type,
+      userId: oldKey.userId || undefined,
+      allowedIps: oldKey.allowedIps,
+      allowedPaths: oldKey.allowedPaths,
+      permissions: oldKey.permissions,
+      scopes: oldKey.scopes,
+      expiresAt: oldKey.expiresAt || undefined,
+      usageQuota: oldKey.usageQuota || undefined,
+    });
  
-     // Update new key to show it was rotated from old one
-     await this.prisma.apiKey.update({
-       where: { id: newKey.id },
-       data: { rotatedFrom: oldKey.id },
-     });
+    // Update new key to show it was rotated from old one
+    await this.prisma.apiKey.update({
+      where: { id: newKey.id },
+      data: { rotatedFrom: oldKey.id },
+    });
  
      // Revoke the old key
      await this.revokeApiKey(oldKey.id);

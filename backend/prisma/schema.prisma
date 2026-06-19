@@ -37,6 +37,7 @@ model RefreshToken {
 
 model ApiKey {
   id            String   @id @default(cuid())
+  publicId      String   @unique @default("")
   keyHash       String   @unique
   name          String
   prefix        String   @default("ak_live_")
