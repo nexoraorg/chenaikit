@@ -29,3 +29,7 @@ export { default as FraudDetection } from './FraudDetection';
 export { default as ChatInterface } from './ChatInterface';
 export { default as WalletInterface } from './WalletInterface';
 export { AnalyticsDashboard } from './AnalyticsDashboard';
+
+// Toast
+export { default as Toast } from './Toast';
+export { default as ToastContainer } from './ToastContainer';
