@@ -100,7 +100,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               }
               label="Email Notifications"
             />
-            <Typography variant="caption" sx={{ color: '#64748b', ml: 6, mb: 2 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', ml: 6, mb: 2 }}>
               Receive notifications via email
             </Typography>
 
@@ -115,7 +115,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               }
               label="Push Notifications"
             />
-            <Typography variant="caption" sx={{ color: '#64748b', ml: 6, mb: 2 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', ml: 6, mb: 2 }}>
               Receive push notifications in your browser
             </Typography>
 
@@ -130,7 +130,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               }
               label="Transaction Alerts"
             />
-            <Typography variant="caption" sx={{ color: '#64748b', ml: 6, mb: 2 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', ml: 6, mb: 2 }}>
               Get notified about new transactions
             </Typography>
 
@@ -145,7 +145,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               }
               label="Score Changes"
             />
-            <Typography variant="caption" sx={{ color: '#64748b', ml: 6, mb: 2 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', ml: 6, mb: 2 }}>
               Notifications when your credit score changes
             </Typography>
 
@@ -160,7 +160,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               }
               label="Price Alerts"
             />
-            <Typography variant="caption" sx={{ color: '#64748b', ml: 6, mb: 2 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', ml: 6, mb: 2 }}>
               Alerts for cryptocurrency price changes
             </Typography>
 
@@ -175,7 +175,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               }
               label="Security Alerts"
             />
-            <Typography variant="caption" sx={{ color: '#64748b', ml: 6, mb: 2 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', ml: 6, mb: 2 }}>
               Important security notifications (login attempts, password changes)
             </Typography>
 
@@ -190,7 +190,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               }
               label="Weekly Report"
             />
-            <Typography variant="caption" sx={{ color: '#64748b', ml: 6, mb: 2 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', ml: 6, mb: 2 }}>
               Receive a weekly summary of your activity
             </Typography>
 
@@ -205,7 +205,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               }
               label="Marketing Emails"
             />
-            <Typography variant="caption" sx={{ color: '#64748b', ml: 6 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', ml: 6 }}>
               Product updates, promotions, and newsletters
             </Typography>
           </Box>

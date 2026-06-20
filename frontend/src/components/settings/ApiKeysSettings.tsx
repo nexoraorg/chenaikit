@@ -131,7 +131,7 @@ export const ApiKeysSettings: React.FC<ApiKeysSettingsProps> = ({
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   API Keys
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b' }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   Manage your API keys for external access
                 </Typography>
               </Box>
@@ -150,11 +150,11 @@ export const ApiKeysSettings: React.FC<ApiKeysSettingsProps> = ({
 
           {apiKeys.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 6 }}>
-              <VpnKeyIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 2 }} />
-              <Typography variant="body1" sx={{ color: '#64748b', mb: 2 }}>
+              <VpnKeyIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
+              <Typography variant="body1" sx={{ color: 'text.secondary', mb: 2 }}>
                 No API keys yet
               </Typography>
-              <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                 Create your first API key to start integrating with external services
               </Typography>
             </Box>
@@ -164,7 +164,8 @@ export const ApiKeysSettings: React.FC<ApiKeysSettingsProps> = ({
                 <ListItem
                   key={apiKey.id}
                   sx={{
-                    borderBottom: '1px solid #f1f5f9',
+                    borderBottom: 1,
+                    borderColor: 'divider',
                     py: 2,
                     '&:last-child': { borderBottom: 'none' },
                     flexDirection: 'column',
@@ -176,13 +177,13 @@ export const ApiKeysSettings: React.FC<ApiKeysSettingsProps> = ({
                       primary={apiKey.name}
                       secondary={
                         <Box component="span" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                          <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                          <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                             Created: {new Date(apiKey.createdAt).toLocaleDateString()}
                           </Typography>
                           {apiKey.lastUsed && (
                             <>
-                              <Box component="span" sx={{ color: '#cbd5e1' }}>•</Box>
-                              <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                              <Box component="span" sx={{ color: 'text.disabled' }}>•</Box>
+                              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                                 Last used: {new Date(apiKey.lastUsed).toLocaleDateString()}
                               </Typography>
                             </>
@@ -237,11 +238,11 @@ export const ApiKeysSettings: React.FC<ApiKeysSettingsProps> = ({
                       mt: 1,
                       px: 2,
                       py: 1,
-                      backgroundColor: '#f8fafc',
+                      bgcolor: 'action.hover',
                       borderRadius: 1,
                       fontFamily: 'monospace',
                       fontSize: '0.875rem',
-                      color: '#475569',
+                      color: 'text.primary',
                       width: '100%'
                     }}
                   >
@@ -254,12 +255,12 @@ export const ApiKeysSettings: React.FC<ApiKeysSettingsProps> = ({
         </CardContent>
       </Card>
 
-      <Card variant="outlined" sx={{ borderRadius: 2, backgroundColor: '#fffbeb' }}>
+      <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: 'warning.light' }}>
         <CardContent>
-          <Typography variant="body2" sx={{ fontWeight: 600, color: '#92400e', mb: 1 }}>
-            Security Notice
+          <Typography variant="body2" sx={{ fontWeight: 600, color: 'warning.dark', mb: 1 }}>
+            Security Information
           </Typography>
-          <Typography variant="body2" sx={{ color: '#a16207' }}>
+          <Typography variant="body2" sx={{ color: 'warning.dark' }}>
             Your API keys carry significant privileges. Keep them secure and never share them in public repositories or client-side code.
           </Typography>
         </CardContent>

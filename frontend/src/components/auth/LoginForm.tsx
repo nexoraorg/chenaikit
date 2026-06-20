@@ -73,10 +73,10 @@ export const LoginForm: React.FC = () => {
   return (
     <Box sx={{ width: '100%' }}>
       <Box sx={{ mb: 4, textAlign: 'center' }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: '#0f172a' }}>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: 'text.primary' }}>
           Welcome back
         </Typography>
-        <Typography variant="body2" sx={{ color: '#64748b' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Enter your details to access your dashboard
         </Typography>
       </Box>
@@ -158,9 +158,9 @@ export const LoginForm: React.FC = () => {
                 />
               }
               label={
-                <Typography variant="body2" sx={{ color: '#475569', userSelect: 'none' }}>
-                  Remember me
-                </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', userSelect: 'none' }}>
+              Remember me
+            </Typography>
               }
             />
             <MuiLink
@@ -168,7 +168,7 @@ export const LoginForm: React.FC = () => {
               to="/forgot-password"
               variant="body2"
               sx={{ 
-                color: '#0284c7', 
+                color: 'primary.main', 
                 textDecoration: 'none', 
                 fontWeight: 600,
                 '&:hover': { textDecoration: 'underline' }
@@ -183,18 +183,14 @@ export const LoginForm: React.FC = () => {
             variant="contained"
             disabled={isSubmitting || !isValid}
             fullWidth
-            sx={{
-              py: 1.5,
-              borderRadius: '10px',
-              textTransform: 'none',
-              fontSize: '16px',
-              fontWeight: 600,
-              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.2)',
-              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #0369a1 0%, #075985 100%)',
-              }
-            }}
+              sx={{
+                py: 1.5,
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontSize: '16px',
+                fontWeight: 600,
+                boxShadow: (theme) => theme.shadows[4],
+              }}
           >
             {isSubmitting ? (
               <CircularProgress size={24} sx={{ color: 'white' }} />
@@ -203,8 +199,8 @@ export const LoginForm: React.FC = () => {
             )}
           </Button>
 
-          <Divider sx={{ my: 1.5, color: '#94a3b8' }}>
-            <Typography variant="caption" sx={{ px: 1, color: '#64748b', fontWeight: 500 }}>
+          <Divider sx={{ my: 1.5, color: 'text.disabled' }}>
+            <Typography variant="caption" sx={{ px: 1, color: 'text.secondary', fontWeight: 500 }}>
               OR CONTINUE WITH
             </Typography>
           </Divider>
@@ -218,13 +214,13 @@ export const LoginForm: React.FC = () => {
               sx={{
                 py: 1.2,
                 borderRadius: '10px',
-                borderColor: '#e2e8f0',
-                color: '#334155',
+                borderColor: 'divider',
+                color: 'text.primary',
                 textTransform: 'none',
                 fontWeight: 500,
                 '&:hover': {
-                  borderColor: '#cbd5e1',
-                  backgroundColor: '#f8fafc'
+                  borderColor: 'action.hover',
+                  backgroundColor: 'action.hover'
                 }
               }}
             >
@@ -238,13 +234,13 @@ export const LoginForm: React.FC = () => {
               sx={{
                 py: 1.2,
                 borderRadius: '10px',
-                borderColor: '#e2e8f0',
-                color: '#334155',
+                borderColor: 'divider',
+                color: 'text.primary',
                 textTransform: 'none',
                 fontWeight: 500,
                 '&:hover': {
-                  borderColor: '#cbd5e1',
-                  backgroundColor: '#f8fafc'
+                  borderColor: 'action.hover',
+                  backgroundColor: 'action.hover'
                 }
               }}
             >
@@ -253,13 +249,13 @@ export const LoginForm: React.FC = () => {
           </Box>
 
           <Box sx={{ textAlign: 'center', mt: 3 }}>
-            <Typography variant="body2" sx={{ color: '#64748b' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               Don't have an account?{' '}
               <MuiLink
                 component={Link}
                 to="/signup"
                 sx={{
-                  color: '#0284c7',
+                  color: 'primary.main',
                   textDecoration: 'none',
                   fontWeight: 600,
                   '&:hover': { textDecoration: 'underline' }

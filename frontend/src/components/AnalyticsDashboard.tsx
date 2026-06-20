@@ -165,26 +165,13 @@ export const AnalyticsDashboard: React.FC = () => {
     );
 
   return (
-    <Box
-      sx={{ flexGrow: 1, p: 4, backgroundColor: "#F9FAFB", minHeight: "100vh" }}
-    >
-      {/* Header with real-time controls */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 4,
-        }}
-      >
+    <Box sx={{ flexGrow: 1, p: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: "#111827" }}>
-              Business Intelligence Dashboard
-            </Typography>
-            <LiveDataIndicator label="Live" size="small" />
-          </Box>
-          <Typography variant="subtitle1" sx={{ color: "#6B7280" }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
+            Business Intelligence Dashboard
+          </Typography>
+          <Typography variant="subtitle1" sx={{ color: 'text.secondary' }}>
             Real-time insights across systems, AI, and blockchain
           </Typography>
         </Box>
