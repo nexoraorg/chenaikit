@@ -25,7 +25,7 @@ export interface ToastAction {
 export interface ToastOptions {
   /** Toast variant – defaults to 'info' */
   type?: ToastType;
-  /** Duration in ms before auto-dismiss. Set to 0 to disable auto-dismiss. Defaults to 4000. */
+  /** Duration in ms before auto-dismiss. Set to 0 to disable. Defaults to 4000. */
   duration?: number;
   /** Where the stack appears on screen. Defaults to global config or 'bottom-left'. */
   position?: ToastPosition;
@@ -43,7 +43,7 @@ export interface Toast extends Required<Omit<ToastOptions, 'data'>> {
   data?: unknown;
   /** Timestamp when the toast was created. Used to compute progress bar width. */
   createdAt: number;
-  /** Whether the toast is in the process of being dismissed (exit animation). */
+  /** Whether the toast is animating out before removal. */
   dismissing: boolean;
 }
 
@@ -60,22 +60,21 @@ export interface ToastContextValue {
   config: Required<GlobalToastConfig>;
   /** Show a toast. Returns the generated ID. */
   show: (message: React.ReactNode, options?: ToastOptions) => string;
-  /** Convenience wrappers */
   success: (message: React.ReactNode, options?: Omit<ToastOptions, 'type'>) => string;
   error: (message: React.ReactNode, options?: Omit<ToastOptions, 'type'>) => string;
   warning: (message: React.ReactNode, options?: Omit<ToastOptions, 'type'>) => string;
   info: (message: React.ReactNode, options?: Omit<ToastOptions, 'type'>) => string;
-  /** Promise helper: shows a loading toast, resolves on success/error. */
+  /** Shows loading toast, swaps to success/error when promise settles. */
   promise: <T>(
     promise: Promise<T>,
     messages: { loading: React.ReactNode; success: React.ReactNode; error: React.ReactNode },
     options?: Omit<ToastOptions, 'type'>
   ) => Promise<T>;
-  /** Start the exit animation then remove from state after 300 ms. */
+  /** Start exit animation then remove after 300 ms. */
   dismiss: (id: string) => void;
-  /** Immediately remove all toasts. */
+  /** Immediately clear all toasts. */
   dismissAll: () => void;
-  /** Update a previously-shown toast (e.g. swap loading → success). */
+  /** Swap content/type of a live toast (e.g. loading → success). */
   update: (id: string, message: React.ReactNode, options?: ToastOptions) => void;
 }
 
@@ -111,7 +110,8 @@ function reducer(state: Toast[], action: Action): Toast[] {
           duration: opts.duration !== undefined ? opts.duration : t.duration,
           position: opts.position ?? t.position,
           action: opts.action ?? t.action,
-          showProgress: opts.showProgress !== undefined ? opts.showProgress : t.showProgress,
+          showProgress:
+            opts.showProgress !== undefined ? opts.showProgress : t.showProgress,
           data: opts.data,
           dismissing: false,
           createdAt: Date.now(),
@@ -143,7 +143,7 @@ export interface ToastProviderProps {
 }
 
 let _idCounter = 0;
-const generateId = () => `toast-${Date.now()}-${++_idCounter}`;
+const generateId = (): string => `toast-${Date.now()}-${++_idCounter}`;
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({
   children,
@@ -152,27 +152,34 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
   const [toasts, dispatch] = useReducer(reducer, []);
   const dismissTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
+  // FIX: include userConfig in deps so config updates if props change;
+  // removed the eslint-disable comment since react-hooks plugin is not configured.
   const config = React.useMemo<Required<GlobalToastConfig>>(
     () => ({ ...DEFAULT_CONFIG, ...userConfig }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [userConfig]
   );
 
-  const scheduleRemove = useCallback(
-    (id: string) => {
-      const existing = dismissTimers.current.get(id);
-      if (existing) clearTimeout(existing);
-      const timer = setTimeout(() => {
-        dispatch({ type: 'REMOVE', id });
-        dismissTimers.current.delete(id);
-      }, 300); // matches exit animation duration
-      dismissTimers.current.set(id, timer);
-    },
-    []
-  );
+  const scheduleRemove = useCallback((id: string) => {
+    const existing = dismissTimers.current.get(id);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      dispatch({ type: 'REMOVE', id });
+      dismissTimers.current.delete(id);
+    }, 300); // matches Collapse exit timeout
+    dismissTimers.current.set(id, timer);
+  }, []);
 
   const dismiss = useCallback(
     (id: string) => {
+      // FIX: cancel the pending auto-dismiss timer so it doesn't fire after
+      // a manual dismiss and try to remove an already-removed toast.
+      const autoKey = `${id}_auto`;
+      const autoTimer = dismissTimers.current.get(autoKey);
+      if (autoTimer) {
+        clearTimeout(autoTimer);
+        dismissTimers.current.delete(autoKey);
+      }
+
       dispatch({ type: 'DISMISS', id });
       scheduleRemove(id);
     },
@@ -190,29 +197,33 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
       const id = generateId();
       const duration =
         options.duration !== undefined ? options.duration : config.defaultDuration;
+
       const toast: Toast = {
         id,
         message,
         type: options.type ?? 'info',
         duration,
         position: options.position ?? config.position,
-        action: options.action ?? { label: '', onClick: () => {} },
-        showProgress: options.showProgress !== undefined ? options.showProgress : duration > 0,
+        action: options.action ?? { label: '', onClick: () => undefined },
+        showProgress:
+          options.showProgress !== undefined ? options.showProgress : duration > 0,
         data: options.data,
         createdAt: Date.now(),
         dismissing: false,
       };
 
-      // Enforce max toasts: trim oldest entries beyond the limit
-      dispatch((prev: Toast[]) => {
-        // Note: our reducer's ADD prepends, so oldest are at the end
-        return prev;
-      });
+      // FIX: removed the no-op thunk dispatch — useReducer dispatch doesn't
+      // accept a function. ToastContainer already caps visible toasts with slice().
       dispatch({ type: 'ADD', toast });
 
       if (duration > 0) {
-        const timer = setTimeout(() => dismiss(id), duration);
-        dismissTimers.current.set(id + '_auto', timer);
+        const autoKey = `${id}_auto`;
+        const timer = setTimeout(() => {
+          // Clean up the timer entry before dismissing
+          dismissTimers.current.delete(autoKey);
+          dismiss(id);
+        }, duration);
+        dismissTimers.current.set(autoKey, timer);
       }
 
       return id;
@@ -246,18 +257,34 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
 
   const update = useCallback(
     (id: string, message: React.ReactNode, options?: ToastOptions) => {
-      // Cancel any existing auto-dismiss for this id and reschedule
-      const autoKey = id + '_auto';
+      const autoKey = `${id}_auto`;
       const existing = dismissTimers.current.get(autoKey);
       if (existing) {
         clearTimeout(existing);
         dismissTimers.current.delete(autoKey);
       }
-      dispatch({ type: 'UPDATE', id, message, options });
+
+      // FIX: compute duration + showProgress here and include them in the
+      // dispatch payload so the reducer (and thus the UI) stays in sync with
+      // the timer being scheduled below. This matters especially when updating
+      // a duration:0 loading toast to a success/error toast with a countdown.
       const duration =
         options?.duration !== undefined ? options.duration : config.defaultDuration;
+      const showProgress =
+        options?.showProgress !== undefined ? options.showProgress : duration > 0;
+
+      dispatch({
+        type: 'UPDATE',
+        id,
+        message,
+        options: { ...options, duration, showProgress },
+      });
+
       if (duration > 0) {
-        const timer = setTimeout(() => dismiss(id), duration);
+        const timer = setTimeout(() => {
+          dismissTimers.current.delete(autoKey);
+          dismiss(id);
+        }, duration);
         dismissTimers.current.set(autoKey, timer);
       }
     },
@@ -302,9 +329,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
   };
 
   return (
-    <ToastContext.Provider value={value}>
-      {children}
-    </ToastContext.Provider>
+    <ToastContext.Provider value={value}>{children}</ToastContext.Provider>
   );
 };
 

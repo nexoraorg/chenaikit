@@ -1,19 +1,19 @@
-import type { ToastType } from '../contexts/ToastContext';
+import type { CSSProperties } from 'react';
+import type { ToastType, ToastPosition } from '../contexts/ToastContext';
 
-// ─── Icon helpers ─────────────────────────────────────────────────────────────
+// ─── Severity mapping ─────────────────────────────────────────────────────────
 
 /**
- * Maps a toast type to the matching MUI Alert severity string.
- * MUI Alert uses the same four values, so this is a straight pass-through,
- * but having an explicit mapping keeps it decoupled.
+ * Maps a ToastType to the MUI Alert severity string.
+ * They share the same four values, but an explicit map keeps them decoupled.
  */
 export const toastTypeToSeverity = (
   type: ToastType
 ): 'success' | 'error' | 'warning' | 'info' => type;
 
-/**
- * Returns a default accessible ARIA label for each toast type.
- */
+// ─── Accessible labels ────────────────────────────────────────────────────────
+
+/** Returns a default ARIA label for each toast type. */
 export const toastAriaLabel = (type: ToastType): string => {
   const labels: Record<ToastType, string> = {
     success: 'Success notification',
@@ -26,12 +26,8 @@ export const toastAriaLabel = (type: ToastType): string => {
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
 
-/**
- * Returns the MUI theme color token for each toast type's progress bar.
- */
-export const toastProgressColor = (
-  type: ToastType
-): string => {
+/** Returns the progress-bar fill color for each toast type. */
+export const toastProgressColor = (type: ToastType): string => {
   const colors: Record<ToastType, string> = {
     success: '#2e7d32', // MUI success.dark
     error: '#c62828',   // MUI error.dark
@@ -42,8 +38,6 @@ export const toastProgressColor = (
 };
 
 // ─── Position helpers ─────────────────────────────────────────────────────────
-
-import type { ToastPosition } from '../contexts/ToastContext';
 
 export interface AnchorPosition {
   vertical: 'top' | 'bottom';
@@ -63,43 +57,44 @@ export const positionToAnchor = (position: ToastPosition): AnchorPosition => {
 };
 
 /**
- * Returns CSS positioning values for the toast stack container
- * so multiple toasts stack away from the screen edge cleanly.
+ * Returns fixed CSS positioning for the toast stack container.
+ *
+ * NOTE: This object is passed directly to MUI's `sx` prop as a CSSProperties
+ * value. Spacing values use explicit pixel strings (e.g. '8px') instead of
+ * raw numbers to avoid MUI theme.spacing() multiplication, which would turn
+ * gap:8 → 64px and padding:16 → 128px.
  */
-export const stackAlignment = (
-  position: ToastPosition
-): React.CSSProperties => {
+export const stackAlignment = (position: ToastPosition): CSSProperties => {
   const [vertical, horizontal] = position.split('-') as [
     'top' | 'bottom',
     'left' | 'center' | 'right'
   ];
 
-  const base: React.CSSProperties = {
+  // FIX: use string pixel values so MUI sx doesn't multiply them by
+  // theme.spacing (default factor = 8). gap:8 → '8px', padding:16 → '16px'.
+  const base: CSSProperties = {
     position: 'fixed',
-    zIndex: 1400, // above MUI Dialog (1300)
+    zIndex: 1400, // above MUI Dialog (z-index 1300)
     display: 'flex',
     flexDirection: vertical === 'top' ? 'column' : 'column-reverse',
-    gap: 8,
+    gap: '8px',
     maxWidth: 400,
     width: '100%',
     pointerEvents: 'none',
-    padding: 16,
+    padding: '16px',
   };
 
-  // Vertical
   if (vertical === 'top') {
     base.top = 0;
   } else {
     base.bottom = 0;
   }
 
-  // Horizontal
   if (horizontal === 'left') {
     base.left = 0;
   } else if (horizontal === 'right') {
     base.right = 0;
   } else {
-    // center
     base.left = '50%';
     base.transform = 'translateX(-50%)';
   }
@@ -107,26 +102,22 @@ export const stackAlignment = (
   return base;
 };
 
-// ─── Duration helpers ─────────────────────────────────────────────────────────
+// ─── Progress math ────────────────────────────────────────────────────────────
 
-/**
- * Computes how many milliseconds remain on a toast's auto-dismiss countdown.
- */
+/** Milliseconds remaining on a toast's auto-dismiss countdown. */
 export const remainingDuration = (createdAt: number, duration: number): number => {
   const elapsed = Date.now() - createdAt;
   return Math.max(0, duration - elapsed);
 };
 
-/**
- * Computes the progress bar width percentage (100 → 0 as time passes).
- */
+/** Progress bar percentage (100 → 0) as time elapses. */
 export const progressPercent = (createdAt: number, duration: number): number => {
   if (duration <= 0) return 0;
   const elapsed = Date.now() - createdAt;
   return Math.max(0, Math.min(100, ((duration - elapsed) / duration) * 100));
 };
 
-// ─── ID generator (re-exported for tests) ────────────────────────────────────
+// ─── ID generator ────────────────────────────────────────────────────────────
 
 export const createToastId = (prefix = 'toast'): string =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;

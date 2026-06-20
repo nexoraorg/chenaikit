@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
-  AlertTitle,
   Box,
   Button,
   Collapse,
@@ -21,15 +20,16 @@ export interface ToastProps {
 
 // ─── Progress bar ─────────────────────────────────────────────────────────────
 
+interface ProgressBarProps {
+  createdAt: number;
+  duration: number;
+  type: ToastData['type'];
+}
+
 /**
- * Animates a CSS linear-gradient bar from 100% → 0% over `duration` ms.
- * Uses requestAnimationFrame for a smooth, jank-free countdown.
+ * rAF-driven countdown bar from 100 % → 0 % over `duration` ms.
  */
-const ProgressBar: React.FC<{ createdAt: number; duration: number; type: ToastData['type'] }> = ({
-  createdAt,
-  duration,
-  type,
-}) => {
+const ProgressBar: React.FC<ProgressBarProps> = ({ createdAt, duration, type }) => {
   const [value, setValue] = useState(100);
   const rafRef = useRef<number | null>(null);
 
@@ -63,30 +63,21 @@ const ProgressBar: React.FC<{ createdAt: number; duration: number; type: ToastDa
         backgroundColor: 'rgba(255,255,255,0.3)',
         '& .MuiLinearProgress-bar': {
           backgroundColor: toastProgressColor(type),
-          transition: 'none', // rAF handles the animation
+          transition: 'none',
         },
       }}
     />
   );
 };
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+// ─── Toast item ───────────────────────────────────────────────────────────────
 
 /**
- * A single toast item rendered as an MUI Alert with optional
- * progress bar, action button, and close button.
+ * Single toast rendered as a filled MUI Alert with optional progress bar,
+ * action button, and close button.
  */
 const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
-  const {
-    id,
-    message,
-    type,
-    duration,
-    action,
-    showProgress,
-    dismissing,
-    createdAt,
-  } = toast;
+  const { id, message, type, duration, action, showProgress, dismissing, createdAt } = toast;
 
   const hasAction = Boolean(action?.label);
 
@@ -109,7 +100,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
           borderRadius: 1.5,
           position: 'relative',
           overflow: 'hidden',
-          pr: hasAction ? 1 : 5, // leave room for close button
+          pr: hasAction ? 1 : 5,
           alignItems: 'flex-start',
           '& .MuiAlert-message': { flex: 1 },
         }}
@@ -150,16 +141,8 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
           </Box>
         }
       >
-        {/* Support both plain strings and rich ReactNode content */}
-        {typeof message === 'string' ? (
-          message
-        ) : (
-          <>
-            {message}
-          </>
-        )}
+        {message}
 
-        {/* Progress bar countdown */}
         {showProgress && duration > 0 && (
           <ProgressBar createdAt={createdAt} duration={duration} type={type} />
         )}
