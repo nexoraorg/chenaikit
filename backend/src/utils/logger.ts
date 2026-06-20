@@ -1,5 +1,5 @@
 import winston from 'winston';
-import Transport from 'winston-transport';
+import { Writable } from 'stream';
 import { monitoringConfig } from '../config/monitoring';
 import { loggingConfig, ExternalLogServiceConfig } from '../config/logging';
 import { LogContext } from '../types/monitoring';
@@ -24,18 +24,24 @@ const LEVEL_ORDER: Record<string, number> = {
   error: 4,
 };
 
-class HttpLogTransport extends Transport {
+class HttpLogTransport extends Writable {
+  public level?: string;
+  public silent?: boolean;
   private readonly cfg: ExternalLogServiceConfig;
   private batch: LogEntry[] = [];
   private flushTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(cfg: ExternalLogServiceConfig, opts?: Transport.TransportStreamOptions) {
-    super(opts);
+  constructor(cfg: ExternalLogServiceConfig) {
+    super({ objectMode: true });
     this.cfg = cfg;
     if (cfg.flushIntervalMs && cfg.flushIntervalMs > 0) {
       this.flushTimer = setInterval(() => this.flush(), cfg.flushIntervalMs);
       if (this.flushTimer.unref) this.flushTimer.unref(); // don't block process exit
     }
+  }
+
+  _write(info: LogEntry, _encoding: string, callback: () => void): void {
+    this.log(info, callback);
   }
 
   private meetsMinLevel(level: string): boolean {
@@ -146,7 +152,7 @@ if (loggingConfig.file) {
 }
 
 if (loggingConfig.externalService.enabled) {
-  transports.push(new HttpLogTransport(loggingConfig.externalService));
+  transports.push(new HttpLogTransport(loggingConfig.externalService) as unknown as winston.transport);
 }
 
 // ---------------------------------------------------------------------------
