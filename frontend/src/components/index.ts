@@ -33,3 +33,12 @@ export { AnalyticsDashboard } from './AnalyticsDashboard';
 // Toast
 export { default as Toast } from './Toast';
 export { default as ToastContainer } from './ToastContainer';
+
+// File Upload
+export { default as FileUpload } from './FileUpload';
+export { default as DropZone } from './DropZone';
+export { default as FileList } from './FileList';
+export { default as FilePreview } from './FilePreview';
+export { useFileUpload } from '../hooks/useFileUpload';
+export type { UploadTask, UseFileUploadOptions } from '../hooks/useFileUpload';
+
