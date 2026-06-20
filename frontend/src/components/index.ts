@@ -1,3 +1,11 @@
+// Form validation library (React Hook Form + Zod)
+export { FormField as RHFFormField } from './forms/FormField';
+export type { FormFieldProps as RHFFormFieldProps } from './forms/FormField';
+export { FormError as RHFFormError } from './forms/FormError';
+export type { FormErrorProps as RHFFormErrorProps } from './forms/FormError';
+export { FormSubmit } from './forms/FormSubmit';
+export type { FormSubmitProps } from './forms/FormSubmit';
+
 export { default as CreditScoreCard } from './CreditScoreCard';
 export { default as ScoreHistoryChart } from './ScoreHistoryChart';
 export { default as RiskFactorsList } from './RiskFactorsList';
