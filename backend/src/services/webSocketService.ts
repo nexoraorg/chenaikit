@@ -1,7 +1,6 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
 import { log } from "../utils/logger";
-import { TransactionMonitor } from "@chenaikit/core";
 import { TransactionEvent, Alert, ConnectionStatus } from "@chenaikit/core";
 
 export interface WebSocketUser {
@@ -14,8 +13,7 @@ export interface WebSocketUser {
 export class WebSocketService {
   private io: SocketIOServer;
   private users: Map<string, WebSocketUser> = new Map();
-  private monitor: TransactionMonitor | null = null;
-  private healthCheckInterval: NodeJS.Timeout | null = null;
+  private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(httpServer: HttpServer) {
     this.io = new SocketIOServer(httpServer, {
@@ -24,10 +22,6 @@ export class WebSocketService {
         methods: ["GET", "POST"],
       },
       transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 99,
     });
 
     this.setupMiddleware();
