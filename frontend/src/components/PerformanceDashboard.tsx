@@ -24,8 +24,6 @@ import {
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
