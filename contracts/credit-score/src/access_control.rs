@@ -37,7 +37,7 @@ pub fn require_admin(env: &Env, caller: &Address) {
 }
 
 /// Require that the caller is the owner
-pub fn require_owner(env: &Env, caller: &Address, owner: &Address) {
+pub fn require_owner(_env: &Env, caller: &Address, owner: &Address) {
     caller.require_auth();
     
     if caller != owner {

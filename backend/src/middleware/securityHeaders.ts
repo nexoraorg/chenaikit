@@ -22,9 +22,9 @@ export const createHelmetMiddleware = (config: SecurityHeadersConfig): RequestHa
 
 const buildCspDirectivesForHelmet = (
   config: SecurityHeadersConfig
-): Record<string, string[] | boolean> => {
+): Record<string, any> => {
   const { csp } = config;
-  const directives: Record<string, string[] | boolean> = {
+  const directives: Record<string, any> = {
     defaultSrc: csp.defaultSrc,
     scriptSrc: csp.scriptSrc,
     styleSrc: csp.styleSrc,
