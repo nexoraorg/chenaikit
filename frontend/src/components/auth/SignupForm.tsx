@@ -109,26 +109,25 @@ export const SignupForm: React.FC = () => {
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
           <CheckCircleOutline sx={{ fontSize: 72, color: '#34d399' }} />
         </Box>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, color: '#0f172a' }}>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, color: 'text.primary' }}>
           Account Created!
         </Typography>
-        <Typography variant="body1" sx={{ color: '#475569', mb: 4, px: 2 }}>
+        <Typography variant="body1" sx={{ color: 'text.secondary', mb: 4, px: 2 }}>
           Your account was created for <strong>{registeredEmail}</strong>. You can now sign in to continue.
         </Typography>
-        <Button
-          component={Link}
-          to="/login"
-          variant="contained"
-          sx={{
-            py: 1.5,
-            px: 4,
-            borderRadius: '10px',
-            textTransform: 'none',
-            fontSize: '16px',
-            fontWeight: 600,
-            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-          }}
-        >
+          <Button
+            component={Link}
+            to="/login"
+            variant="contained"
+            sx={{
+              py: 1.5,
+              px: 4,
+              borderRadius: '10px',
+              textTransform: 'none',
+              fontSize: '16px',
+              fontWeight: 600,
+            }}
+          >
           Go to Sign In
         </Button>
       </Box>
@@ -138,10 +137,10 @@ export const SignupForm: React.FC = () => {
   return (
     <Box sx={{ width: '100%' }}>
       <Box sx={{ mb: 3, textAlign: 'center' }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: '#0f172a' }}>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: 'text.primary' }}>
           Create an account
         </Typography>
-        <Typography variant="body2" sx={{ color: '#64748b' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Sign up to monitor blockchain analytics and credit metrics
         </Typography>
       </Box>
@@ -221,7 +220,7 @@ export const SignupForm: React.FC = () => {
           {values.password && (
             <Box sx={{ mt: -1, mb: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                   Password Strength:
                 </Typography>
                 <Typography variant="caption" sx={{ color: passwordStrength.color, fontWeight: 700 }}>
@@ -234,7 +233,7 @@ export const SignupForm: React.FC = () => {
                 sx={{ 
                   height: 6, 
                   borderRadius: 3, 
-                  backgroundColor: '#e2e8f0',
+                  backgroundColor: 'action.hover',
                   '& .MuiLinearProgress-bar': {
                     backgroundColor: passwordStrength.color,
                     borderRadius: 3
@@ -294,12 +293,12 @@ export const SignupForm: React.FC = () => {
               />
             }
             label={
-              <Typography variant="body2" sx={{ color: '#475569', userSelect: 'none' }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', userSelect: 'none' }}>
                 I agree to the{' '}
                 <MuiLink 
                   component={Link}
                   to="/terms"
-                  sx={{ color: '#0284c7', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+                  sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
                 >
                   Terms of Service
                 </MuiLink>{' '}
@@ -307,7 +306,7 @@ export const SignupForm: React.FC = () => {
                 <MuiLink 
                   component={Link}
                   to="/privacy"
-                  sx={{ color: '#0284c7', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+                  sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
                 >
                   Privacy Policy
                 </MuiLink>
@@ -321,18 +320,14 @@ export const SignupForm: React.FC = () => {
             variant="contained"
             disabled={isSubmitting || !isValid || !acceptTerms}
             fullWidth
-            sx={{
-              py: 1.5,
-              borderRadius: '10px',
-              textTransform: 'none',
-              fontSize: '16px',
-              fontWeight: 600,
-              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.2)',
-              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #0369a1 0%, #075985 100%)',
-              }
-            }}
+              sx={{
+                py: 1.5,
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontSize: '16px',
+                fontWeight: 600,
+                boxShadow: (theme) => theme.shadows[4],
+              }}
           >
             {isSubmitting ? (
               <CircularProgress size={24} sx={{ color: 'white' }} />
@@ -342,13 +337,13 @@ export const SignupForm: React.FC = () => {
           </Button>
 
           <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2" sx={{ color: '#64748b' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               Already have an account?{' '}
               <MuiLink
                 component={Link}
                 to="/login"
                 sx={{
-                  color: '#0284c7',
+                  color: 'primary.main',
                   textDecoration: 'none',
                   fontWeight: 600,
                   '&:hover': { textDecoration: 'underline' }
