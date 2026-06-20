@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ModalProvider, useModalContext } from './contexts/ModalContext';
 import ToastContainer from './components/ToastContainer';
 import ThemeToggle from './components/ThemeToggle';
 import Login from './pages/Login';
@@ -227,9 +228,10 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <AuthProvider>
-        <BrowserRouter>
-        <Routes>
+        <ModalProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -351,9 +353,10 @@ const App: React.FC = () => {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        </BrowserRouter>
-        <ToastContainer />
-      </AuthProvider>
+            </BrowserRouter>
+            <ToastContainer />
+          </AuthProvider>
+        </ModalProvider>
       </ToastProvider>
     </ThemeProvider>
   );
