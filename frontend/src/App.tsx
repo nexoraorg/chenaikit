@@ -8,6 +8,8 @@ import { AnalyticsDashboard } from './components';
 import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastProvider } from './contexts/ToastContext';
+import ToastContainer from './components/ToastContainer';
 import ThemeToggle from './components/ThemeToggle';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -224,7 +226,8 @@ const DashboardShell: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
         <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -349,7 +352,9 @@ const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </BrowserRouter>
+        <ToastContainer />
       </AuthProvider>
+      </ToastProvider>
     </ThemeProvider>
   );
 };
