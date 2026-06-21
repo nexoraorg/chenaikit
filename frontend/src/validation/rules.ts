@@ -27,7 +27,7 @@ export const rules = {
     z.string().url(msg),
 
   positiveNumber: (msg = 'Must be a positive number') =>
-    z.string().refine((v) => !isNaN(Number(v)) && Number(v) > 0, msg),
+    z.string().refine((v) => { const n = Number(v); return !isNaN(n) && isFinite(n) && n > 0; }, msg),
 
   /** Stellar public key: starts with 'G', 56 chars total */
   stellarAddress: (msg = 'Please enter a valid Stellar address') =>
@@ -54,3 +54,4 @@ export const rules = {
 };
 
 export type Rules = typeof rules;
+

@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { useToastContext } from '../contexts/ToastContext';
 import type { ToastOptions, ToastType } from '../contexts/ToastContext';
 
@@ -20,7 +21,7 @@ const useToast = () => {
    */
   const show = useCallback(
     (
-      message: React.ReactNode,
+      message: ReactNode,
       type: ToastType = 'info',
       options?: Omit<ToastOptions, 'type'>
     ) => ctx.show(message, { ...options, type }),
@@ -47,3 +48,4 @@ const useToast = () => {
 };
 
 export default useToast;
+

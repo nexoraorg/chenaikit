@@ -68,7 +68,7 @@ describe('File Upload Feature Suite', () => {
 
     it('removes files and revokes preview URLs', () => {
       const { result } = renderHook(() => useFileUpload());
-      const file = new File(['data'], 'test.txt', { type: 'text/plain' });
+      const file = new File(['data'], 'test.png', { type: 'image/png' });
 
       act(() => {
         result.current.addFiles([file]);
@@ -227,3 +227,4 @@ describe('File Upload Feature Suite', () => {
     });
   });
 });
+

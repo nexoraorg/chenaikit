@@ -6,6 +6,9 @@ on:
       - "backend/src/config/swagger.ts"
       - "backend/src/swagger/**"
       - "backend/src/routes/**"
+      - "backend/package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/openapi-validate.yml"
   push:
     branches: [main, develop]
 
@@ -19,6 +22,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v4
         with:
@@ -44,3 +49,4 @@ jobs:
         with:
           name: openapi-spec
           path: backend/openapi.json
+

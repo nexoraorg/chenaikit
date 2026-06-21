@@ -33,20 +33,20 @@ export const passwordSchema = z
 export const positiveAmountSchema = z
   .string()
   .min(1, 'Amount is required')
-  .refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Amount must be a positive number');
+  .refine((v) => { const n = Number(v); return !isNaN(n) && isFinite(n) && n > 0; }, 'Amount must be a positive number');
 
 // ─── Composite form schemas ───────────────────────────────────────────────────
 
 export const loginSchema = z.object({
   email: emailSchema,
-  password: requiredString('Password is required'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 export const signupSchema = z
   .object({
     email: emailSchema,
     password: passwordSchema,
-    confirmPassword: requiredString('Please confirm your password'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: 'Passwords do not match',
@@ -71,3 +71,4 @@ export type LoginFormValues = z.infer<typeof loginSchema>;
 export type SignupFormValues = z.infer<typeof signupSchema>;
 export type ProfileFormValues = z.infer<typeof profileSchema>;
 export type TransactionFormValues = z.infer<typeof transactionSchema>;
+
