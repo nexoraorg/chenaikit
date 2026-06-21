@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   Grid,
   Box,
@@ -15,20 +21,31 @@ import {
   Divider,
   Paper,
   Fade,
+  Snackbar,
 } from "@mui/material";
 import {
   TrendingUp,
   Assessment,
   Public,
   BugReport,
-  Download,
   FiberManualRecord as LiveIcon,
+  FileDownload as FileDownloadIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import { UsageChart } from "./charts/UsageChart";
 import { DistributionChart } from "./charts/DistributionChart";
 import { useWebSocket } from "./WebSocketProvider";
 import { ConnectionStatus } from "./ConnectionStatus";
+import ExportButton from "./ExportButton";
+import ExportModal, { ExportConfig } from "./ExportModal";
+import {
+  exportToCSV,
+  exportToJSON,
+  exportToExcel,
+  exportToPDF,
+  ExportMetadata,
+  ChartElement,
+} from "../utils/exportUtils";
 
 interface DashboardData {
   systemUsage: {
@@ -64,6 +81,14 @@ export const AnalyticsDashboard: React.FC = () => {
   const [trendData, setTrendData] = useState<TrendData | null>(null);
   const [timeRange, setTimeRange] = useState("30");
   const [hasRealtimeUpdate, setHasRealtimeUpdate] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+
+  // Refs for chart elements (for PDF export)
+  const usageChartRef = useRef<HTMLDivElement>(null);
+  const riskChartRef = useRef<HTMLDivElement>(null);
+  const assetChartRef = useRef<HTMLDivElement>(null);
 
   const {
     subscribe,
@@ -155,11 +180,205 @@ export const AnalyticsDashboard: React.FC = () => {
     }
   }, [isConnected, wsMetrics, isPaused]);
 
-  const handleExport = async (format: "csv" | "pdf") => {
-    window.open(
-      `/api/v1/analytics/export?format=${format}&days=${timeRange}`,
-      "_blank",
-    );
+  // Prepare export data
+  const prepareExportData = useCallback(() => {
+    if (!dashboardData) return [];
+
+    const data = [
+      {
+        Category: "System Usage",
+        Metric: "Total Requests",
+        Value: dashboardData.systemUsage.totalRequests,
+      },
+      {
+        Category: "System Usage",
+        Metric: "Avg Latency (ms)",
+        Value: dashboardData.systemUsage.avgLatency.toFixed(2),
+      },
+      {
+        Category: "System Usage",
+        Metric: "Error Rate (%)",
+        Value: dashboardData.systemUsage.errorRate.toFixed(2),
+      },
+      {
+        Category: "System Usage",
+        Metric: "Success Rate (%)",
+        Value: dashboardData.systemUsage.successRate.toFixed(2),
+      },
+      {
+        Category: "AI Performance",
+        Metric: "Avg Credit Score",
+        Value: dashboardData.aiPerformance.avgCreditScore,
+      },
+      {
+        Category: "AI Performance",
+        Metric: "Total Fraud Alerts",
+        Value: dashboardData.aiPerformance.totalFraudAlerts,
+      },
+      {
+        Category: "AI Performance",
+        Metric: "Resolved Alerts",
+        Value: dashboardData.aiPerformance.resolvedAlerts,
+      },
+      {
+        Category: "Blockchain Activity",
+        Metric: "Total Transactions",
+        Value: dashboardData.blockchainActivity.totalTxCount,
+      },
+      {
+        Category: "Blockchain Activity",
+        Metric: "Total Volume",
+        Value: dashboardData.blockchainActivity.totalVolume,
+      },
+    ];
+
+    // Add trend data if available
+    if (trendData?.history) {
+      trendData.history.forEach((item) => {
+        data.push({
+          Category: "Historical Trends",
+          Metric: `Traffic on ${item.date}`,
+          Value: item.value,
+        });
+      });
+    }
+
+    return data;
+  }, [dashboardData, trendData]);
+
+  // Quick export handler
+  const handleQuickExport = async (
+    format: "csv" | "json" | "pdf" | "excel",
+  ) => {
+    if (!dashboardData) {
+      setSnackbarMessage("No data available to export");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      const data = prepareExportData();
+      const metadata: ExportMetadata = {
+        exportDate: new Date(),
+        source: "Analytics Dashboard",
+        filters: { timeRange: `${timeRange} days` },
+      };
+
+      switch (format) {
+        case "csv":
+          exportToCSV(data, {
+            metadata,
+            onProgress: setExportProgress,
+          });
+          break;
+        case "json":
+          exportToJSON(
+            { dashboardData, trendData },
+            {
+              metadata,
+              onProgress: setExportProgress,
+            },
+          );
+          break;
+        case "excel":
+          exportToExcel(data, {
+            metadata,
+            sheetName: "Analytics",
+            onProgress: setExportProgress,
+          });
+          break;
+        case "pdf":
+          const charts: ChartElement[] = [];
+          if (usageChartRef.current) {
+            charts.push({
+              element: usageChartRef.current,
+              title: "System Traffic & Forecast",
+            });
+          }
+          if (riskChartRef.current) {
+            charts.push({
+              element: riskChartRef.current,
+              title: "Risk Level Distribution",
+            });
+          }
+          if (assetChartRef.current) {
+            charts.push({
+              element: assetChartRef.current,
+              title: "Blockchain Assets",
+            });
+          }
+
+          await exportToPDF(data, charts, {
+            metadata,
+          });
+          break;
+      }
+
+      setSnackbarMessage(`Exported successfully as ${format.toUpperCase()}`);
+      setSnackbarOpen(true);
+    } catch (error: any) {
+      setSnackbarMessage("Export failed. Please try again.");
+      setSnackbarOpen(true);
+    }
+  };
+
+  // Advanced export handler (from modal)
+  const handleAdvancedExport = async (config: ExportConfig) => {
+    if (!dashboardData) {
+      throw new Error("No data available to export");
+    }
+
+    const data = prepareExportData();
+    const metadata: ExportMetadata = {
+      exportDate: new Date(),
+      dateRange: config.dateRange,
+      source: "Analytics Dashboard",
+      filters: {
+        timeRange: `${timeRange} days`,
+        datasets: config.datasets,
+      },
+    };
+
+    const options = {
+      filename: config.filename,
+      metadata: config.includeMetadata ? metadata : undefined,
+    };
+
+    switch (config.format) {
+      case "csv":
+        exportToCSV(data, options);
+        break;
+      case "json":
+        exportToJSON({ dashboardData, trendData }, options);
+        break;
+      case "excel":
+        exportToExcel(data, { ...options, sheetName: "Analytics" });
+        break;
+      case "pdf":
+        const charts: ChartElement[] = [];
+        if (config.includeCharts) {
+          if (usageChartRef.current) {
+            charts.push({
+              element: usageChartRef.current,
+              title: "System Traffic & Forecast",
+            });
+          }
+          if (riskChartRef.current) {
+            charts.push({
+              element: riskChartRef.current,
+              title: "Risk Level Distribution",
+            });
+          }
+          if (assetChartRef.current) {
+            charts.push({
+              element: assetChartRef.current,
+              title: "Blockchain Assets",
+            });
+          }
+        }
+        await exportToPDF(data, charts, options);
+        break;
+    }
   };
 
   if (loading)
@@ -245,19 +464,18 @@ export const AnalyticsDashboard: React.FC = () => {
               <MenuItem value="90">Last 90 Days</MenuItem>
             </Select>
           </FormControl>
-          <Button
-            startIcon={<Download />}
-            variant="outlined"
-            onClick={() => handleExport("csv")}
-          >
-            Export CSV
-          </Button>
-          <Button
-            startIcon={<Download />}
+          <ExportButton
+            onExport={handleQuickExport}
             variant="contained"
-            onClick={() => handleExport("pdf")}
+            size="medium"
+          />
+          <Button
+            startIcon={<FileDownloadIcon />}
+            variant="outlined"
+            onClick={() => setExportModalOpen(true)}
+            size="medium"
           >
-            Export PDF
+            Advanced Export
           </Button>
         </Box>
       </Box>
@@ -304,33 +522,39 @@ export const AnalyticsDashboard: React.FC = () => {
       <Grid container spacing={3}>
         {/* Main Trend Chart */}
         <Grid item xs={12} lg={8}>
-          {trendData && (
-            <UsageChart
-              data={trendData.history}
-              forecast={trendData.forecast}
-              title="System Traffic & Forecast"
-            />
-          )}
+          <div ref={usageChartRef}>
+            {trendData && (
+              <UsageChart
+                data={trendData.history}
+                forecast={trendData.forecast}
+                title="System Traffic & Forecast"
+              />
+            )}
+          </div>
         </Grid>
 
         {/* AI Distribution Chart */}
         <Grid item xs={12} md={6} lg={4}>
-          {dashboardData && (
-            <DistributionChart
-              data={dashboardData.aiPerformance.riskDistribution}
-              title="Risk Level Distribution"
-            />
-          )}
+          <div ref={riskChartRef}>
+            {dashboardData && (
+              <DistributionChart
+                data={dashboardData.aiPerformance.riskDistribution}
+                title="Risk Level Distribution"
+              />
+            )}
+          </div>
         </Grid>
 
         {/* Asset Distribution */}
         <Grid item xs={12} md={6} lg={4}>
-          {dashboardData && (
-            <DistributionChart
-              data={dashboardData.blockchainActivity.assetDistribution}
-              title="Blockchain Assets"
-            />
-          )}
+          <div ref={assetChartRef}>
+            {dashboardData && (
+              <DistributionChart
+                data={dashboardData.blockchainActivity.assetDistribution}
+                title="Blockchain Assets"
+              />
+            )}
+          </div>
         </Grid>
 
         {/* System Health Summary */}
@@ -389,6 +613,29 @@ export const AnalyticsDashboard: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Export Modal */}
+      <ExportModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onExport={handleAdvancedExport}
+        title="Export Analytics Dashboard"
+        availableDatasets={[
+          "System Usage",
+          "AI Performance",
+          "Blockchain Activity",
+          "Historical Trends",
+        ]}
+      />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      />
     </Box>
   );
 };

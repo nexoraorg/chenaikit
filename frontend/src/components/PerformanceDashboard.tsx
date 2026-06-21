@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Card,
@@ -20,6 +20,7 @@ import {
   TableHead,
   TableRow,
   Fade,
+  Snackbar,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
@@ -28,11 +29,19 @@ import {
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
-  Info as InfoIcon,
   FiberManualRecord as LiveIcon,
 } from "@mui/icons-material";
 import { useWebSocket } from "./WebSocketProvider";
 import { ConnectionStatus } from "./ConnectionStatus";
+import ExportButton from "./ExportButton";
+import {
+  exportToCSV,
+  exportToJSON,
+  exportToExcel,
+  exportToPDF,
+  ExportMetadata,
+  ChartElement,
+} from "../utils/exportUtils";
 
 // Performance data types
 interface PerformanceMetrics {
@@ -100,8 +109,12 @@ const PerformanceDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [hasUpdate, setHasUpdate] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
-  const { subscribe, isConnected, isPaused } = useWebSocket();
+  const metricsRef = useRef<HTMLDivElement>(null);
+
+  const { subscribe, isPaused } = useWebSocket();
 
   // Performance thresholds
   const thresholds = {
@@ -267,6 +280,183 @@ const PerformanceDashboard: React.FC = () => {
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  // Prepare export data
+  const prepareExportData = () => {
+    if (!metrics) return [];
+
+    const data = [
+      // API Metrics
+      {
+        Category: "API Performance",
+        Metric: "Avg Response Time (ms)",
+        Value: metrics.api.avgResponseTime,
+        Threshold: thresholds.api.avgResponseTime,
+        Status: getStatusColor(
+          metrics.api.avgResponseTime,
+          thresholds.api.avgResponseTime,
+        ),
+      },
+      {
+        Category: "API Performance",
+        Metric: "95th Percentile (ms)",
+        Value: metrics.api.p95ResponseTime,
+        Threshold: thresholds.api.p95ResponseTime,
+        Status: getStatusColor(
+          metrics.api.p95ResponseTime,
+          thresholds.api.p95ResponseTime,
+        ),
+      },
+      {
+        Category: "API Performance",
+        Metric: "Error Rate (%)",
+        Value: metrics.api.errorRate,
+        Threshold: thresholds.api.errorRate,
+        Status: getStatusColor(metrics.api.errorRate, thresholds.api.errorRate),
+      },
+      {
+        Category: "API Performance",
+        Metric: "Throughput (RPS)",
+        Value: metrics.api.throughput,
+        Threshold: thresholds.api.throughput,
+        Status: getStatusColor(
+          metrics.api.throughput,
+          thresholds.api.throughput,
+          true,
+        ),
+      },
+      // Frontend Metrics
+      {
+        Category: "Frontend Performance",
+        Metric: "Lighthouse Score",
+        Value: metrics.frontend.lighthouseScore,
+        Threshold: thresholds.frontend.lighthouseScore,
+        Status: getStatusColor(
+          metrics.frontend.lighthouseScore,
+          thresholds.frontend.lighthouseScore,
+          true,
+        ),
+      },
+      {
+        Category: "Frontend Performance",
+        Metric: "Bundle Size",
+        Value: formatBytes(metrics.frontend.bundleSize),
+        Threshold: formatBytes(thresholds.frontend.bundleSize),
+        Status: getStatusColor(
+          metrics.frontend.bundleSize,
+          thresholds.frontend.bundleSize,
+        ),
+      },
+      {
+        Category: "Frontend Performance",
+        Metric: "First Contentful Paint (ms)",
+        Value: metrics.frontend.fcp,
+        Threshold: thresholds.frontend.fcp,
+        Status: getStatusColor(metrics.frontend.fcp, thresholds.frontend.fcp),
+      },
+      {
+        Category: "Frontend Performance",
+        Metric: "Largest Contentful Paint (ms)",
+        Value: metrics.frontend.lcp,
+        Threshold: thresholds.frontend.lcp,
+        Status: getStatusColor(metrics.frontend.lcp, thresholds.frontend.lcp),
+      },
+      // Database Metrics
+      {
+        Category: "Database Performance",
+        Metric: "Avg Query Time (ms)",
+        Value: metrics.database.avgQueryTime,
+        Threshold: thresholds.database.avgQueryTime,
+        Status: getStatusColor(
+          metrics.database.avgQueryTime,
+          thresholds.database.avgQueryTime,
+        ),
+      },
+      {
+        Category: "Database Performance",
+        Metric: "Cache Hit Rate (%)",
+        Value: metrics.database.cacheHitRate,
+        Threshold: thresholds.database.cacheHitRate,
+        Status: getStatusColor(
+          metrics.database.cacheHitRate,
+          thresholds.database.cacheHitRate,
+          true,
+        ),
+      },
+      // Contract Metrics
+      {
+        Category: "Smart Contracts",
+        Metric: "Avg Gas Usage",
+        Value: metrics.contracts.avgGasUsage,
+        Threshold: thresholds.contracts.avgGasUsage,
+        Status: getStatusColor(
+          metrics.contracts.avgGasUsage,
+          thresholds.contracts.avgGasUsage,
+        ),
+      },
+      {
+        Category: "Smart Contracts",
+        Metric: "Avg Execution Time (ms)",
+        Value: metrics.contracts.avgExecutionTime,
+        Threshold: thresholds.contracts.avgExecutionTime,
+        Status: getStatusColor(
+          metrics.contracts.avgExecutionTime,
+          thresholds.contracts.avgExecutionTime,
+        ),
+      },
+    ];
+
+    return data;
+  };
+
+  // Handle export
+  const handleExport = async (format: "csv" | "json" | "pdf" | "excel") => {
+    if (!metrics) {
+      setSnackbarMessage("No data available to export");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      const data = prepareExportData();
+      const metadata: ExportMetadata = {
+        exportDate: new Date(),
+        source: "Performance Dashboard",
+        filters: { lastUpdated: lastUpdated.toISOString() },
+      };
+
+      switch (format) {
+        case "csv":
+          exportToCSV(data, { metadata });
+          break;
+        case "json":
+          exportToJSON({ metrics, issues, thresholds }, { metadata });
+          break;
+        case "excel":
+          exportToExcel(data, {
+            metadata,
+            sheetName: "Performance Metrics",
+          });
+          break;
+        case "pdf":
+          const charts: ChartElement[] = [];
+          if (metricsRef.current) {
+            charts.push({
+              element: metricsRef.current,
+              title: "Performance Metrics Overview",
+            });
+          }
+          await exportToPDF(data, charts, { metadata });
+          break;
+      }
+
+      setSnackbarMessage(`Exported successfully as ${format.toUpperCase()}`);
+      setSnackbarOpen(true);
+    } catch (error: any) {
+      setSnackbarMessage("Export failed. Please try again.");
+      setSnackbarOpen(true);
+    }
   };
 
   const renderMetricCard = (
@@ -587,6 +777,11 @@ const PerformanceDashboard: React.FC = () => {
           <Typography variant="body2" color="textSecondary">
             Last updated: {lastUpdated.toLocaleString()}
           </Typography>
+          <ExportButton
+            onExport={handleExport}
+            variant="contained"
+            size="small"
+          />
           <Tooltip title="Refresh metrics">
             <IconButton onClick={fetchPerformanceData} disabled={loading}>
               <RefreshIcon />
@@ -625,7 +820,7 @@ const PerformanceDashboard: React.FC = () => {
       </Box>
 
       <TabPanel value={tabValue} index={0}>
-        {renderAPIMetrics()}
+        <div ref={metricsRef}>{renderAPIMetrics()}</div>
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>
@@ -643,6 +838,15 @@ const PerformanceDashboard: React.FC = () => {
       <TabPanel value={tabValue} index={4}>
         {renderIssuesTable()}
       </TabPanel>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      />
     </Box>
   );
 };
