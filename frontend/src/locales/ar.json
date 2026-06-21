@@ -160,6 +160,30 @@
     "documentation": "التوثيق",
     "contact": "الاتصال"
   },
+  "profile": {
+    "title": "الملف الشخصي",
+    "subtitle": "ملف تعريف حسابك",
+    "activity": "النشاط",
+    "account": "الحساب",
+    "statistics": "الإحصائيات",
+    "editProfile": "تعديل الملف الشخصي",
+    "displayName": "الاسم المعروض",
+    "email": "البريد الإلكتروني",
+    "role": "الدور",
+    "memberSince": "عضو منذ",
+    "transactions": "المعاملات",
+    "creditScore": "درجة الائتمان",
+    "activeDays": "الأيام النشطة",
+    "uploadAvatar": "تحميل الصورة الشخصية",
+    "changeAvatar": "تغيير الصورة الشخصية",
+    "saveChanges": "حفظ التغييرات",
+    "recentActivity": "النشاط الأخير",
+    "noActivity": "لا يوجد نشاط حديث",
+    "securityStatus": "حالة الأمان",
+    "twoFactorEnabled": "المصادقة الثنائية",
+    "passwordSet": "كلمة المرور",
+    "activeSessions": "الجلسات النشطة"
+  },
   "websocket": {
     "connected": "متصل",
     "disconnected": "منفصل",
@@ -206,7 +230,15 @@
     "improveScore": "تحسين درجتك",
     "scoreBreakdown": "تفصيل الدرجة",
     "noDataAvailable": "لا توجد بيانات ائتمانية متاحة",
-    "lastUpdated": "آخر تحديث"
+    "lastUpdated": "آخر تحديث",
+    "outOf": "من {{max}}",
+    "scoreRange": "نطاق الدرجات",
+    "points_zero": "{{count}} نقطة",
+    "points_one": "نقطة واحدة",
+    "points_two": "نقطتان",
+    "points_few": "{{count}} نقاط",
+    "points_many": "{{count}} نقطة",
+    "points_other": "{{count}} نقطة"
   },
   "errors": {
     "networkError": "حدث خطأ في الشبكة",

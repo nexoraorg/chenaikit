@@ -160,6 +160,30 @@
     "documentation": "Documentación",
     "contact": "Contacto"
   },
+  "profile": {
+    "title": "Perfil",
+    "subtitle": "Tu perfil de cuenta",
+    "activity": "Actividad",
+    "account": "Cuenta",
+    "statistics": "Estadísticas",
+    "editProfile": "Editar Perfil",
+    "displayName": "Nombre para Mostrar",
+    "email": "Correo Electrónico",
+    "role": "Rol",
+    "memberSince": "Miembro Desde",
+    "transactions": "Transacciones",
+    "creditScore": "Puntaje de Crédito",
+    "activeDays": "Días Activos",
+    "uploadAvatar": "Cargar Avatar",
+    "changeAvatar": "Cambiar Avatar",
+    "saveChanges": "Guardar Cambios",
+    "recentActivity": "Actividad Reciente",
+    "noActivity": "Sin actividad reciente",
+    "securityStatus": "Estado de Seguridad",
+    "twoFactorEnabled": "Doble Factor",
+    "passwordSet": "Contraseña",
+    "activeSessions": "Sesiones Activas"
+  },
   "websocket": {
     "connected": "Conectado",
     "disconnected": "Desconectado",
@@ -206,7 +230,11 @@
     "improveScore": "Mejorar Su Puntaje",
     "scoreBreakdown": "Desglose del Puntaje",
     "noDataAvailable": "No hay datos crediticios disponibles",
-    "lastUpdated": "Última Actualización"
+    "lastUpdated": "Última Actualización",
+    "outOf": "de {{max}}",
+    "scoreRange": "Rango de Puntaje",
+    "points_one": "{{count}} punto",
+    "points_other": "{{count}} puntos"
   },
   "errors": {
     "networkError": "Ocurrió un error de red",

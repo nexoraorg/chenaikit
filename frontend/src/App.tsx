@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Box, Button, Typography } from '@mui/material';
 import { Logout as LogoutIcon, AccountCircle } from '@mui/icons-material';
@@ -57,7 +59,8 @@ const PrivacyPage: React.FC = () => {
 };
 
 const DashboardShell: React.FC = () => {
-  const [activeDemo, setActiveDemo] = useState<'analytics' | 'forms' | 'visualization'>('analytics');
+  const { t } = useTranslation();
+const [activeDemo, setActiveDemo] = useState<'analytics' | 'forms' | 'visualization'>('analytics');
   const { user, logout } = useAuth();
 
   return (
@@ -101,16 +104,16 @@ const DashboardShell: React.FC = () => {
                 }
               }}
             >
-              Sign Out
+              {t('app.signOut')}
             </Button>
           </Box>
         )}
 
         <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>
-          ChenaiKit - BI & Analytics Dashboard
+          {t('app.title')}
         </h1>
         <p style={{ fontSize: '18px', opacity: 0.9, marginBottom: '30px' }}>
-          Advanced AI Insights & Blockchain Monitoring
+          {t('app.subtitle')}
         </p>
         
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
