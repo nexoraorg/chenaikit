@@ -37,3 +37,12 @@ export { default as Modal } from './Modal';
 export { default as Dialog } from './Dialog';
 export { default as ConfirmDialog } from './ConfirmDialog';
 export { default as FormModal } from './FormModal';
+
+// File Upload
+export { default as FileUpload } from './FileUpload';
+export { default as DropZone } from './DropZone';
+export { default as FileList } from './FileList';
+export { default as FilePreview } from './FilePreview';
+export { useFileUpload } from '../hooks/useFileUpload';
+export type { UploadTask, UseFileUploadOptions } from '../hooks/useFileUpload';
+
