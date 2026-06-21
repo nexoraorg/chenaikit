@@ -9,7 +9,9 @@ import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import ToastContainer from './components/ToastContainer';
+import NotificationCenter from './components/NotificationCenter';
 import ThemeToggle from './components/ThemeToggle';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -81,6 +83,7 @@ const DashboardShell: React.FC = () => {
             mb: { xs: 2, sm: 0 }
           }}>
             <ThemeToggle />
+            <NotificationCenter size="medium" />
             <AccountCircle sx={{ color: '#38bdf8' }} />
             <Typography variant="body2" sx={{ fontWeight: 500, color: '#e2e8f0' }}>
               {user.email}
@@ -227,6 +230,7 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <ToastProvider>
+        <NotificationProvider>
         <AuthProvider>
         <BrowserRouter>
         <Routes>
@@ -354,6 +358,7 @@ const App: React.FC = () => {
         </BrowserRouter>
         <ToastContainer />
       </AuthProvider>
+      </NotificationProvider>
       </ToastProvider>
     </ThemeProvider>
   );
