@@ -18,7 +18,11 @@ model User {
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
 
+  @@index([email])
+  @@index([role])
   @@index([createdAt])
+  @@index([deletedAt])
+  @@index([role, deletedAt])
 }
 
 
@@ -31,7 +35,10 @@ model RefreshToken {
   updatedAt  DateTime @updatedAt
   expiresAt  DateTime
 
+  @@index([userId])
+  @@index([expiresAt])
   @@index([userId, expiresAt])
+  @@index([createdAt])
 }
 
 model ApiKey {
@@ -57,9 +64,15 @@ model ApiKey {
   usageLogs     ApiUsage[]
   
   @@map("api_keys")
+  @@index([userId])
+  @@index([tier])
+  @@index([isActive])
   @@index([userId, isActive])
   @@index([expiresAt])
   @@index([lastUsedAt])
+  @@index([deletedAt])
+  @@index([tier, isActive])
+  @@index([createdAt])
 }
 
 model ApiUsage {
@@ -79,10 +92,18 @@ model ApiUsage {
   deletedAt    DateTime?
   
   @@map("api_usage")
+  @@index([apiKeyId])
+  @@index([timestamp])
+  @@index([endpoint])
+  @@index([statusCode])
+  @@index([ip])
   @@index([apiKeyId, timestamp])
   @@index([endpoint, timestamp])
   @@index([statusCode, timestamp])
   @@index([ip, timestamp])
-  @@index([timestamp])
+  @@index([method, timestamp])
+  @@index([deletedAt])
+  @@index([apiKeyId, statusCode])
+  @@index([timestamp, statusCode])
 }
 
