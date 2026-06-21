@@ -10,6 +10,7 @@ import {
   TransactionsResponse,
   AccountCreationResponse
 } from '../types/api';
+import { NotFoundError, ConflictError, ValidationError } from '../utils/errors';
 
 // Mock data storage (in a real app, this would be a database)
 const accounts: Map<string, Account> = new Map();
@@ -64,238 +65,141 @@ transactions.set(mockAccount.id, mockTransactions);
 
 export class AccountController {
   static async getAccount(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
+    const { id } = req.params;
 
-      const account = accounts.get(id);
-      if (!account) {
-        return res.status(404).json({
-          success: false,
-          error: {
-            code: 'ACCOUNT_NOT_FOUND',
-            message: 'Account not found',
-            timestamp: new Date().toISOString()
-          }
-        });
-      }
-
-      if (!account.isActive) {
-        return res.status(410).json({
-          success: false,
-          error: {
-            code: 'ACCOUNT_INACTIVE',
-            message: 'Account is inactive',
-            timestamp: new Date().toISOString()
-          }
-        });
-      }
-
-      const response: AccountResponse = {
-        success: true,
-        data: account,
-        timestamp: new Date().toISOString()
-      };
-
-      res.status(200).json(response);
-    } catch (error) {
-      console.error('Error getting account:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to retrieve account',
-          timestamp: new Date().toISOString()
-        }
-      });
+    const account = accounts.get(id);
+    if (!account) {
+      throw new NotFoundError('Account not found', { accountId: id });
     }
+
+    if (!account.isActive) {
+      throw new ValidationError('Account is inactive', { accountId: id });
+    }
+
+    const response: AccountResponse = {
+      success: true,
+      data: account,
+      timestamp: new Date().toISOString()
+    };
+
+    res.status(200).json(response);
   }
 
   static async getAccountBalance(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
+    const { id } = req.params;
 
-      const account = accounts.get(id);
-      if (!account) {
-        return res.status(404).json({
-          success: false,
-          error: {
-            code: 'ACCOUNT_NOT_FOUND',
-            message: 'Account not found',
-            timestamp: new Date().toISOString()
-          }
-        });
-      }
-
-      if (!account.isActive) {
-        return res.status(410).json({
-          success: false,
-          error: {
-            code: 'ACCOUNT_INACTIVE',
-            message: 'Account is inactive',
-            timestamp: new Date().toISOString()
-          }
-        });
-      }
-
-      const response: AccountBalanceResponse = {
-        success: true,
-        data: {
-          balance: account.balance,
-          accountId: account.id
-        },
-        timestamp: new Date().toISOString()
-      };
-
-      res.status(200).json(response);
-    } catch (error) {
-      console.error('Error getting account balance:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to retrieve account balance',
-          timestamp: new Date().toISOString()
-        }
-      });
+    const account = accounts.get(id);
+    if (!account) {
+      throw new NotFoundError('Account not found', { accountId: id });
     }
+
+    if (!account.isActive) {
+      throw new ValidationError('Account is inactive', { accountId: id });
+    }
+
+    const response: AccountBalanceResponse = {
+      success: true,
+      data: {
+        balance: account.balance,
+        accountId: account.id
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    res.status(200).json(response);
   }
 
   static async getAccountTransactions(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const query = req.query as PaginationQuery;
+    const { id } = req.params;
+    const query = req.query as PaginationQuery;
 
-      const account = accounts.get(id);
-      if (!account) {
-        return res.status(404).json({
-          success: false,
-          error: {
-            code: 'ACCOUNT_NOT_FOUND',
-            message: 'Account not found',
-            timestamp: new Date().toISOString()
-          }
-        });
-      }
-
-      const accountTransactions = transactions.get(id) || [];
-
-      // Pagination parameters
-      const page = parseInt(query.page || '1');
-      const limit = parseInt(query.limit || '10');
-      const sortBy = query.sortBy || 'timestamp';
-      const sortOrder = query.sortOrder || 'desc';
-
-      // Sort transactions
-      const sortedTransactions = [...accountTransactions].sort((a, b) => {
-        let comparison = 0;
-        if (sortBy === 'timestamp') {
-          comparison = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
-        } else if (sortBy === 'amount') {
-          comparison = Math.abs(a.amount) - Math.abs(b.amount);
-        }
-        return sortOrder === 'desc' ? -comparison : comparison;
-      });
-
-      // Calculate pagination
-      const total = sortedTransactions.length;
-      const pages = Math.ceil(total / limit);
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      const paginatedTransactions = sortedTransactions.slice(startIndex, endIndex);
-
-      const paginatedResponse: PaginatedResponse<Transaction> = {
-        data: paginatedTransactions,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages,
-          hasNext: page < pages,
-          hasPrev: page > 1
-        }
-      };
-
-      const response: TransactionsResponse = {
-        success: true,
-        data: paginatedResponse,
-        timestamp: new Date().toISOString()
-      };
-
-      res.status(200).json(response);
-    } catch (error) {
-      console.error('Error getting account transactions:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to retrieve account transactions',
-          timestamp: new Date().toISOString()
-        }
-      });
+    const account = accounts.get(id);
+    if (!account) {
+      throw new NotFoundError('Account not found', { accountId: id });
     }
+
+    const accountTransactions = transactions.get(id) || [];
+
+    // Pagination parameters
+    const page = parseInt(query.page || '1');
+    const limit = parseInt(query.limit || '10');
+    const sortBy = query.sortBy || 'timestamp';
+    const sortOrder = query.sortOrder || 'desc';
+
+    // Sort transactions
+    const sortedTransactions = [...accountTransactions].sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'timestamp') {
+        comparison = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      } else if (sortBy === 'amount') {
+        comparison = Math.abs(a.amount) - Math.abs(b.amount);
+      }
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+
+    // Calculate pagination
+    const total = sortedTransactions.length;
+    const pages = Math.ceil(total / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedTransactions = sortedTransactions.slice(startIndex, endIndex);
+
+    const paginatedResponse: PaginatedResponse<Transaction> = {
+      data: paginatedTransactions,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages,
+        hasNext: page < pages,
+        hasPrev: page > 1
+      }
+    };
+
+    const response: TransactionsResponse = {
+      success: true,
+      data: paginatedResponse,
+      timestamp: new Date().toISOString()
+    };
+
+    res.status(200).json(response);
   }
 
   static async createAccount(req: Request, res: Response) {
-    try {
-      const { name, email, publicKey }: AccountCreationRequest = req.body;
+    const { name, email, publicKey }: AccountCreationRequest = req.body;
 
-      // Check if account already exists
-      if (accounts.has(publicKey)) {
-        return res.status(409).json({
-          success: false,
-          error: {
-            code: 'ACCOUNT_ALREADY_EXISTS',
-            message: 'Account with this public key already exists',
-            timestamp: new Date().toISOString()
-          }
-        });
-      }
-
-      // Check if email already exists
-      for (const account of accounts.values()) {
-        if (account.email === email) {
-          return res.status(409).json({
-            success: false,
-            error: {
-              code: 'EMAIL_ALREADY_EXISTS',
-              message: 'Account with this email already exists',
-              timestamp: new Date().toISOString()
-            }
-          });
-        }
-      }
-
-      const newAccount: Account = {
-        id: publicKey,
-        name,
-        email,
-        publicKey,
-        balance: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        isActive: true
-      };
-
-      accounts.set(publicKey, newAccount);
-      transactions.set(publicKey, []);
-
-      const response: AccountCreationResponse = {
-        success: true,
-        data: newAccount,
-        timestamp: new Date().toISOString()
-      };
-
-      res.status(201).json(response);
-    } catch (error) {
-      console.error('Error creating account:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to create account',
-          timestamp: new Date().toISOString()
-        }
-      });
+    // Check if account already exists
+    if (accounts.has(publicKey)) {
+      throw new ConflictError('Account with this public key already exists', { publicKey });
     }
+
+    // Check if email already exists
+    for (const account of accounts.values()) {
+      if (account.email === email) {
+        throw new ConflictError('Account with this email already exists', { email });
+      }
+    }
+
+    const newAccount: Account = {
+      id: publicKey,
+      name,
+      email,
+      publicKey,
+      balance: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isActive: true
+    };
+
+    accounts.set(publicKey, newAccount);
+    transactions.set(publicKey, []);
+
+    const response: AccountCreationResponse = {
+      success: true,
+      data: newAccount,
+      timestamp: new Date().toISOString()
+    };
+
+    res.status(201).json(response);
   }
 }

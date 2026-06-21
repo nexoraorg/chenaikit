@@ -2,35 +2,63 @@
   "name": "@chenaikit/frontend",
   "version": "0.1.0",
   "description": "Frontend applications for ChenAIKit",
+  "homepage": ".",
+  "proxy": "http://localhost:5000",
   "main": "src/index.tsx",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "eslint src/**/*.{ts,tsx}"
+    "lint": "eslint src/**/*.{ts,tsx}",
+    "i18n:scan": "i18next-scanner 'src/**/*.{js,jsx,ts,tsx}' --output 'src/locales'",
+    "i18n:extract": "i18next 'src/**/*.{js,jsx,ts,tsx}' --output 'src/locales'",
+    "i18n:validate": "node scripts/validate-translations.js"
   },
   "dependencies": {
     "@chenaikit/core": "workspace:*",
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@hookform/resolvers": "3.10.0",
+    "@mui/icons-material": "^5.15.0",
+    "@mui/material": "^5.15.0",
+    "@types/papaparse": "^5.5.2",
+    "axios": "^1.6.0",
+    "html2canvas": "^1.4.1",
+    "i18next": "^23.7.0",
+    "i18next-browser-languagedetector": "^7.2.0",
+    "i18next-http-backend": "^2.4.0",
+    "jspdf": "^3.0.4",
+    "papaparse": "^5.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-dropzone": "^15.0.0",
+    "react-hook-form": "7.54.2",
+    "react-i18next": "^13.5.0",
     "react-router-dom": "^6.8.0",
-    "axios": "^1.6.0",
-    "@mui/material": "^5.15.0",
-    "@emotion/react": "^11.11.0",
-    "@emotion/styled": "^11.11.0"
+    "recharts": "^3.2.1",
+    "xlsx": "^0.18.5",
+    "zod": "3.24.2"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.0",
+    "@testing-library/react": "^13.4.0",
+    "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "react-scripts": "5.0.1",
-    "eslint": "^8.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/jest-dom": "^5.16.0"
+    "eslint": "^8.0.0",
+    "i18next-scanner": "^4.4.0",
+    "jest-environment-jsdom": "^27.5.1",
+    "jsdom": "^16.7.0",
+    "react-scripts": "5.0.1",
+    "typescript": "^5.0.0"
+  },
+  "jest": {
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@chenaikit|axios|@stellar|d3|d3-|internmap|delaunator|robust-predicates)/)"
+    ]
   },
   "browserslist": {
     "production": [

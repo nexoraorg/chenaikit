@@ -1,116 +1,147 @@
 // ChenAIKit Backend Server
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
+import 'reflect-metadata';
 import dotenv from 'dotenv';
-import authRoutes from './routes/auth';
-import { ensureRedisConnection } from './config/redis';
-import { cacheMiddleware } from './middleware/cache';
-import { CacheKeys } from './utils/cacheKeys';
-import accountRoutes from './routes/accounts';
-
-// Load environment variables
 dotenv.config();
 
+// Initialize Sentry first
+import { initSentry, sentryErrorHandler } from './middleware/errorTracking';
+if (process.env.SENTRY_DSN) {
+  initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || 'development');
+}
+
+import express, { Request, Response } from 'express';
+import { log } from './utils/logger';
+import { requestLoggingMiddleware } from './middleware/logging';
+import healthRouter from './routes/health';
+import { metricsService, metricsMiddleware } from './services/metricsService';
+import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
+import { UserPayload } from './types/auth';
+import { ensureRedisConnection } from './config/redis';
+import { detectVersion, versionHeaders, createVersionRouter } from './middleware/versioning';
+import v1Router from './routes/v1';
+import v2Router from './routes/v2';
+import { API_VERSIONS, LATEST_VERSION, DEFAULT_VERSION } from './utils/versionUtils';
+import { PrismaClient } from '@prisma/client';
+import { ApiKeyService } from './services/apiKeyService';
+import { UsageTrackingService } from './services/usageTrackingService';
+import { ApiGateway } from './middleware/apiGateway';
+import { createTieredRateLimiter } from './middleware/advancedRateLimiter';
+import Redis from 'ioredis';
+import { applySecurityMiddleware } from './middleware/security';
+import { loadVaultSecrets } from './config/secrets';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+
 const app: express.Application = express();
-const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(helmet());
-app.use(cors());
+applySecurityMiddleware(app);
 app.use(express.json({ limit: '10mb' }));
+app.use(metricsMiddleware);
+app.use(requestLoggingMiddleware);
+// Health checks remain unversioned and must be matched before the version dispatcher.
+app.use('/api', healthRouter);
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
+// Version discovery endpoint: lists supported versions and their lifecycle.
+app.get('/api/versions', (_req: Request, res: Response) => {
   res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    service: 'chenaikit-backend',
-    version: '1.0.0'
+    success: true,
+    data: {
+      default: DEFAULT_VERSION,
+      latest: LATEST_VERSION,
+      versions: API_VERSIONS,
+    },
   });
 });
 
-// Placeholder endpoints - implementation pending
-app.get(
-  '/api/accounts/:id',
-  cacheMiddleware({ keyBuilder: (req) => CacheKeys.accountById(req.params.id), ttlSeconds: 60 }),
-  (req, res) => {
-    res.json({ 
-      message: 'Account endpoint - implementation pending - see backend-01-api-endpoints.md' 
-    });
-  }
+// Versioned API surface.
+// Supports URL path (/api/v1, /api/v2), header (Accept-Version) and query
+// (?version) versioning. Unversioned requests fall back to the default version,
+// keeping existing clients working.
+app.use(
+  '/api',
+  detectVersion(),
+  versionHeaders(),
+  createVersionRouter({ v1: v1Router, v2: v2Router })
 );
-// API Routes
-app.use('/api/accounts', accountRoutes);
 
-// Placeholder endpoints for future implementation
-app.get('/api/accounts/:id/credit-score', (req, res) => {
-  res.json({
-    message: 'Credit scoring endpoint - implementation pending'
-  });
-});
-
-app.post('/api/fraud/detect', (req, res) => {
-  res.json({
-    message: 'Fraud detection endpoint - implementation pending'
-  });
-});
-
-app.get(
-  '/api/accounts/:id/credit-score',
-  cacheMiddleware({ keyBuilder: (req) => CacheKeys.creditScoreByAccount(req.params.id), ttlSeconds: 300 }),
-  (req, res) => {
-    res.json({ 
-      message: 'Credit scoring endpoint - implementation pending - see backend-01-api-endpoints.md' 
-    });
+// Prometheus metrics endpoint
+app.get('/metrics', async (_req: Request, res: Response) => {
+  try {
+    const metrics = await metricsService.getMetrics();
+    res.set('Content-Type', 'text/plain');
+    res.send(metrics);
+  } catch (e: unknown) {
+    const error = e as Error;
+    res.status(500).send(error?.message || 'metrics error');
   }
-);
+});
+
 // 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      code: 'ENDPOINT_NOT_FOUND',
-      message: `Endpoint ${req.method} ${req.originalUrl} not found`,
-      timestamp: new Date().toISOString()
-    }
-  });
-});
+app.use('*', notFoundHandler);
+
+// Sentry error handler (must be before other error handlers)
+if (process.env.SENTRY_DSN) {
+  app.use(sentryErrorHandler());
+}
 
 // Global error handler
-app.use((error: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', error);
+app.use(errorHandler);
 
-  res.status(500).json({
-    success: false,
-    error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected error occurred',
-      timestamp: new Date().toISOString()
+export const startServer = async (): Promise<void> => {
+  // Load environment variables
+  dotenv.config();
+
+  // Optional: load secrets from Vault before validating environment
+  await loadVaultSecrets();
+
+  // Validate environment configuration
+  validateEnvironment();
+
+  const prisma = new PrismaClient();
+  const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+  const apiKeyService = new ApiKeyService(prisma);
+  const usageTrackingService = new UsageTrackingService(prisma);
+  const rateLimiter = createTieredRateLimiter(redis);
+  const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
+
+  // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
+
+  const PORT = process.env.PORT || 5000;
+
+  await initializeMonitoring();
+
+  const shutdown = async () => {
+    try {
+      await shutdownMonitoring();
+      await redis.quit();
+      await prisma.$disconnect();
+    } catch {
+      /* noop */
+    }
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+
+  const server = app.listen(PORT, async () => {
+    console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
+    console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
+
+    try {
+      await ensureRedisConnection();
+      console.log('🧠 Redis cache ready');
+    } catch (_err) {
+      console.warn('⚠️  Redis not available. Continuing without cache.');
     }
   });
-});
+};
 
-
-app.use('/api/auth', authRoutes);
-
-// Start server
-app.listen(PORT, async () => {
-  console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
-  try {
-    await ensureRedisConnection();
-    console.log('🧠 Redis cache ready');
-  } catch (err) {
-    console.warn('⚠️  Redis not available. Continuing without cache.');
-  }
-});
+if (require.main === module) {
+  startServer().catch((error) => {
+    console.error('Failed to start server', error);
+    process.exit(1);
+  });
+}
 
 export default app;

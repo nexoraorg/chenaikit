@@ -48,7 +48,6 @@ export class RateLimiter {
     return (req: Request, res: Response, next: NextFunction) => {
       const key = this.getKey(req);
       const now = Date.now();
-      const windowStart = now;
       const windowEnd = now + this.options.windowMs;
 
       if (!this.store[key] || this.store[key].resetTime <= now) {
@@ -62,7 +61,6 @@ export class RateLimiter {
 
       const current = this.store[key];
       const remaining = Math.max(0, this.options.max - current.count);
-      const resetTime = Math.ceil((current.resetTime - now) / 1000);
 
       if (this.options.standardHeaders) {
         res.set({

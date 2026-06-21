@@ -1,13 +1,12 @@
 #![no_std]
 
-use soroban_sdk::{contract, contractimpl, Address, Env, BytesN, String, symbol_short};
+use soroban_sdk::{contract, contractimpl, Address, Env, BytesN, String, symbol_short, Vec};
 
 mod access_control;
 mod events;
 mod storage;
 mod upgrade;
 
-use crate::access_control::{is_admin, require_admin};
 use crate::storage::{get_score, set_score, has_score};
 use crate::events::emit_score_updated;
 use crate::upgrade::{init_admin, upgrade as perform_upgrade};
@@ -28,7 +27,7 @@ impl CreditScoreContract {
     }
 
     /// Calculate credit score for an account, potentially using cross-contract oracle
-    pub fn calculate_score(env: Env, account: Address) -> u32 {
+    pub fn calculate_score(_env: Env, account: Address) -> u32 {
         account.require_auth();
         let base_score: u32 = 600;  // Default base
         // TODO: Implement cross-contract oracle adjustment (uncomment when oracle.wasm ready)
@@ -74,7 +73,7 @@ impl CreditScoreContract {
     }
 
     /// Cross-contract adjustment (stubbed; extend with oracle import above)
-    pub fn adjust_score_with_oracle(env: Env, user: Address, oracle_contract: Address) {
+    pub fn adjust_score_with_oracle(env: Env, user: Address, _oracle_contract: Address) {
         user.require_auth();
 
         // Stub: Simulate oracle adjustment (replace with real client call)
@@ -89,6 +88,31 @@ impl CreditScoreContract {
     /// Admin-only upgrade function (pass admin addr and auth)
     pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) {
         perform_upgrade(&env, admin, new_wasm_hash);
+    }
+
+    /// Upgrade with custom migration notes
+    pub fn upgrade_with_migration(
+        env: Env,
+        admin: Address,
+        new_wasm_hash: BytesN<32>,
+        migration_notes: String,
+    ) {
+        upgrade::upgrade_with_migration(&env, admin, new_wasm_hash, migration_notes);
+    }
+
+    /// Rollback to previous version (emergency only)
+    pub fn rollback(env: Env, admin: Address) {
+        upgrade::rollback(&env, admin);
+    }
+
+    /// Get current contract version
+    pub fn get_version(env: Env) -> u32 {
+        upgrade::get_version(&env)
+    }
+
+    /// Get upgrade history
+    pub fn get_upgrade_history(env: Env) -> Vec<upgrade::UpgradeRecord> {
+        upgrade::get_upgrade_history(&env)
     }
 
     /// Check if account has a score

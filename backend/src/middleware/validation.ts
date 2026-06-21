@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ValidationError, ApiError } from '../types/api';
+import { ValidationError } from '../types/api';
 
 export class ValidationMiddleware {
   static validateAccountId(req: Request, res: Response, next: NextFunction) {
@@ -104,9 +104,10 @@ export class ValidationMiddleware {
 
   static sanitizeInput(req: Request, res: Response, next: NextFunction) {
     if (req.body && typeof req.body === 'object') {
-      for (const key in req.body) {
-        if (typeof req.body[key] === 'string') {
-          req.body[key] = req.body[key].trim();
+      const body = req.body as Record<string, any>;
+      for (const key in body) {
+        if (typeof body[key] === 'string') {
+          body[key] = (body[key] as string).trim();
         }
       }
     }

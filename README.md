@@ -87,7 +87,7 @@ const score = await ai.calculateCreditScore(account);
 ## 🤝 Contributing
 
 We welcome contributions! Check out our [issue templates](.github/ISSUE_TEMPLATE/) for beginner-friendly tasks:
-
+frontend 
 - **Frontend**: React components, UI/UX, data visualization
 - **Backend**: APIs, databases, authentication, monitoring
 - **AI**: Machine learning models, fraud detection, NLP

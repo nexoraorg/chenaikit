@@ -25,11 +25,15 @@
   "license": "MIT",
   "dependencies": {
     "@chenaikit/core": "workspace:*",
-    "commander": "^11.0.0",
+    "@stellar/stellar-sdk": "^12.1.0",
     "chalk": "^4.1.2",
-    "inquirer": "^8.2.0"
+    "cli-progress": "^3.12.0",
+    "commander": "^11.0.0",
+    "inquirer": "^8.2.0",
+    "ora": "^5.4.1"
   },
   "devDependencies": {
+    "@types/cli-progress": "^3.11.5",
     "@types/node": "^20.0.0",
     "@types/inquirer": "^8.2.0",
     "typescript": "^5.0.0",
