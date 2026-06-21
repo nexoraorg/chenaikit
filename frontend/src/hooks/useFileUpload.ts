@@ -168,7 +168,7 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
     const totalSize = file.size;
     
     // Chunking parameters
-    const sizeOfChunk = chunkSizeInBytes;
+    const sizeOfChunk = chunkSizeInBytes && chunkSizeInBytes > 0 ? chunkSizeInBytes : 1024 * 1024;
     const totalChunks = Math.ceil(totalSize / sizeOfChunk);
 
     try {
@@ -287,3 +287,4 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
     clearFiles,
   };
 };
+
