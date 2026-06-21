@@ -94,10 +94,12 @@ export async function uploadToS3(params: {
   const { filePath, bucket, key, region, accessKeyId, secretAccessKey } = params
   const body = await fs.promises.readFile(filePath)
   const host = `${bucket}.s3.${region}.amazonaws.com`
-  const url = `https://${host}/${key}`
+  const encodedKey = key.split('/').map(encodeURIComponent).join('/')
+  const url = `https://${host}/${encodedKey}`
 
   const now = new Date()
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 15) + 'Z'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const amzDate = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`
   const dateStamp = amzDate.slice(0, 8)
 
   const contentHash = crypto.createHash('sha256').update(body).digest('hex')
@@ -112,7 +114,7 @@ export async function uploadToS3(params: {
 
   const canonicalRequest = [
     'PUT',
-    `/${key}`,
+    `/${encodedKey}`,
     '',
     canonicalHeaders,
     signedHeaders,
@@ -178,10 +180,12 @@ export async function downloadFromS3(params: {
 }): Promise<void> {
   const { destPath, bucket, key, region, accessKeyId, secretAccessKey } = params
   const host = `${bucket}.s3.${region}.amazonaws.com`
-  const url = `https://${host}/${key}`
+  const encodedKey = key.split('/').map(encodeURIComponent).join('/')
+  const url = `https://${host}/${encodedKey}`
 
   const now = new Date()
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 15) + 'Z'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const amzDate = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`
   const dateStamp = amzDate.slice(0, 8)
 
   const contentHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'  // sha256('')
@@ -192,7 +196,7 @@ export async function downloadFromS3(params: {
     `x-amz-content-sha256:${contentHash}\n` +
     `x-amz-date:${amzDate}\n`
 
-  const canonicalRequest = ['GET', `/${key}`, '', canonicalHeaders, signedHeaders, contentHash].join('\n')
+  const canonicalRequest = ['GET', `/${encodedKey}`, '', canonicalHeaders, signedHeaders, contentHash].join('\n')
 
   const credentialScope = `${dateStamp}/${region}/s3/aws4_request`
   const stringToSign = [

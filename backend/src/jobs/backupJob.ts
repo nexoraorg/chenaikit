@@ -13,6 +13,11 @@ let backupQueue: Queue.Queue | null = null
  * Call once at application startup when Redis is available.
  */
 export function initBackupScheduler(redisUrl: string): void {
+  if (backupQueue) {
+    logger.warn('Backup scheduler already initialised, skipping')
+    return
+  }
+
   backupQueue = new Queue(QUEUE_NAME, redisUrl, {
     defaultJobOptions: {
       attempts: 3,

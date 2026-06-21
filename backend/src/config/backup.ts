@@ -11,7 +11,10 @@ export const backupConfig = {
   schedule: process.env.BACKUP_SCHEDULE ?? '0 2 * * *',
 
   /** How many local backup files to retain before pruning the oldest. */
-  retentionCount: parseInt(process.env.BACKUP_RETENTION_COUNT ?? '14', 10),
+  retentionCount: (() => {
+    const parsed = parseInt(process.env.BACKUP_RETENTION_COUNT ?? '14', 10)
+    return Number.isNaN(parsed) || parsed < 1 ? 14 : parsed
+  })(),
 
   /** AWS region for S3 uploads. Required when S3_BUCKET is set. */
   s3Region: process.env.AWS_REGION ?? 'us-east-1',
@@ -31,6 +34,7 @@ export const backupConfig = {
   /** Path to the SQLite database file. Derived from DATABASE_URL by default. */
   get dbPath(): string {
     const url = process.env.DATABASE_URL ?? ''
+    if (!url) throw new Error('DATABASE_URL environment variable is required')
     // SQLite URLs: "file:./dev.db" or "/absolute/path/to/app.db"
     const match = url.match(/^file:(.+)$/)
     return match ? path.resolve(match[1]) : path.resolve(url)

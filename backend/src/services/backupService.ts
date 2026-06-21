@@ -101,7 +101,8 @@ export class BackupService {
    */
   async restore(source: string): Promise<RestoreResult> {
     const start = Date.now()
-    const isS3Key = !path.isAbsolute(source) && !source.startsWith('.')
+    const isS3Key = source.startsWith('s3://')
+    const s3KeyPath = isS3Key ? source.slice(5) : source
 
     const tmpEncOrGz = path.join(os.tmpdir(), `chenaikit-restore-dl-${Date.now()}`)
     const tmpGz = path.join(os.tmpdir(), `chenaikit-restore-gz-${Date.now()}.gz`)
@@ -113,11 +114,11 @@ export class BackupService {
         if (!backupConfig.s3Bucket || !backupConfig.awsAccessKeyId) {
           throw new Error('S3_BUCKET and AWS credentials are required to restore from S3')
         }
-        logger.info('Downloading backup from S3', { key: source })
+        logger.info('Downloading backup from S3', { key: s3KeyPath })
         await downloadFromS3({
           destPath: tmpEncOrGz,
           bucket: backupConfig.s3Bucket,
-          key: source,
+          key: s3KeyPath,
           region: backupConfig.s3Region,
           accessKeyId: backupConfig.awsAccessKeyId,
           secretAccessKey: backupConfig.awsSecretAccessKey,
@@ -147,7 +148,9 @@ export class BackupService {
       this.verifySqlite(tmpRaw)
 
       // Step 5: atomically replace the live database
-      await fs.promises.copyFile(tmpRaw, backupConfig.dbPath)
+      const tmpDest = `${backupConfig.dbPath}.restore-${Date.now()}`
+      await fs.promises.copyFile(tmpRaw, tmpDest)
+      await fs.promises.rename(tmpDest, backupConfig.dbPath)
       logger.info('Database restored successfully', { dbPath: backupConfig.dbPath })
 
       const durationMs = Date.now() - start
@@ -211,9 +214,10 @@ export class BackupService {
     const db = new Database(filePath, { readonly: true })
     try {
       // SQLite magic header check: first 16 bytes should be "SQLite format 3\000"
-      const integrity = db.prepare('PRAGMA integrity_check').get() as { integrity_check: string }
-      if (integrity.integrity_check !== 'ok') {
-        throw new Error(`SQLite integrity check failed: ${integrity.integrity_check}`)
+      const rows = db.prepare('PRAGMA integrity_check').all() as Array<{ integrity_check: string }>
+      const errors = rows.filter((r) => r.integrity_check !== 'ok')
+      if (errors.length > 0) {
+        throw new Error(`SQLite integrity check failed: ${errors.map((r) => r.integrity_check).join('; ')}`)
       }
     } finally {
       db.close()
