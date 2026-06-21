@@ -1,7 +1,7 @@
 import Queue from 'bull'
 import { backupService } from '../services/backupService'
 import { backupConfig } from '../config/backup'
-import { logger } from '../utils/logger'
+import { winstonLogger as logger } from '../utils/logger'
 
 const QUEUE_NAME = 'database-backup'
 

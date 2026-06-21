@@ -12,7 +12,7 @@ import {
   uploadToS3,
   downloadFromS3,
 } from '../utils/backupUtils'
-import { logger } from '../utils/logger'
+import { winstonLogger as logger } from '../utils/logger'
 
 export interface BackupResult {
   filename: string
