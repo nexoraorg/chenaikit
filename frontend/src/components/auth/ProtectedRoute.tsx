@@ -1,15 +1,17 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { Box, CircularProgress } from '@mui/material';
-import { useAuth } from './AuthContext';
-import { LoadingSpinner } from '../index';
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "./AuthContext";
+import { LoadingSpinner } from "../index";
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
   allowedRoles?: string[];
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  allowedRoles,
+}) => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
