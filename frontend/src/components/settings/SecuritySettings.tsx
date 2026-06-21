@@ -243,7 +243,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   Two-Factor Authentication
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b' }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   Add an extra layer of security to your account
                 </Typography>
               </Box>
@@ -286,16 +286,16 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
           </Box>
 
           {sessions.length === 0 ? (
-            <Typography variant="body2" sx={{ color: '#64748b' }}>
-              No active sessions
-            </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    Active Sessions
+                  </Typography>
           ) : (
             <List>
               {sessions.map((session) => (
                 <ListItem
                   key={session.id}
                   sx={{
-                    borderBottom: '1px solid #f1f5f9',
+                    borderBottom: 1, borderColor: 'divider',
                     '&:last-child': { borderBottom: 'none' }
                   }}
                   secondaryAction={
@@ -345,7 +345,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
           </Box>
 
           {loginHistory.length === 0 ? (
-            <Typography variant="body2" sx={{ color: '#64748b' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               No login history available
             </Typography>
           ) : (
@@ -354,7 +354,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
                 <ListItem
                   key={login.id}
                   sx={{
-                    borderBottom: '1px solid #f1f5f9',
+                    borderBottom: 1, borderColor: 'divider',
                     '&:last-child': { borderBottom: 'none' }
                   }}
                 >

@@ -287,7 +287,7 @@ const options: swaggerJsdoc.Options = {
     security: [{ bearerAuth: [] }],
     tags: [
       { name: "Health", description: "API health and status checks" },
-      { name: "Auth", description: "Authentication — register, login, refresh, logout" },
+      { name: "Auth", description: "Authentication - register, login, refresh, logout" },
       { name: "Accounts", description: "Stellar account management and credit scoring" },
       { name: "Analytics", description: "Usage analytics and reporting" },
       { name: "Feature Flags", description: "Runtime feature flag management" },

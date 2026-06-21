@@ -111,7 +111,7 @@ export const Settings: React.FC<SettingsPageProps> = ({
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#f8fafc', p: { xs: 2, md: 4 } }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: { xs: 2, md: 4 } }}>
       <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
         <Breadcrumbs sx={{ mb: 2 }}>
           <Link component={RouterLink} to="/" underline="hover" color="inherit">
@@ -121,8 +121,8 @@ export const Settings: React.FC<SettingsPageProps> = ({
         </Breadcrumbs>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-          <SettingsIcon sx={{ fontSize: 32, color: '#0f172a' }} />
-          <Typography variant="h4" sx={{ fontWeight: 700, color: '#0f172a' }}>
+          <SettingsIcon sx={{ fontSize: 32, color: 'text.primary' }} />
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
             Settings
           </Typography>
         </Box>
@@ -134,7 +134,8 @@ export const Settings: React.FC<SettingsPageProps> = ({
             variant="scrollable"
             scrollButtons="auto"
             sx={{
-              borderBottom: '1px solid #e5e7eb',
+              borderBottom: 1,
+              borderColor: 'divider',
               '& .MuiTab-root': {
                 fontWeight: 600,
                 textTransform: 'none',

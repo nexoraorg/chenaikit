@@ -1,0 +1,46 @@
+name: Validate OpenAPI Specification
+
+on:
+  pull_request:
+    paths:
+      - "backend/src/config/swagger.ts"
+      - "backend/src/swagger/**"
+      - "backend/src/routes/**"
+  push:
+    branches: [main, develop]
+
+jobs:
+  validate:
+    name: Validate OpenAPI Spec
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Export OpenAPI spec
+        run: pnpm docs:export
+
+      - name: Validate with swagger-cli
+        run: npx @apidevtools/swagger-cli validate openapi.json
+
+      - name: Upload spec artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: backend/openapi.json

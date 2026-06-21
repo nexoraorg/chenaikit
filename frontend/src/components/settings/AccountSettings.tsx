@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { ValidationRules } from '@chenaikit/core';
+import { useThemeMode } from '../../contexts/ThemeContext';
 
 interface AccountSettingsProps {
   user: {
@@ -33,6 +34,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
   onUpdateAccount,
   onDeleteAccount
 }) => {
+  const { setTheme } = useThemeMode();
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -71,6 +73,12 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
     validateOnChange: true,
     validateOnBlur: true
   });
+
+  useEffect(() => {
+    if (values.theme === 'light' || values.theme === 'dark' || values.theme === 'system') {
+      setTheme(values.theme);
+    }
+  }, [values.theme, setTheme]);
 
   const handleDeleteAccount = async () => {
     if (deleteEmail !== user.email) return;
@@ -178,7 +186,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: 'error.main' }}>
             Danger Zone
           </Typography>
-          <Typography variant="body2" sx={{ color: '#64748b', mb: 3 }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
             Once you delete your account, there is no going back. Please be certain.
           </Typography>
 
@@ -197,7 +205,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
           Delete Account
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ mb: 3, color: '#475569' }}>
+          <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
             This action cannot be undone. To confirm, please type your email address:{' '}
             <strong>{user.email}</strong>
           </Typography>

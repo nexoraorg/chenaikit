@@ -23,7 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "@stellar/stellar-sdk": "^11.3.0",
-    "axios": "^1.12.2",
+    "axios": "^1.18.0",
     "eventemitter3": "^5.0.1",
     "lodash": "^4.17.21",
     "node-cache": "^5.1.2",

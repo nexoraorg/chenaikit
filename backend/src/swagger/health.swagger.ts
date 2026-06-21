@@ -1,6 +1,6 @@
 /**
  * @swagger
- * /health:
+ * /api/health:
  *   get:
  *     tags: [Health]
  *     summary: Health check
