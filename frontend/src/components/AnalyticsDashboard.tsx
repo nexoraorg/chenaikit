@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Grid,
   Box,
@@ -25,6 +25,7 @@ import {
 import axios from 'axios';
 import { UsageChart } from './charts/UsageChart';
 import { DistributionChart } from './charts/DistributionChart';
+import useUndoRedo from '../hooks/useUndoRedo';
 
 interface DashboardData {
   systemUsage: {
@@ -57,6 +58,9 @@ export const AnalyticsDashboard: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [trendData, setTrendData] = useState<TrendData | null>(null);
   const [timeRange, setTimeRange] = useState('30');
+  const timeRangeRef = useRef(timeRange);
+  timeRangeRef.current = timeRange;
+  const { trackAction } = useUndoRedo();
 
   useEffect(() => {
     fetchData();
@@ -79,6 +83,21 @@ export const AnalyticsDashboard: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const handleTimeRangeChange = useCallback((newRange: string) => {
+    const prevRange = timeRangeRef.current;
+    setTimeRange(newRange);
+    trackAction(
+      'filter_change',
+      `Changed time range to ${newRange} days`,
+      () => {
+        setTimeRange(newRange);
+      },
+      () => {
+        setTimeRange(prevRange);
+      },
+    );
+  }, [trackAction]);
 
   const handleExport = async (format: 'csv' | 'pdf') => {
     window.open(`/api/v1/analytics/export?format=${format}&days=${timeRange}`, '_blank');
@@ -111,7 +130,7 @@ export const AnalyticsDashboard: React.FC = () => {
         <Box sx={{ display: 'flex', gap: 2 }}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>Range</InputLabel>
-            <Select value={timeRange} label="Range" onChange={(e) => setTimeRange(e.target.value)}>
+            <Select value={timeRange} label="Range" onChange={(e) => handleTimeRangeChange(e.target.value)}>
               <MenuItem value="7">Last 7 Days</MenuItem>
               <MenuItem value="30">Last 30 Days</MenuItem>
               <MenuItem value="90">Last 90 Days</MenuItem>

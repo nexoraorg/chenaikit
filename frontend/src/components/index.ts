@@ -42,3 +42,7 @@ export { default as FilePreview } from './FilePreview';
 export { useFileUpload } from '../hooks/useFileUpload';
 export type { UploadTask, UseFileUploadOptions } from '../hooks/useFileUpload';
 
+// Undo/Redo
+export { UndoRedoButtons } from './UndoRedoButtons';
+export { ActionHistory } from './ActionHistory';
+

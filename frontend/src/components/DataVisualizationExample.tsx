@@ -11,6 +11,7 @@ import TransactionFlowChart from './TransactionFlowChart';
 import PerformanceMetricsChart from './PerformanceMetricsChart';
 import UserActivityHeatmap from './UserActivityHeatmap';
 import NetworkTopologyView from './NetworkTopologyView';
+import useUndoRedo from '../hooks/useUndoRedo';
 
 // Generate sample data
 const generateSampleData = () => {
@@ -77,6 +78,7 @@ export const DataVisualizationExample: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'flow' | 'performance' | 'heatmap' | 'network'>('flow');
   const [data, setData] = useState(generateSampleData());
   const [isExporting, setIsExporting] = useState(false);
+  const { trackAction } = useUndoRedo();
   
   const flowChartRef = useRef<HTMLDivElement>(null);
   const performanceChartRef = useRef<HTMLDivElement>(null);
@@ -143,8 +145,14 @@ export const DataVisualizationExample: React.FC = () => {
 
   // Refresh data
   const handleRefreshData = useCallback(() => {
-    setData(generateSampleData());
-  }, []);
+    const oldData = data;
+    trackAction(
+      'data_modification',
+      'Refreshed visualization data',
+      () => setData(generateSampleData()),
+      () => setData(oldData),
+    );
+  }, [data, trackAction]);
 
   return (
     <div className="data-visualization-example" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -205,7 +213,17 @@ export const DataVisualizationExample: React.FC = () => {
         ].map(({ key, label, icon }) => (
           <button
             key={key}
-            onClick={() => setActiveTab(key as any)}
+            onClick={() => {
+              const prevTab = activeTab;
+              if (prevTab !== key) {
+                trackAction(
+                  'layout_change',
+                  `Switched to ${label} view`,
+                  () => setActiveTab(key as any),
+                  () => setActiveTab(prevTab as any),
+                );
+              }
+            }}
             style={{
               padding: '12px 20px',
               background: activeTab === key ? '#3B82F6' : 'transparent',

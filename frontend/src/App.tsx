@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
-import { Box, Button, Typography } from '@mui/material';
-import { Logout as LogoutIcon, AccountCircle } from '@mui/icons-material';
+import { Box, Button, Typography, Drawer, IconButton, Badge } from '@mui/material';
+import { Logout as LogoutIcon, AccountCircle, History as HistoryIcon } from '@mui/icons-material';
 import FormValidationExample from './components/FormValidationExample';
 import DataVisualizationExample from './components/DataVisualizationExample';
 import { AnalyticsDashboard } from './components';
@@ -9,8 +9,12 @@ import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { UndoRedoProvider } from './contexts/UndoRedoContext';
 import ToastContainer from './components/ToastContainer';
 import ThemeToggle from './components/ThemeToggle';
+import UndoRedoButtons from './components/UndoRedoButtons';
+import ActionHistory from './components/ActionHistory';
+import { useUndoRedoContext } from './contexts/UndoRedoContext';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
@@ -59,6 +63,8 @@ const PrivacyPage: React.FC = () => {
 const DashboardShell: React.FC = () => {
   const [activeDemo, setActiveDemo] = useState<'analytics' | 'forms' | 'visualization'>('analytics');
   const { user, logout } = useAuth();
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const { undoStack } = useUndoRedoContext();
 
   return (
     <div className="App">
@@ -76,10 +82,21 @@ const DashboardShell: React.FC = () => {
             right: 20, 
             display: 'flex', 
             alignItems: 'center', 
-            gap: 1,
+            gap: 0.5,
             justifyContent: 'center',
             mb: { xs: 2, sm: 0 }
           }}>
+            <UndoRedoButtons />
+            <IconButton
+              size="small"
+              onClick={() => setHistoryOpen(true)}
+              sx={{ color: 'white' }}
+              aria-label="Action history"
+            >
+              <Badge badgeContent={undoStack.length} color="primary" max={99}>
+                <HistoryIcon />
+              </Badge>
+            </IconButton>
             <ThemeToggle />
             <AccountCircle sx={{ color: '#38bdf8' }} />
             <Typography variant="body2" sx={{ fontWeight: 500, color: '#e2e8f0' }}>
@@ -219,6 +236,15 @@ const DashboardShell: React.FC = () => {
       >
         Built with ChenaiKit - Advanced AI and Blockchain Solutions
       </Box>
+
+      <Drawer
+        anchor="right"
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        PaperProps={{ sx: { width: 320, maxWidth: '100vw' } }}
+      >
+        <ActionHistory />
+      </Drawer>
     </div>
   );
 };
@@ -227,6 +253,7 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <ToastProvider>
+        <UndoRedoProvider maxHistorySize={50}>
         <AuthProvider>
         <BrowserRouter>
         <Routes>
@@ -354,6 +381,7 @@ const App: React.FC = () => {
         </BrowserRouter>
         <ToastContainer />
       </AuthProvider>
+      </UndoRedoProvider>
       </ToastProvider>
     </ThemeProvider>
   );
