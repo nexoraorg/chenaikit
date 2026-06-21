@@ -255,31 +255,4 @@ router.post('/:id/revoke', authenticate, async (req, res, next) => {
   }
 });
 
-/**
- * Get API key usage analytics
- */
-router.get('/:id/usage', authenticate, async (req, res, next) => {
-  try {
-    const existingKey = await apiKeyService.getApiKeyById(req.params.id);
-    
-    if (!existingKey || (req.user?.role !== 'admin' && existingKey.userId !== req.user?.id)) {
-      throw new NotFoundError('API key not found');
-    }
-
-    const { startDate, endDate } = req.query;
-    const usage = await apiKeyService.getApiKeyUsage(
-      req.params.id,
-      startDate ? new Date(startDate as string) : undefined,
-      endDate ? new Date(endDate as string) : undefined
-    );
-
-    res.json({
-      success: true,
-      data: usage
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
 export default router;

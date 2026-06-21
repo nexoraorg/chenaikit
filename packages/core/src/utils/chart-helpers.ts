@@ -76,15 +76,31 @@ export function formatDateTime(date: Date, format: 'short' | 'long' | 'time' = '
   }
 }
 
+/**
+ * Escapes HTML special characters to prevent XSS.
+ */
+export function escapeHtml(unsafe: string): string {
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Generate tooltip content
 export function generateTooltipContent(data: TooltipData[]): string {
-  return data.map(item => 
-    `<div style="display: flex; align-items: center; margin: 2px 0;">
-      <div style="width: 12px; height: 12px; background-color: ${item.color || '#3B82F6'}; margin-right: 8px; border-radius: 2px;"></div>
-      <span style="font-weight: 500;">${item.label}:</span>
-      <span style="margin-left: 8px;">${item.value}</span>
-    </div>`
-  ).join('');
+  return data.map(item => {
+    const label = escapeHtml(item.label);
+    const value = escapeHtml(String(item.value));
+    const color = escapeHtml(item.color || '#3B82F6');
+    
+    return `<div style="display: flex; align-items: center; margin: 2px 0;">
+      <div style="width: 12px; height: 12px; background-color: ${color}; margin-right: 8px; border-radius: 2px;"></div>
+      <span style="font-weight: 500;">${label}:</span>
+      <span style="margin-left: 8px;">${value}</span>
+    </div>`;
+  }).join('');
 }
 
 // Calculate zoom bounds
@@ -98,20 +114,27 @@ export function calculateZoomBounds(
   const minScale = 0.1;
   const maxScale = 10;
   
-  const bounds = {
-    x: [-width * (scale - 1), width * (scale - 1)] as [number, number],
-    y: [-height * (scale - 1), height * (scale - 1)] as [number, number]
-  };
+  const xMin = -width * (scale - 1);
+  const xMax = 0;
+  const yMin = -height * (scale - 1);
+  const yMax = 0;
   
-  return { minScale, maxScale, bounds };
+  return {
+    minScale,
+    maxScale,
+    bounds: {
+      x: [xMin, xMax],
+      y: [yMin, yMax]
+    }
+  };
 }
 
-// Clamp zoom values
-export function clampZoom(zoom: ZoomState, bounds: { minScale: number; maxScale: number }): ZoomState {
+// Clamp zoom state
+export function clampZoom(zoom: ZoomState, options: { minScale: number; maxScale: number }): ZoomState {
+  const scale = Math.max(options.minScale, Math.min(options.maxScale, zoom.scale));
   return {
-    scale: Math.max(bounds.minScale, Math.min(bounds.maxScale, zoom.scale)),
-    translateX: zoom.translateX,
-    translateY: zoom.translateY
+    ...zoom,
+    scale
   };
 }
 
@@ -149,24 +172,18 @@ export function generateId(prefix: string = 'chart'): string {
   return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Debounce function for performance
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
+// Simple debounce implementation
+export function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null;
   return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
+    if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
 }
 
-// Throttle function for performance
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
-  limit: number
-): (...args: Parameters<T>) => void {
-  let inThrottle: boolean;
+// Simple throttle implementation
+export function throttle<T extends (...args: any[]) => void>(func: T, limit: number): (...args: Parameters<T>) => void {
+  let inThrottle = false;
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args);
@@ -216,15 +233,56 @@ export function getAnimationConfig(duration: number = 750): {
   };
 }
 
-// Data processing utilities
-export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
-  return array.reduce((groups, item) => {
-    const group = String(item[key]);
+// Group data by a key
+export function groupBy<T>(data: T[], keyGetter: (item: T) => string): Record<string, T[]> {
+  const groups: Record<string, T[]> = {};
+  for (const item of data) {
+    const group = keyGetter(item);
+    
+    // Prevent prototype pollution
+    if (group === '__proto__' || group === 'constructor' || group === 'prototype') {
+      continue;
+    }
+    
     groups[group] = groups[group] || [];
     groups[group].push(item);
-    return groups;
-  }, {} as Record<string, T[]>);
+  }
+  return groups;
 }
+
+// Calculate chart distribution
+export function getDistribution(data: number[], bins: number = 10): Record<string, number> {
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min;
+  const binWidth = range / bins || 1;
+  
+  const distribution: Record<string, number> = {};
+  for (let i = 0; i < bins; i++) {
+    const binStart = min + i * binWidth;
+    const binEnd = binStart + binWidth;
+    const label = `${formatNumber(binStart)} - ${formatNumber(binEnd)}`;
+    distribution[label] = 0;
+  }
+  
+  for (const value of data) {
+    const binIndex = Math.min(Math.floor((value - min) / binWidth), bins - 1);
+    const binStart = min + binIndex * binWidth;
+    const binEnd = binStart + binWidth;
+    const label = `${formatNumber(binStart)} - ${formatNumber(binEnd)}`;
+    
+    // Prevent prototype pollution
+    if (label === '__proto__' || label === 'constructor' || label === 'prototype') {
+      continue;
+    }
+    
+    distribution[label] = (distribution[label] || 0) + 1;
+  }
+  
+  return distribution;
+}
+
+// Data processing utilities
 
 export function sortBy<T>(array: T[], key: keyof T, direction: 'asc' | 'desc' = 'asc'): T[] {
   return [...array].sort((a, b) => {

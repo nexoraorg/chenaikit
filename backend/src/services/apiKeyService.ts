@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { ApiKey, ApiKeyCreateInput, ApiKeyUpdateInput, ApiKeyStatus, ApiKeyUsage } from '../models/ApiKey';
 import { log } from '../utils/logger';
 import { DatabaseError, NotFoundError, ValidationError } from '../utils/errors';
@@ -14,11 +14,21 @@ export class ApiKeyService {
     const prefix = input.type === 'TEMPORARY' ? 'ak_test_' : 'ak_live_';
     const { key, hash, publicId } = await generateApiKey(prefix);
     
+    // Sanitize input name to prevent XSS/Injection if displayed in UI
+    const sanitizedName = input.name
+      .replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char] || char));
+
     const prismaApiKey = await this.prisma.apiKey.create({
       data: {
         keyHash: hash,
         publicId: publicId,
-        name: input.name,
+        name: sanitizedName,
         prefix: prefix,
         type: input.type || 'READ_WRITE',
         status: 'ACTIVE',
@@ -71,12 +81,18 @@ export class ApiKeyService {
    * This is optimized for performance as it's called on every request.
    */
   async validateApiKey(key: string): Promise<ApiKey | null> {
+    if (!key || typeof key !== 'string') return null;
+    
     // Format: prefix_publicId_secretPart
     const parts = key.split('_');
     if (parts.length < 3) return null;
     
+    // Validate format to prevent potential injection or parsing issues
     const prefix = `${parts[0]}_${parts[1]}_`;
+    if (prefix !== 'ak_live_' && prefix !== 'ak_test_') return null;
+    
     const publicId = parts[2];
+    if (!/^[a-f0-9]{12}$/i.test(publicId)) return null;
 
     // Find the key by publicId (optimized lookup)
     const prismaApiKey = await this.prisma.apiKey.findUnique({
@@ -334,16 +350,18 @@ export class ApiKeyService {
         orderBy: { _count: { endpoint: 'desc' } },
         take: 10,
       }),
-      this.prisma.$queryRaw<Array<{ date: string; requests: bigint }>>`
-        SELECT 
-          DATE(timestamp) as date,
-          COUNT(*) as requests
-        FROM api_usage 
-        WHERE api_key_id = ${id}
-          AND timestamp >= datetime('now', '-30 days')
-        GROUP BY DATE(timestamp)
-        ORDER BY date DESC
-      `,
+      this.prisma.$queryRaw<Array<{ date: string; requests: bigint }>>(
+        Prisma.sql`
+          SELECT 
+            DATE(timestamp) as date,
+            COUNT(*) as requests
+          FROM api_usage 
+          WHERE apiKeyId = ${id}
+            AND timestamp >= datetime('now', '-30 days')
+          GROUP BY DATE(timestamp)
+          ORDER BY date DESC
+        `
+      ),
     ]);
 
     const totalCount = await this.prisma.apiUsage.count({ where: whereClause });

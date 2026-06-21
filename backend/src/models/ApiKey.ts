@@ -155,14 +155,15 @@ export class ApiKey {
     return this.allowedPaths.some(pattern => {
       // Security: Prevent extremely long patterns or too many wildcards
       if (!pattern || pattern.length > 128) return false;
-      const wildcardCount = (pattern.match(/\*/g) || []).length;
-      if (wildcardCount > 3) return false; // Further restricted wildcards
-
-      // Escape regex special characters and replace * with .*
-      // We use a restricted set of characters to further prevent ReDoS
-      const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`^${escaped.replace(/\*/g, '[^/]*')}$`); // Only match within a path segment
-      return regex.test(path);
+      
+      // Manual safe matching for common patterns (e.g., /api/v1/*)
+      // This is much safer than dynamic RegExp construction
+      if (pattern.endsWith('*')) {
+        const base = pattern.slice(0, -1);
+        return path.startsWith(base);
+      }
+      
+      return path === pattern;
     });
   }
 

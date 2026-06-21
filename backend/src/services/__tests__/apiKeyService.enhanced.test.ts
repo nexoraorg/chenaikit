@@ -96,12 +96,12 @@ describe('ApiKeyService Enhanced', () => {
 
   describe('validateApiKey', () => {
     it('should validate an API key correctly using Argon2', async () => {
-      const testKey = 'ak_live_test-public-id-test-key-secret';
+      const testKey = 'ak_live_abcdef123456_secret-part';
       
       mockPrisma.apiKey.findUnique.mockResolvedValue(
         {
           id: 'key-1',
-          publicId: 'test-public-id',
+          publicId: 'abcdef123456',
           keyHash: 'hash-1',
           prefix: 'ak_live_',
           type: 'READ_WRITE',
@@ -138,12 +138,12 @@ describe('ApiKeyService Enhanced', () => {
     });
 
     it('should return null for invalid key', async () => {
-      const testKey = 'ak_live_test-public-id-invalid-key-secret';
+      const testKey = 'ak_live_abcdef123456_invalid-key-secret';
       
       mockPrisma.apiKey.findUnique.mockResolvedValue(
         { 
           id: 'key-1',
-          publicId: 'test-public-id',
+          publicId: 'abcdef123456',
           keyHash: 'hash-1',
           prefix: 'ak_live_',
           status: 'ACTIVE',

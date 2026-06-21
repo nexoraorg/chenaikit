@@ -65,9 +65,16 @@ export const apiKeyAuth = async (req: Request, res: Response, next: NextFunction
     }
 
     // Check IP allowlist
-    const clientIp = req.ip || req.socket.remoteAddress || '';
+    // Note: Ensure the app is configured with 'trust proxy' if behind a load balancer
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.ip || req.socket.remoteAddress || '').split(',')[0].trim();
+    
     if (!apiKey.isIpAllowed(clientIp)) {
       await apiKeyService.recordUsage(apiKey.id, false);
+      log.warn('API key access denied: IP not allowed', { 
+        apiKeyId: apiKey.id, 
+        clientIp,
+        allowedIps: apiKey.allowedIps 
+      });
       return res.status(403).json({
         success: false,
         error: {
@@ -81,10 +88,19 @@ export const apiKeyAuth = async (req: Request, res: Response, next: NextFunction
     const tierConfig = API_TIER_CONFIGS[apiKey.tier];
     const rateLimitKey = `rate_limit:${apiKey.id}`;
     
-    // Simple fixed window rate limiting with Redis
-    const currentCount = await redis.incr(rateLimitKey);
-    if (currentCount === 1) {
-      await redis.pexpire(rateLimitKey, tierConfig.rateLimit.windowMs);
+    let currentCount = 0;
+    try {
+      // Simple fixed window rate limiting with Redis
+      currentCount = await redis.incr(rateLimitKey);
+      if (currentCount === 1) {
+        await redis.pexpire(rateLimitKey, tierConfig.rateLimit.windowMs);
+      }
+    } catch (redisError) {
+      log.error('Redis rate limiting error', { error: redisError as Error, apiKeyId: apiKey.id });
+      // Fail open to avoid blocking legitimate traffic if Redis is down
+      // Or fail closed if strict security is required. 
+      // For this implementation, we'll continue but log the error.
+      currentCount = 0; 
     }
 
     if (currentCount > tierConfig.rateLimit.max) {
@@ -110,13 +126,11 @@ export const apiKeyAuth = async (req: Request, res: Response, next: NextFunction
     next();
   } catch (error) {
     log.error('API key authentication error', { error: error as Error });
-    console.error('Detailed API key auth error:', error);
     return res.status(500).json({
       success: false,
       error: {
         code: 'INTERNAL_SERVER_ERROR',
-        message: 'An error occurred during API key authentication',
-        details: error instanceof Error ? error.message : String(error)
+        message: 'An error occurred during API key authentication'
       }
     });
   }

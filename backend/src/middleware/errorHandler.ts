@@ -47,13 +47,14 @@ export function errorHandler(
   const appError = isAppError(error) ? error : convertToAppError(error);
 
   // Build error response
+  const isDevelopment = process.env.NODE_ENV === 'development';
   const errorResponse = {
     success: false,
     error: {
       code: appError.code,
       message: appError.message,
-      ...(appError.context && { context: appError.context }),
-      ...(process.env.NODE_ENV === 'development' && {
+      ...(isDevelopment && appError.context && { context: appError.context }),
+      ...(isDevelopment && {
         stack: appError.stack,
         details: error instanceof ZodError ? formatZodError(error) : undefined,
       }),
