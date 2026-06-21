@@ -24,7 +24,6 @@ module.exports = {
     '!src/react-app-env.d.ts',
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
     global: {
       branches: 60,

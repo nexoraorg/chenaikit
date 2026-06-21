@@ -6,12 +6,19 @@ if (process.env.SENTRY_DSN) {
 
 import express, { Application } from 'express';
 import healthRouter, { registerHealthCheck } from './routes/health';
+import { generalRateLimit } from './middleware/rateLimiter';
+import v1Router from './routes/v1';
+import v2Router from './routes/v2';
 
 const app: Application = express();
 
 app.use(express.json());
 
-// Health checks
+// Apply general rate limit globally to all /api routes except health
+app.use('/api/v1', generalRateLimit.middleware());
+app.use('/api/v2', generalRateLimit.middleware());
+
+// Health checks (no rate limiting — monitoring tools need unthrottled access)
 app.use('/api', healthRouter);
 
 // Register service health checks
@@ -30,9 +37,9 @@ registerHealthCheck('ai', async () => {
   return { status: 'up' };
 });
 
-// Your API routes here
-// app.use('/api/credit', creditRouter);
-// app.use('/api/fraud', fraudRouter);
+// API routes
+app.use('/api/v1', v1Router);
+app.use('/api/v2', v2Router);
 
 // Error handling (must be last)
 if (process.env.SENTRY_DSN) {

@@ -13,7 +13,7 @@ import {
 import { supportedLanguages, changeLanguage, getCurrentLanguage } from '../i18n/config';
 
 interface LanguageSwitcherProps {
-  variant?: 'select' | 'chip' | 'avatar';
+  variant?: 'select' | 'chip' | 'avatar' | 'compact';
   size?: 'small' | 'medium' | 'large';
   showFlag?: boolean;
   showNativeName?: boolean;
@@ -80,8 +80,6 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   );
 
   const renderChipVariant = () => {
-    const currentLangInfo = getCurrentLanguageInfo();
-    
     return (
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         {supportedLanguages.map((language) => (
@@ -115,7 +113,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 
   const renderAvatarVariant = () => {
     const currentLangInfo = getCurrentLanguageInfo();
-    
+
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Tooltip title={i18n.t('settings.language')}>
@@ -187,6 +185,8 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       return renderChipVariant();
     case 'avatar':
       return renderAvatarVariant();
+    case 'compact':
+      return renderCompactVariant();
     default:
       return renderSelectVariant();
   }
@@ -245,7 +245,6 @@ export const MobileLanguageSelector: React.FC = () => {
 
 // Language info display component
 export const LanguageInfo: React.FC = () => {
-  const { t, i18n } = useTranslation();
   const currentLang = getCurrentLanguage();
   const currentLangInfo = supportedLanguages.find(lang => lang.code === currentLang) || supportedLanguages[0];
 

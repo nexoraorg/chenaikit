@@ -26,7 +26,6 @@ module.exports = {
     'node_modules/(?!(uuid)/)'
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
     global: {
       branches: 70,

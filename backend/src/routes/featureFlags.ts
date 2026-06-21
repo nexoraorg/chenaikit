@@ -3,11 +3,22 @@ import { featureFlagService } from '../services/featureFlagService';
 import { featureFlagMiddleware } from '../middleware/featureFlags';
 import { FeatureFlagCreateInput, FeatureFlagUpdateInput, FlagContext } from '../models/FeatureFlag';
 import { log } from '../utils/logger';
+import { generalRateLimit, RateLimiter } from '../middleware/rateLimiter';
+
+// Mutations (create/update/delete/toggle) get a stricter limit
+const flagWriteLimit = new RateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,
+  message: 'Too many flag write requests. Please slow down.',
+});
 
 export function createFeatureFlagRouter(): Router {
   const router = Router();
 
   router.use(featureFlagMiddleware());
+
+  // Read endpoints — general rate limit
+  router.use(generalRateLimit.middleware());
 
   router.get('/evaluate', (_req: Request, res: Response) => {
     try {
@@ -51,7 +62,9 @@ export function createFeatureFlagRouter(): Router {
 
   router.get('/audit-log', (req: Request, res: Response) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 100;
+      const rawLimit = parseInt(req.query.limit as string);
+      // Clamp to a safe range — no upper bound lets callers DoS with huge allocations
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 1000) : 100;
       const entries = featureFlagService.getAuditLog(limit);
       res.json({ success: true, data: entries });
     } catch (error) {
@@ -119,7 +132,7 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.put('/:key', (req: Request, res: Response) => {
+  router.put('/:key', flagWriteLimit.middleware(), (req: Request, res: Response) => {
     try {
       const input: FeatureFlagUpdateInput = req.body;
       const flag = featureFlagService.updateFlag(req.params.key, input);
@@ -148,7 +161,7 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.delete('/:key', (req: Request, res: Response) => {
+  router.delete('/:key', flagWriteLimit.middleware(), (req: Request, res: Response) => {
     try {
       featureFlagService.deleteFlag(req.params.key);
       res.json({
@@ -179,7 +192,7 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.post('/:key/toggle', (req: Request, res: Response) => {
+  router.post('/:key/toggle', flagWriteLimit.middleware(), (req: Request, res: Response) => {
     try {
       const flag = featureFlagService.toggleFlag(req.params.key);
       res.json({ success: true, data: flag });
@@ -207,7 +220,7 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.post('/:key/override', (req: Request, res: Response) => {
+  router.post('/:key/override', flagWriteLimit.middleware(), (req: Request, res: Response) => {
     try {
       const { value } = req.body;
       featureFlagService.setOverride(req.params.key, value);
@@ -239,7 +252,7 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.delete('/:key/override', (req: Request, res: Response) => {
+  router.delete('/:key/override', flagWriteLimit.middleware(), (req: Request, res: Response) => {
     try {
       featureFlagService.clearOverride(req.params.key);
       res.json({
@@ -276,7 +289,7 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.post('/', (req: Request, res: Response) => {
+  router.post('/', flagWriteLimit.middleware(), (req: Request, res: Response) => {
     try {
       const input: FeatureFlagCreateInput = req.body;
       const flag = featureFlagService.createFlag(input);

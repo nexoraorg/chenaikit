@@ -23,6 +23,6 @@ export class User {
   @UpdateDateColumn()
   updatedAt!: Date;
 
-  @OneToMany(() => Account, account => account.user)
+  @OneToMany(() => Account, (account: Account) => account.user)
   accounts!: Account[];
 }

@@ -1,17 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { HealthCheckResult } from '../types/monitoring';
 import { log } from '../utils/logger';
-import { metricsService } from '../services/metricsService';
 
 const router: Router = Router();
 const startTime = Date.now();
-
-interface HealthStatus {
-  status: 'healthy' | 'degraded' | 'unhealthy';
-  timestamp: string;
-  uptime: number;
-  services: Record<string, ServiceHealth>;
-}
 
 interface ServiceHealth {
   status: 'up' | 'down';
@@ -36,44 +28,6 @@ export function registerHealthCheck(
 ): void {
   dependencies.push({ name, check, critical });
   log.info(`Health check registered: ${name}`, { critical });
-}
-
-/**
- * Check database connectivity
- */
-async function checkDatabase(): Promise<{ status: 'up' | 'down'; message?: string; responseTime: number }> {
-  const start = Date.now();
-  try {
-    const responseTime = Date.now() - start;
-    return { status: 'up', responseTime };
-  } catch (error) {
-    const err = error as Error;
-    const responseTime = Date.now() - start;
-    return {
-      status: 'down',
-      message: err.message,
-      responseTime
-    };
-  }
-}
-
-/**
- * Check Redis connectivity
- */
-async function checkRedis(): Promise<{ status: 'up' | 'down'; message?: string; responseTime: number }> {
-  const start = Date.now();
-  try {
-    const responseTime = Date.now() - start;
-    return { status: 'up', responseTime };
-  } catch (error) {
-    const err = error as Error;
-    const responseTime = Date.now() - start;
-    return {
-      status: 'down',
-      message: err.message,
-      responseTime
-    };
-  }
 }
 
 /**

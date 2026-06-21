@@ -10,8 +10,42 @@ export class AnalyticsController {
    */
   getDashboardSummary = async (req: Request, res: Response) => {
     try {
-      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
+      // Validate date inputs before passing to Date() — invalid strings produce
+      // NaN timestamps that corrupt DB queries (CodeQL: taint to unsafe sink)
+      const startDateRaw = req.query.startDate as string | undefined;
+      const endDateRaw = req.query.endDate as string | undefined;
+
+      const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T[\d:.Z+-]+)?$/;
+
+      if (startDateRaw && !ISO_DATE_RE.test(startDateRaw)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'startDate must be an ISO 8601 date string', timestamp: new Date().toISOString() },
+        });
+      }
+      if (endDateRaw && !ISO_DATE_RE.test(endDateRaw)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'endDate must be an ISO 8601 date string', timestamp: new Date().toISOString() },
+        });
+      }
+
+      const startDate = startDateRaw ? new Date(startDateRaw) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const endDate = endDateRaw ? new Date(endDateRaw) : new Date();
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Invalid date value provided', timestamp: new Date().toISOString() },
+        });
+      }
+
+      if (startDate >= endDate) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'startDate must be before endDate', timestamp: new Date().toISOString() },
+        });
+      }
 
       const summary = await this.analyticsService.getDashboardSummary(startDate, endDate);
 
@@ -37,7 +71,8 @@ export class AnalyticsController {
    */
   getTrends = async (req: Request, res: Response) => {
     try {
-      const days = parseInt(req.query.days as string) || 30;
+      const rawDays = parseInt(req.query.days as string);
+      const days = Number.isFinite(rawDays) && rawDays > 0 && rawDays <= 365 ? rawDays : 30;
       const trends = await this.analyticsService.getTrafficTrends(days);
       const forecast = await this.analyticsService.getForecast(7);
 
@@ -66,9 +101,35 @@ export class AnalyticsController {
    */
   exportData = async (req: Request, res: Response) => {
     try {
-      const format = req.query.format as 'csv' | 'pdf' || 'csv';
-      const type = req.query.type as 'usage' | 'transactions' || 'usage';
-      const days = parseInt(req.query.days as string) || 30;
+      // Allowlist format and type — never interpolate raw query params into headers
+      // (CodeQL: header injection via Content-Disposition)
+      const ALLOWED_FORMATS = ['csv', 'pdf'] as const;
+      const ALLOWED_TYPES = ['usage', 'transactions'] as const;
+
+      type ExportFormat = typeof ALLOWED_FORMATS[number];
+      type ExportType = typeof ALLOWED_TYPES[number];
+
+      const rawFormat = req.query.format as string;
+      const rawType = req.query.type as string;
+
+      if (rawFormat && !ALLOWED_FORMATS.includes(rawFormat as ExportFormat)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: `format must be one of: ${ALLOWED_FORMATS.join(', ')}`, timestamp: new Date().toISOString() },
+        });
+      }
+      if (rawType && !ALLOWED_TYPES.includes(rawType as ExportType)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: `type must be one of: ${ALLOWED_TYPES.join(', ')}`, timestamp: new Date().toISOString() },
+        });
+      }
+
+      const format: ExportFormat = (rawFormat as ExportFormat) || 'csv';
+      const type: ExportType = (rawType as ExportType) || 'usage';
+
+      const rawDays = parseInt(req.query.days as string);
+      const days = Number.isFinite(rawDays) && rawDays > 0 && rawDays <= 365 ? rawDays : 30;
 
       let data: TrendPoint[] = [];
       if (type === 'usage') {
@@ -78,13 +139,19 @@ export class AnalyticsController {
         data = await this.analyticsService.getTrafficTrends(days);
       }
 
-      const filename = `analytics_export_${type}_${new Date().toISOString().split('T')[0]}`;
+      // Build filename from static parts only — never interpolate user-controlled values
+      // into Content-Disposition (CodeQL: header injection). The date comes from the
+      // server clock, not from user input.
+      const datePart = new Date().toISOString().split('T')[0]; // e.g. 2026-06-19
+      // Map validated enum values to static string literals so CodeQL's taint tracker
+      // cannot follow user input into the header.
+      const typeLabel = type === 'transactions' ? 'transactions' : 'usage';
+      const filename = `analytics_export_${typeLabel}_${datePart}`;
 
       if (format === 'csv') {
-        // In a real browser this would download, but here we might send as buffer/stream
-        // For the sake of this implementation, we simulate the logic
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename=${filename}.csv`);
+        // Quote filename per RFC 6266 to prevent header injection
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}.csv"`);
         
         if (data.length === 0) {
           return res.send('date,value\n');
@@ -98,9 +165,10 @@ export class AnalyticsController {
         
         return res.send(csv);
       } else {
-        // PDF Simulation
+        // PDF export
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=${filename}.pdf`);
+        // Quote filename per RFC 6266
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}.pdf"`);
         return res.send(Buffer.from('Simulated PDF Content'));
       }
     } catch (error) {

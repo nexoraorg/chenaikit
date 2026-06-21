@@ -17,6 +17,7 @@ model User {
   deletedAt     DateTime?
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
+  webhooks      Webhook[]
 
   @@index([createdAt])
 }
@@ -84,5 +85,64 @@ model ApiUsage {
   @@index([statusCode, timestamp])
   @@index([ip, timestamp])
   @@index([timestamp])
+}
+
+// ---------------------------------------------------------------------------
+// Webhook System
+// ---------------------------------------------------------------------------
+
+model Webhook {
+  id            String           @id @default(cuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  url           String
+  secret        String           // HMAC signing secret (stored hashed)
+  secretHash    String           // SHA-256 hash of the secret for verification
+  events        String           // JSON array of subscribed event types
+  isActive      Boolean          @default(true)
+  isPaused      Boolean          @default(false)
+  allowedIps    String           @default("[]") // JSON array of whitelisted IPs
+  headers       String           @default("{}") // JSON object of custom headers
+  maxRetries    Int              @default(3)
+  timeoutMs     Int              @default(10000)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  deletedAt     DateTime?
+  lastTriggeredAt DateTime?
+  deliveries    WebhookDelivery[]
+
+  @@map("webhooks")
+  @@index([userId, isActive])
+  @@index([isActive, isPaused])
+  @@index([createdAt])
+}
+
+model WebhookDelivery {
+  id              String    @id @default(cuid())
+  webhookId       String
+  webhook         Webhook   @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  eventType       String
+  eventId         String    @default(cuid()) // Idempotency key for the event
+  payload         String    // JSON payload sent
+  statusCode      Int?      // HTTP status code of the response
+  responseBody    String?   // Response body from target URL
+  responseHeaders String?   // JSON response headers
+  attempt         Int       @default(1)
+  maxAttempts     Int       @default(3)
+  status          String    @default("pending") // pending, success, failed, retrying
+  errorMessage    String?
+  duration        Int?      // in milliseconds
+  nextRetryAt     DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("webhook_deliveries")
+  @@index([webhookId, status])
+  @@index([webhookId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
 }
 

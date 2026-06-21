@@ -1,6 +1,3 @@
-import { renderHook, waitFor } from '@testing-library/react';
-import { act } from 'react-dom/test-utils';
-
 // Mock hooks tests - add actual hooks when they exist
 describe('Custom Hooks', () => {
   describe('useApi', () => {

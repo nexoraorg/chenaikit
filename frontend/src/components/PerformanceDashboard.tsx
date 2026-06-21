@@ -27,7 +27,6 @@ import {
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
-  Info as InfoIcon,
 } from '@mui/icons-material';
 
 // Performance data types
@@ -136,9 +135,8 @@ const PerformanceDashboard: React.FC = () => {
       setMetrics(data.metrics);
       setIssues(data.issues || []);
       setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Error fetching performance data:', error);
-      // Set mock data for demonstration
+    } catch (_error) {
+      // Set mock data for demonstration when the API is unavailable
       const mockMetrics: PerformanceMetrics = {
         api: {
           avgResponseTime: 180,
@@ -214,14 +212,6 @@ const PerformanceDashboard: React.FC = () => {
       if (ratio <= 1.2) return <WarningIcon color="warning" />;
       return <ErrorIcon color="error" />;
     }
-  };
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const renderMetricCard = (title: string, value: number, threshold: number, unit: string, inverse = false) => {

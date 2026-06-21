@@ -20,6 +20,13 @@ module.exports = {
   },
   overrides: [
     {
+      // CLI commands and entry point intentionally use console for user-facing output
+      files: ['src/commands/**/*.ts', 'src/index.ts'],
+      rules: {
+        'no-console': 'off',
+      },
+    },
+    {
       files: ['src/__tests__/**', '**/*.test.ts'],
       env: {
         jest: true,

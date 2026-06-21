@@ -1,6 +1,5 @@
 import { createCorsMiddleware } from '../cors';
 import type { CorsConfig } from '../../config/security';
-import type { Request, Response } from 'express';
 
 const baseConfig: CorsConfig = {
   origins: [],
@@ -10,22 +9,6 @@ const baseConfig: CorsConfig = {
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['X-Request-ID'],
-};
-
-const makeReqRes = (origin?: string) => {
-  const headers: Record<string, string> = {};
-  const req = {
-    method: 'GET',
-    headers: origin ? { origin } : {},
-  } as unknown as Request;
-  const res = {
-    getHeader: (name: string) => headers[name.toLowerCase()],
-    setHeader: (name: string, value: string) => {
-      headers[name.toLowerCase()] = value;
-    },
-    headers,
-  } as unknown as Response;
-  return { req, res, headers };
 };
 
 describe('createCorsMiddleware', () => {

@@ -1,5 +1,5 @@
 import { ApiKeyService } from '../apiKeyService';
-import { ApiKeyCreateInput, ApiKeyUpdateInput, ApiTier } from '../../models/ApiKey';
+import { ApiKeyCreateInput, ApiKeyUpdateInput } from '../../models/ApiKey';
 
 // Create a mock interface that matches PrismaClient structure
 interface MockPrismaClient {

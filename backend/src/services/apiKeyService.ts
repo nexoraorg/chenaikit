@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import { ApiKey, ApiKeyCreateInput, ApiKeyUpdateInput } from '../models/ApiKey';
 import { createHash, randomBytes } from 'crypto';
 import { log } from '../utils/logger';
-import { DatabaseError, NotFoundError, ValidationError } from '../utils/errors';
 
 export class ApiKeyService {
   constructor(private prisma: PrismaClient) {}
