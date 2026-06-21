@@ -25,6 +25,7 @@ import {
   ExpandLess
 } from '@mui/icons-material';
 import { RiskFactorsListProps } from '../types/credit-score';
+import { SkeletonCard } from './SkeletonCard';
 
 export const RiskFactorsList: React.FC<RiskFactorsListProps> = ({
   factors,
@@ -84,23 +85,7 @@ export const RiskFactorsList: React.FC<RiskFactorsListProps> = ({
   };
 
   if (loading) {
-    return (
-      <Card sx={{ minHeight: 300 }}>
-        <Box sx={{
-          height: 300,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <Box sx={{ textAlign: 'center' }}>
-            <CircularProgress size={60} />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              Loading risk factors...
-            </Typography>
-          </Box>
-        </Box>
-      </Card>
-    );
+    return <SkeletonCard lines={maxItems || 5} />;
   }
 
   if (error) {

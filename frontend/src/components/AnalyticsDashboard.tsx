@@ -25,6 +25,7 @@ import {
 import axios from 'axios';
 import { UsageChart } from './charts/UsageChart';
 import { DistributionChart } from './charts/DistributionChart';
+import { SkeletonCard, SkeletonChart } from './index';
 
 interface DashboardData {
   systemUsage: {
@@ -84,11 +85,6 @@ export const AnalyticsDashboard: React.FC = () => {
     window.open(`/api/v1/analytics/export?format=${format}&days=${timeRange}`, '_blank');
   };
 
-  if (loading) return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-      <CircularProgress size={60} />
-    </Box>
-  );
 
   if (error) return (
     <Box sx={{ p: 4 }}>
@@ -128,36 +124,48 @@ export const AnalyticsDashboard: React.FC = () => {
 
       {/* KPI Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <KpiCard 
-          title="Total Requests" 
-          value={dashboardData?.systemUsage.totalRequests.toLocaleString() || '0'} 
-          icon={<Assessment color="primary" />} 
-          color="#3B82F6"
-        />
-        <KpiCard 
-          title="Avg Latency" 
-          value={`${dashboardData?.systemUsage.avgLatency.toFixed(2)}ms` || '0ms'} 
-          icon={<TrendingUp sx={{ color: '#10B981' }} />} 
-          color="#10B981"
-        />
-        <KpiCard 
-          title="Avg Credit Score" 
-          value={dashboardData?.aiPerformance.avgCreditScore.toFixed(0) || '0'} 
-          icon={<BugReport color="warning" />} 
-          color="#F59E0B"
-        />
-        <KpiCard 
-          title="Blockchain Vol" 
-          value={dashboardData?.blockchainActivity.totalVolume.toLocaleString() || '0'} 
-          icon={<Public color="secondary" />} 
-          color="#8B5CF6"
-        />
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <SkeletonCard lines={2} />
+            </Grid>
+          ))
+        ) : (
+          <>
+            <KpiCard 
+              title="Total Requests" 
+              value={dashboardData?.systemUsage.totalRequests.toLocaleString() || '0'} 
+              icon={<Assessment color="primary" />} 
+              color="#3B82F6"
+            />
+            <KpiCard 
+              title="Avg Latency" 
+              value={`${dashboardData?.systemUsage.avgLatency.toFixed(2)}ms` || '0ms'} 
+              icon={<TrendingUp sx={{ color: '#10B981' }} />} 
+              color="#10B981"
+            />
+            <KpiCard 
+              title="Avg Credit Score" 
+              value={dashboardData?.aiPerformance.avgCreditScore.toFixed(0) || '0'} 
+              icon={<BugReport color="warning" />} 
+              color="#F59E0B"
+            />
+            <KpiCard 
+              title="Blockchain Vol" 
+              value={dashboardData?.blockchainActivity.totalVolume.toLocaleString() || '0'} 
+              icon={<Public color="secondary" />} 
+              color="#8B5CF6"
+            />
+          </>
+        )}
       </Grid>
 
       <Grid container spacing={3}>
         {/* Main Trend Chart */}
         <Grid item xs={12} lg={8}>
-          {trendData && (
+          {loading ? (
+            <SkeletonChart height={350} />
+          ) : trendData && (
             <UsageChart 
               data={trendData.history} 
               forecast={trendData.forecast} 
@@ -168,7 +176,9 @@ export const AnalyticsDashboard: React.FC = () => {
 
         {/* AI Distribution Chart */}
         <Grid item xs={12} md={6} lg={4}>
-          {dashboardData && (
+          {loading ? (
+            <SkeletonChart height={300} />
+          ) : dashboardData && (
             <DistributionChart 
               data={dashboardData.aiPerformance.riskDistribution} 
               title="Risk Level Distribution" 
@@ -178,7 +188,9 @@ export const AnalyticsDashboard: React.FC = () => {
 
         {/* Asset Distribution */}
         <Grid item xs={12} md={6} lg={4}>
-          {dashboardData && (
+          {loading ? (
+            <SkeletonChart height={300} />
+          ) : dashboardData && (
             <DistributionChart 
               data={dashboardData.blockchainActivity.assetDistribution} 
               title="Blockchain Assets" 
@@ -188,18 +200,22 @@ export const AnalyticsDashboard: React.FC = () => {
 
         {/* System Health Summary */}
         <Grid item xs={12} lg={8}>
-          <Paper sx={{ p: 3, borderRadius: 2 }}>
-            <Typography variant="h6" gutterBottom color="primary" sx={{ fontWeight: 600 }}>
-              System Health & Performance
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Grid container spacing={2}>
-              <HealthStat label="Success Rate" value={`${dashboardData?.systemUsage.successRate.toFixed(1)}%`} status={dashboardData?.systemUsage.successRate && dashboardData.systemUsage.successRate > 95 ? 'good' : 'warning'} />
-              <HealthStat label="Error Rate" value={`${dashboardData?.systemUsage.errorRate.toFixed(1)}%`} status={dashboardData?.systemUsage.errorRate && dashboardData.systemUsage.errorRate < 5 ? 'good' : 'critical'} />
-              <HealthStat label="Fraud Alerts" value={dashboardData?.aiPerformance.totalFraudAlerts.toString() || '0'} status={dashboardData?.aiPerformance.totalFraudAlerts === 0 ? 'good' : 'warning'} />
-              <HealthStat label="Resolved Alerts" value={dashboardData?.aiPerformance.resolvedAlerts.toString() || '0'} status="none" />
-            </Grid>
-          </Paper>
+          {loading ? (
+            <SkeletonCard lines={4} />
+          ) : (
+            <Paper sx={{ p: 3, borderRadius: 2 }}>
+              <Typography variant="h6" gutterBottom color="primary" sx={{ fontWeight: 600 }}>
+                System Health & Performance
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Grid container spacing={2}>
+                <HealthStat label="Success Rate" value={`${dashboardData?.systemUsage.successRate.toFixed(1)}%`} status={dashboardData?.systemUsage.successRate && dashboardData.systemUsage.successRate > 95 ? 'good' : 'warning'} />
+                <HealthStat label="Error Rate" value={`${dashboardData?.systemUsage.errorRate.toFixed(1)}%`} status={dashboardData?.systemUsage.errorRate && dashboardData.systemUsage.errorRate < 5 ? 'good' : 'critical'} />
+                <HealthStat label="Fraud Alerts" value={dashboardData?.aiPerformance.totalFraudAlerts.toString() || '0'} status={dashboardData?.aiPerformance.totalFraudAlerts === 0 ? 'good' : 'warning'} />
+                <HealthStat label="Resolved Alerts" value={dashboardData?.aiPerformance.resolvedAlerts.toString() || '0'} status="none" />
+              </Grid>
+            </Paper>
+          )}
         </Grid>
       </Grid>
     </Box>
