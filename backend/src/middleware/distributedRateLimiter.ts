@@ -19,6 +19,25 @@ export interface DistributedRateLimitOptions {
   onLimitReached?: (req: Request, info: RateLimitInfo) => void;
 }
 
+const SLIDING_WINDOW_SCRIPT = `
+  local key = KEYS[1]
+  local now = tonumber(ARGV[1])
+  local windowMs = tonumber(ARGV[2])
+  local maxCount = tonumber(ARGV[3])
+  local member = ARGV[4]
+  local windowStart = now - windowMs
+
+  redis.call('ZREMRANGEBYSCORE', key, 0, windowStart)
+  local count = redis.call('ZCARD', key)
+
+  if count < maxCount then
+    redis.call('ZADD', key, now, member)
+    redis.call('EXPIRE', key, math.ceil(windowMs / 1000))
+    return {1, count + 1}
+  end
+  return {0, count}
+`;
+
 export class DistributedRateLimiter {
   private redis: Redis;
   private onLimitReached?: (req: Request, info: RateLimitInfo) => void;
@@ -28,31 +47,34 @@ export class DistributedRateLimiter {
     this.onLimitReached = options.onLimitReached;
   }
 
+  async close(): Promise<void> {
+    await this.redis.quit();
+  }
+
   async checkSlidingWindow(
     key: string,
     rule: RateLimitRule,
     scope: RateLimitInfo['scope'],
   ): Promise<{ allowed: boolean; info: RateLimitInfo }> {
     const now = Date.now();
-    const windowStart = now - rule.windowMs;
     const member = `${now}:${Math.random().toString(36).slice(2, 8)}`;
 
     try {
-      const pipeline = this.redis.pipeline();
-      pipeline.zremrangebyscore(key, 0, windowStart);
-      pipeline.zcard(key);
-      pipeline.expire(key, Math.ceil(rule.windowMs / 1000));
-      const results = await pipeline.exec();
+      const results = (await this.redis.eval(
+        SLIDING_WINDOW_SCRIPT,
+        1,
+        key,
+        now.toString(),
+        rule.windowMs.toString(),
+        rule.max.toString(),
+        member,
+      )) as [number, number];
 
-      const currentCount = (results?.[1]?.[1] as number) || 0;
-      const allowed = currentCount < rule.max;
-
-      if (allowed) {
-        await this.redis.zadd(key, now, member);
-      }
+      const allowed = results[0] === 1;
+      const currentCount = results[1];
 
       const resetTime = new Date(now + rule.windowMs);
-      const remaining = Math.max(0, rule.max - currentCount - (allowed ? 1 : 0));
+      const remaining = allowed ? Math.max(0, rule.max - currentCount) : 0;
       const retryAfter = allowed
         ? undefined
         : Math.max(1, Math.ceil((resetTime.getTime() - now) / 1000));
@@ -133,8 +155,8 @@ export class DistributedRateLimiter {
       }
 
       try {
-        const { scope } = resolveRateLimitRule(req);
         const base = resolveRateLimitRule(req);
+        const { scope } = base;
         const key = `${base.key}:${keySuffix}`;
         const result = await this.checkSlidingWindow(key, rule, scope);
 
@@ -143,6 +165,7 @@ export class DistributedRateLimiter {
         if (!result.allowed) {
           metricsService.recordRateLimitExceeded(scope);
           logRateLimitViolation(req, result.info);
+          this.onLimitReached?.(req, result.info);
           sendRateLimitExceeded(res, result.info);
           return;
         }
@@ -171,6 +194,9 @@ export function getDistributedRateLimiter(): DistributedRateLimiter {
   return cachedLimiter;
 }
 
-export function resetDistributedRateLimiter(): void {
+export async function resetDistributedRateLimiter(): Promise<void> {
+  if (cachedLimiter) {
+    await cachedLimiter.close();
+  }
   cachedLimiter = null;
 }

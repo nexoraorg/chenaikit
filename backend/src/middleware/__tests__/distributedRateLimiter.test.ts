@@ -15,8 +15,12 @@ function makeReqRes() {
 
   const headers: Record<string, string> = {};
   const res = {
-    set: jest.fn((values: Record<string, string>) => {
-      Object.assign(headers, values);
+    set: jest.fn((key: string | Record<string, string>, value?: string) => {
+      if (typeof key === 'string') {
+        headers[key] = value ?? '';
+      } else {
+        Object.assign(headers, key);
+      }
     }),
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
@@ -26,6 +30,8 @@ function makeReqRes() {
 }
 
 describe('DistributedRateLimiter', () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+
   beforeEach(() => {
     resetRateLimitConfigCache();
     process.env.RATE_LIMIT_ENABLED = 'true';
@@ -35,21 +41,12 @@ describe('DistributedRateLimiter', () => {
   afterEach(() => {
     resetRateLimitConfigCache();
     delete process.env.RATE_LIMIT_ENABLED;
+    process.env.NODE_ENV = originalNodeEnv;
   });
 
   it('allows requests under the configured limit', async () => {
     const redis = {
-      pipeline: jest.fn().mockReturnValue({
-        zremrangebyscore: jest.fn().mockReturnThis(),
-        zcard: jest.fn().mockReturnThis(),
-        expire: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue([
-          [null, 0],
-          [null, 1],
-          [null, 1],
-        ]),
-      }),
-      zadd: jest.fn().mockResolvedValue(1),
+      eval: jest.fn().mockResolvedValue([1, 2]),
     };
 
     const limiter = new DistributedRateLimiter({ redis: redis as never });
@@ -66,17 +63,7 @@ describe('DistributedRateLimiter', () => {
 
   it('returns 429 with headers when the limit is exceeded', async () => {
     const redis = {
-      pipeline: jest.fn().mockReturnValue({
-        zremrangebyscore: jest.fn().mockReturnThis(),
-        zcard: jest.fn().mockReturnThis(),
-        expire: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue([
-          [null, 0],
-          [null, 100],
-          [null, 1],
-        ]),
-      }),
-      zadd: jest.fn(),
+      eval: jest.fn().mockResolvedValue([0, 100]),
     };
 
     const limiter = new DistributedRateLimiter({ redis: redis as never });
@@ -87,6 +74,9 @@ describe('DistributedRateLimiter', () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(429);
+    expect(headers['RateLimit-Limit']).toBeDefined();
+    expect(headers['RateLimit-Remaining']).toBeDefined();
+    expect(headers['Retry-After']).toBeDefined();
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: false,

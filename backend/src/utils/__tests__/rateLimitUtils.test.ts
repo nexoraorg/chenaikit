@@ -24,6 +24,13 @@ function makeReq(overrides: Partial<Request> = {}): Request {
 }
 
 describe('rateLimitUtils', () => {
+  const originalEnv = {
+    RATE_LIMIT_ENABLED: process.env.RATE_LIMIT_ENABLED,
+    RATE_LIMIT_ADMIN_BYPASS_TOKEN: process.env.RATE_LIMIT_ADMIN_BYPASS_TOKEN,
+    RATE_LIMIT_WHITELIST_IPS: process.env.RATE_LIMIT_WHITELIST_IPS,
+    NODE_ENV: process.env.NODE_ENV,
+  };
+
   beforeEach(() => {
     resetRateLimitConfigCache();
     process.env.RATE_LIMIT_ENABLED = 'true';
@@ -32,8 +39,10 @@ describe('rateLimitUtils', () => {
 
   afterEach(() => {
     resetRateLimitConfigCache();
-    delete process.env.RATE_LIMIT_ENABLED;
-    delete process.env.RATE_LIMIT_ADMIN_BYPASS_TOKEN;
+    process.env.RATE_LIMIT_ENABLED = originalEnv.RATE_LIMIT_ENABLED;
+    process.env.RATE_LIMIT_ADMIN_BYPASS_TOKEN = originalEnv.RATE_LIMIT_ADMIN_BYPASS_TOKEN;
+    process.env.RATE_LIMIT_WHITELIST_IPS = originalEnv.RATE_LIMIT_WHITELIST_IPS;
+    process.env.NODE_ENV = originalEnv.NODE_ENV;
   });
 
   it('normalizes versioned and unversioned API paths', () => {
@@ -50,7 +59,7 @@ describe('rateLimitUtils', () => {
     const resolved = resolveRateLimitRule(req);
 
     expect(resolved.scope).toBe('ip');
-    expect(resolved.key).toContain('rate_limit:ip:203.0.113.10');
+    expect(resolved.key).toBe('rate_limit:ip:203.0.113.10');
     expect(resolved.rule.max).toBeGreaterThan(0);
   });
 
@@ -65,7 +74,7 @@ describe('rateLimitUtils', () => {
     const resolved = resolveRateLimitRule(req);
 
     expect(resolved.scope).toBe('user');
-    expect(resolved.key).toContain('rate_limit:user:user-1');
+    expect(resolved.key).toBe('rate_limit:user:user-1');
   });
 
   it('resolves tier-based limits for API keys', () => {
@@ -78,6 +87,7 @@ describe('rateLimitUtils', () => {
     const resolved = resolveRateLimitRule(req);
 
     expect(resolved.scope).toBe('api_key');
+    expect(resolved.key).toBe('rate_limit:api_key:key-1');
     expect(resolved.rule.max).toBe(loadRateLimitConfig().tierLimits.PRO.max);
   });
 
@@ -90,6 +100,7 @@ describe('rateLimitUtils', () => {
     const resolved = resolveRateLimitRule(req);
 
     expect(resolved.rule.max).toBe(10);
+    expect(resolved.key).toBe('rate_limit:ip:203.0.113.10:POST /auth/login');
   });
 
   it('skips health and metrics paths', () => {
@@ -132,10 +143,19 @@ describe('rateLimitUtils', () => {
     ).toBe(true);
   });
 
-  it('reads forwarded client IPs', () => {
+  it('prefers Express req.ip over spoofable forwarded headers', () => {
     const req = makeReq({
+      ip: '203.0.113.10',
       headers: { 'x-forwarded-for': '198.51.100.1, 203.0.113.10' },
     });
-    expect(getClientIp(req)).toBe('198.51.100.1');
+    expect(getClientIp(req)).toBe('203.0.113.10');
+  });
+
+  it('falls back to socket remote address when req.ip is missing', () => {
+    const req = makeReq({
+      ip: undefined,
+      socket: { remoteAddress: '10.0.0.5' },
+    });
+    expect(getClientIp(req)).toBe('10.0.0.5');
   });
 });

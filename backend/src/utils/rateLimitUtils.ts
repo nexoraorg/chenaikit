@@ -21,11 +21,10 @@ export interface ResolvedRateLimit {
 }
 
 export function getClientIp(req: Request): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string' && forwarded.length > 0) {
-    return forwarded.split(',')[0]?.trim() || 'unknown';
+  if (req.ip) {
+    return req.ip;
   }
-  return req.ip || req.socket.remoteAddress || 'unknown';
+  return req.socket.remoteAddress || 'unknown';
 }
 
 export function normalizeRoutePath(path: string): string {
@@ -58,25 +57,31 @@ export function resolveRateLimitRule(req: Request): ResolvedRateLimit {
 
   if (req.apiKey) {
     const tier = req.apiKey.tier as ApiTier;
+    const baseKey = `rate_limit:api_key:${req.apiKey.id}`;
+    const rule = endpointRule ?? config.tierLimits[tier];
     return {
-      key: `rate_limit:api_key:${req.apiKey.id}:${endpointKey}`,
-      rule: endpointRule ?? config.tierLimits[tier],
+      key: endpointRule ? `${baseKey}:${endpointKey}` : baseKey,
+      rule,
       scope: 'api_key',
     };
   }
 
   if (req.user?.id) {
+    const baseKey = `rate_limit:user:${req.user.id}`;
+    const rule = endpointRule ?? config.defaultIpLimit;
     return {
-      key: `rate_limit:user:${req.user.id}:${endpointKey}`,
-      rule: endpointRule ?? config.defaultIpLimit,
+      key: endpointRule ? `${baseKey}:${endpointKey}` : baseKey,
+      rule,
       scope: 'user',
     };
   }
 
   const ip = getClientIp(req);
+  const baseKey = `rate_limit:ip:${ip}`;
+  const rule = endpointRule ?? config.defaultIpLimit;
   return {
-    key: `rate_limit:ip:${ip}:${endpointKey}`,
-    rule: endpointRule ?? config.defaultIpLimit,
+    key: endpointRule ? `${baseKey}:${endpointKey}` : baseKey,
+    rule,
     scope: 'ip',
   };
 }
