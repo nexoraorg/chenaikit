@@ -17,8 +17,7 @@ import {
   AccessTime
 } from '@mui/icons-material';
 import { CreditScoreCardProps, getScoreRating } from '../types/credit-score';
-import { useTranslation } from 'react-i18next';
-import { formatRelativeTime, formatDate as i18nFormatDate } from '../i18n/config';
+import { SkeletonCard } from './SkeletonCard';
 
 export const CreditScoreCard: React.FC<CreditScoreCardProps> = ({
   score,
@@ -32,23 +31,7 @@ export const CreditScoreCard: React.FC<CreditScoreCardProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   if (loading) {
-    return (
-      <Card
-        sx={{
-          minHeight: 280,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <Box sx={{ textAlign: 'center' }}>
-          <CircularProgress size={60} />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            {t('common.loading')}
-          </Typography>
-        </Box>
-      </Card>
-    );
+    return <SkeletonCard lines={4} />;
   }
 
   if (error) {
