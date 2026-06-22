@@ -29,6 +29,7 @@ import {
   Error as ErrorIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
+import { SkeletonCard, SkeletonTable } from './index';
 
 // Performance data types
 interface PerformanceMetrics {
@@ -480,8 +481,28 @@ const PerformanceDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="400px">
-        <Typography variant="h6">Loading performance metrics...</Typography>
+      <Box sx={{ width: '100%' }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4" component="h1">
+            Performance Dashboard
+          </Typography>
+        </Box>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs value={0}>
+            <Tab label="API Performance" />
+            <Tab label="Frontend Performance" />
+            <Tab label="Database Performance" />
+            <Tab label="Smart Contracts" />
+            <Tab label="Issues & Alerts" />
+          </Tabs>
+        </Box>
+        <Grid container spacing={3}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <SkeletonCard lines={4} />
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Box, Button, Typography } from '@mui/material';
 import { Logout as LogoutIcon, AccountCircle } from '@mui/icons-material';
@@ -10,14 +10,17 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { LoadingProvider } from './contexts/LoadingContext';
+import { LoadingSpinner } from './components/LoadingSpinner';
 import ToastContainer from './components/ToastContainer';
 import NotificationCenter from './components/NotificationCenter';
 import ThemeToggle from './components/ThemeToggle';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
 import './components/FormValidation.css';
+
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 // Stub page components for policy/auth routes
 const ForgotPasswordPage: React.FC = () => {
@@ -203,9 +206,11 @@ const DashboardShell: React.FC = () => {
       </header>
       
       <main style={{ minHeight: 'calc(100vh - 200px)' }}>
-        {activeDemo === 'analytics' && <AnalyticsDashboard />}
-        {activeDemo === 'forms' && <FormValidationExample />}
-        {activeDemo === 'visualization' && <DataVisualizationExample />}
+        <Suspense fallback={<LoadingSpinner fullScreen />}>
+          {activeDemo === 'analytics' && <AnalyticsDashboard />}
+          {activeDemo === 'forms' && <FormValidationExample />}
+          {activeDemo === 'visualization' && <DataVisualizationExample />}
+        </Suspense>
       </main>
       
       <Box
@@ -229,9 +234,11 @@ const DashboardShell: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ThemeProvider>
+      <LoadingProvider>
       <ToastProvider>
         <NotificationProvider>
         <AuthProvider>
+
         <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -360,6 +367,7 @@ const App: React.FC = () => {
       </AuthProvider>
       </NotificationProvider>
       </ToastProvider>
+      </LoadingProvider>
     </ThemeProvider>
   );
 };
