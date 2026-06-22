@@ -36,6 +36,7 @@ export class ContentBasedRecommender {
       this.itemVectors.set(it.id, vec);
 
       for (const key of Object.keys(vec)) {
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
         this.docFreq[key] = (this.docFreq[key] || 0) + 1;
       }
     }
@@ -44,6 +45,7 @@ export class ContentBasedRecommender {
     if (N > 0) {
       for (const [id, vec] of this.itemVectors) {
         for (const k of Object.keys(vec)) {
+          if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
           const idf = Math.log(1 + N / (1 + (this.docFreq[k] || 1)));
           vec[k] *= idf;
         }
@@ -55,18 +57,23 @@ export class ContentBasedRecommender {
     const out: Record<string, number> = {};
     if (!item.features) return out;
     for (const [k, v] of Object.entries(item.features)) {
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+      
       if (Array.isArray(v)) {
         for (const vv of v) {
           const token = `${k}:${String(vv)}`;
+          if (token === '__proto__' || token === 'constructor' || token === 'prototype') continue;
           out[token] = (out[token] || 0) + 1;
         }
       } else if (typeof v === 'string') {
         const token = `${k}:${v}`;
+        if (token === '__proto__' || token === 'constructor' || token === 'prototype') continue;
         out[token] = (out[token] || 0) + 1;
       } else if (typeof v === 'number') {
         out[k] = (out[k] || 0) + v;
       } else {
         const token = `${k}:${String(v)}`;
+        if (token === '__proto__' || token === 'constructor' || token === 'prototype') continue;
         out[token] = (out[token] || 0) + 1;
       }
     }
@@ -83,11 +90,15 @@ export class ContentBasedRecommender {
       const weight = typeof it.rating === 'number' ? it.rating : 1;
       totalWeight += weight;
       for (const k of Object.keys(itemVec)) {
+        if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
         profile[k] = (profile[k] || 0) + itemVec[k] * weight;
       }
     }
     if (totalWeight > 0) {
-      for (const k of Object.keys(profile)) profile[k] = profile[k] / totalWeight;
+      for (const k of Object.keys(profile)) {
+        if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+        profile[k] = profile[k] / totalWeight;
+      }
     }
     return { userId, vector: profile };
   }

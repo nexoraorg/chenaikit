@@ -4,6 +4,12 @@ import { TimeSeriesForecaster } from './timeSeriesForecaster';
 function groupBy<T, K extends string | number>(items: T[], getKey: (i: T) => K): Record<K, T[]> {
   return items.reduce((acc, item) => {
     const key = getKey(item);
+    
+    // Prevent prototype pollution
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      return acc;
+    }
+    
     (acc[key] = acc[key] || []).push(item);
     return acc;
   }, {} as Record<K, T[]>);

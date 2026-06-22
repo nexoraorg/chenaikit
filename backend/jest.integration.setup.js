@@ -21,7 +21,7 @@ jest.mock('axios', () => ({
 }));
 
 // Mock database
-jest.mock('../generated/prisma', () => ({
+jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn(() => ({
     apiKey: {
       create: jest.fn(),

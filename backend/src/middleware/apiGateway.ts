@@ -204,7 +204,11 @@ export class ApiGateway {
       try {
         // Transform headers
         if (options.requestHeaders) {
-          Object.assign(req.headers, options.requestHeaders);
+          const safeHeaders = { ...options.requestHeaders };
+          delete (safeHeaders as any).__proto__;
+          delete (safeHeaders as any).constructor;
+          delete (safeHeaders as any).prototype;
+          Object.assign(req.headers, safeHeaders);
         }
 
         // Transform query parameters
@@ -295,7 +299,7 @@ export class ApiGateway {
           setImmediate(async () => {
             try {
               await Promise.all([
-                self.apiKeyService.incrementUsage(apiKey.id),
+                self.apiKeyService.recordUsage(apiKey.id, res.statusCode < 400),
                 self.usageTrackingService.recordUsage(
                   self.usageTrackingService.extractUsageFromRequest(
                     req,

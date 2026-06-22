@@ -1,25 +1,34 @@
 import { ApiKey as PrismaApiKey, ApiUsage as PrismaApiUsage } from '@prisma/client';
 
 export type ApiTier = 'FREE' | 'PRO' | 'ENTERPRISE';
+export type ApiKeyType = 'READ_ONLY' | 'READ_WRITE' | 'ADMIN' | 'SCOPED' | 'TEMPORARY';
+export type ApiKeyStatus = 'ACTIVE' | 'REVOKED' | 'EXPIRED' | 'INACTIVE';
 
 export interface ApiKeyCreateInput {
   name: string;
   tier?: ApiTier;
+  type?: ApiKeyType;
   userId?: string;
   allowedIps?: string[];
   allowedPaths?: string[];
   expiresAt?: Date;
   usageQuota?: number;
+  permissions?: string[];
+  scopes?: string[];
 }
 
 export interface ApiKeyUpdateInput {
   name?: string;
   tier?: ApiTier;
+  type?: ApiKeyType;
+  status?: ApiKeyStatus;
   isActive?: boolean;
   allowedIps?: string[];
   allowedPaths?: string[];
   expiresAt?: Date;
   usageQuota?: number;
+  permissions?: string[];
+  scopes?: string[];
 }
 
 export interface ApiKeyUsage {
@@ -65,42 +74,71 @@ export interface ApiTierConfig {
 export class ApiKey {
   constructor(
     public id: string,
+    public publicId: string,
     public keyHash: string,
     public name: string,
+    public prefix: string,
+    public type: ApiKeyType,
+    public status: ApiKeyStatus,
+    public permissions: string[],
+    public scopes: string[],
     public tier: ApiTier,
     public userId: string | null,
     public isActive: boolean,
     public allowedIps: string[],
     public allowedPaths: string[],
     public createdAt: Date,
+    public updatedAt: Date,
     public expiresAt: Date | null,
-    public lastUsedAt: Date,
+    public lastUsedAt: Date | null,
     public usageQuota: number | null,
-    public currentUsage: number,
+    public usageCount: number,
+    public successCount: number,
+    public failureCount: number,
+    public rotatedFrom: string | null,
     public usageResetAt: Date
   ) {}
 
   static fromPrisma(prismaApiKey: PrismaApiKey): ApiKey {
     return new ApiKey(
       prismaApiKey.id,
+      prismaApiKey.publicId,
       prismaApiKey.keyHash,
       prismaApiKey.name,
+      prismaApiKey.prefix,
+      prismaApiKey.type as ApiKeyType,
+      prismaApiKey.status as ApiKeyStatus,
+      JSON.parse(prismaApiKey.permissions || '[]'),
+      JSON.parse(prismaApiKey.scopes || '[]'),
       prismaApiKey.tier as ApiTier,
       prismaApiKey.userId,
       prismaApiKey.isActive,
       JSON.parse(prismaApiKey.allowedIps || '[]'),
       JSON.parse(prismaApiKey.allowedPaths || '[]'),
       prismaApiKey.createdAt,
+      prismaApiKey.updatedAt,
       prismaApiKey.expiresAt,
       prismaApiKey.lastUsedAt,
       prismaApiKey.usageQuota,
-      prismaApiKey.currentUsage,
+      prismaApiKey.usageCount,
+      prismaApiKey.successCount,
+      prismaApiKey.failureCount,
+      prismaApiKey.rotatedFrom,
       prismaApiKey.usageResetAt
     );
   }
 
   isExpired(): boolean {
+    if (this.status === 'EXPIRED') return true;
     return this.expiresAt ? this.expiresAt < new Date() : false;
+  }
+
+  isRevoked(): boolean {
+    return this.status === 'REVOKED';
+  }
+
+  isActiveStatus(): boolean {
+    return this.status === 'ACTIVE' && this.isActive;
   }
 
   isIpAllowed(ip: string): boolean {
@@ -110,10 +148,35 @@ export class ApiKey {
 
   isPathAllowed(path: string): boolean {
     if (this.allowedPaths.length === 0) return true;
+    
+    // Security: Limit path complexity to prevent ReDoS
+    if (path.length > 512) return false;
+
     return this.allowedPaths.some(pattern => {
-      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-      return regex.test(path);
+      // Security: Prevent extremely long patterns or too many wildcards
+      if (!pattern || pattern.length > 128) return false;
+      
+      // Manual safe matching for common patterns (e.g., /api/v1/*)
+      // This is much safer than dynamic RegExp construction
+      if (pattern.endsWith('*')) {
+        const base = pattern.slice(0, -1);
+        return path.startsWith(base);
+      }
+      
+      return path === pattern;
     });
+  }
+
+  hasScope(scope: string): boolean {
+    if (this.type === 'ADMIN') return true;
+    if (this.scopes.length === 0) return true;
+    return this.scopes.includes(scope);
+  }
+
+  hasPermission(permission: string): boolean {
+    if (this.type === 'ADMIN') return true;
+    if (this.permissions.length === 0) return true;
+    return this.permissions.includes(permission);
   }
 
   hasQuotaExceeded(): boolean {
@@ -127,7 +190,7 @@ export class ApiKey {
       return false;
     }
     
-    return this.currentUsage >= this.usageQuota;
+    return this.usageCount >= this.usageQuota;
   }
 
   needsQuotaReset(): boolean {
