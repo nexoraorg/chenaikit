@@ -3,6 +3,14 @@ import { featureFlagService } from '../services/featureFlagService';
 import { featureFlagMiddleware } from '../middleware/featureFlags';
 import { FeatureFlagCreateInput, FeatureFlagUpdateInput, FlagContext } from '../models/FeatureFlag';
 import { log } from '../utils/logger';
+import { validate } from '../middleware/validation';
+import {
+  createFeatureFlagBodySchema,
+  updateFeatureFlagBodySchema,
+  evaluateFlagsBodySchema,
+  setOverrideBodySchema,
+  flagKeyParamsSchema,
+} from '../schemas';
 
 export function createFeatureFlagRouter(): Router {
   const router = Router();
@@ -26,7 +34,10 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.post('/evaluate', (req: Request, res: Response) => {
+  router.post(
+    '/evaluate',
+    validate({ body: evaluateFlagsBodySchema }),
+    (req: Request, res: Response) => {
     try {
       const context: FlagContext = req.body.context || {};
       const keys: string[] = req.body.keys;
@@ -91,7 +102,10 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.get('/:key', (req: Request, res: Response) => {
+  router.get(
+    '/:key',
+    validate({ params: flagKeyParamsSchema }),
+    (req: Request, res: Response) => {
     try {
       const flag = featureFlagService.getFlag(req.params.key);
       if (!flag) {
@@ -119,7 +133,10 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.put('/:key', (req: Request, res: Response) => {
+  router.put(
+    '/:key',
+    validate({ params: flagKeyParamsSchema, body: updateFeatureFlagBodySchema }),
+    (req: Request, res: Response) => {
     try {
       const input: FeatureFlagUpdateInput = req.body;
       const flag = featureFlagService.updateFlag(req.params.key, input);
@@ -148,7 +165,10 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.delete('/:key', (req: Request, res: Response) => {
+  router.delete(
+    '/:key',
+    validate({ params: flagKeyParamsSchema }),
+    (req: Request, res: Response) => {
     try {
       featureFlagService.deleteFlag(req.params.key);
       res.json({
@@ -179,7 +199,10 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.post('/:key/toggle', (req: Request, res: Response) => {
+  router.post(
+    '/:key/toggle',
+    validate({ params: flagKeyParamsSchema }),
+    (req: Request, res: Response) => {
     try {
       const flag = featureFlagService.toggleFlag(req.params.key);
       res.json({ success: true, data: flag });
@@ -207,7 +230,10 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.post('/:key/override', (req: Request, res: Response) => {
+  router.post(
+    '/:key/override',
+    validate({ params: flagKeyParamsSchema, body: setOverrideBodySchema }),
+    (req: Request, res: Response) => {
     try {
       const { value } = req.body;
       featureFlagService.setOverride(req.params.key, value);
@@ -239,7 +265,10 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.delete('/:key/override', (req: Request, res: Response) => {
+  router.delete(
+    '/:key/override',
+    validate({ params: flagKeyParamsSchema }),
+    (req: Request, res: Response) => {
     try {
       featureFlagService.clearOverride(req.params.key);
       res.json({
@@ -276,7 +305,10 @@ export function createFeatureFlagRouter(): Router {
     }
   });
 
-  router.post('/', (req: Request, res: Response) => {
+  router.post(
+    '/',
+    validate({ body: createFeatureFlagBodySchema }),
+    (req: Request, res: Response) => {
     try {
       const input: FeatureFlagCreateInput = req.body;
       const flag = featureFlagService.createFlag(input);
