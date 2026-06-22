@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { ModalProvider, useModalContext } from './contexts/ModalContext';
+import { ModalProvider } from './contexts/ModalContext';
 import ToastContainer from './components/ToastContainer';
 import ThemeToggle from './components/ThemeToggle';
 import Login from './pages/Login';

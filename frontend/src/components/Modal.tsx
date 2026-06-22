@@ -1,7 +1,6 @@
 import React, { forwardRef } from 'react';
 import {
   Box,
-  Button,
   Dialog as MuiDialog,
   DialogTitle,
   DialogContent,
@@ -100,8 +99,11 @@ const Modal: React.FC<ModalProps> = ({
       fullWidth={!drawer}
       TransitionComponent={drawer ? DrawerTransition : DefaultTransition}
       keepMounted
+      aria-label={ariaLabel}
       aria-labelledby={title ? 'modal-title' : undefined}
-      aria-describedby={description ? 'modal-description' : undefined}
+      aria-describedby={
+        description ? 'modal-description' : ariaDescription ? 'modal-aria-description' : undefined
+      }
       PaperProps={{
         sx: drawer
           ? {
@@ -144,6 +146,11 @@ const Modal: React.FC<ModalProps> = ({
               >
                 {description}
               </Typography>
+            )}
+            {!description && ariaDescription && (
+              <Box id="modal-aria-description" sx={{ display: 'none' }}>
+                {ariaDescription}
+              </Box>
             )}
           </Box>
           {showCloseButton && (

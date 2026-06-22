@@ -83,7 +83,7 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     dispatch({ type: 'CLOSE_ALL' });
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (modals.length === 0 && lastFocusedElement.current) {
       lastFocusedElement.current.focus();
       lastFocusedElement.current = null;
