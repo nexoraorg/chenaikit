@@ -16,7 +16,7 @@ const testEncKey = crypto.randomBytes(32).toString('hex')
 // Mock backupConfig before any module that imports it is loaded
 // -----------------------------------------------------------------------
 jest.mock('../utils/logger', () => ({
-  logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+  winstonLogger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
 }))
 
 jest.mock('../config/backup', () => ({
