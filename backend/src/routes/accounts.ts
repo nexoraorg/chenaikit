@@ -2,13 +2,9 @@ import { Router } from 'express';
 import type { Router as ExpressRouter } from 'express';
 import { AccountController } from '../controllers/accountController';
 import { ValidationMiddleware } from '../middleware/validation';
-import { generalRateLimit, createAccountRateLimit } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
 
 const router: ExpressRouter = Router();
-
-// Apply general rate limiting to all account routes
-router.use(generalRateLimit.middleware());
 
 // GET /api/accounts/:id - Get account details
 router.get(
@@ -35,7 +31,6 @@ router.get(
 // POST /api/accounts - Create new account
 router.post(
   '/',
-  createAccountRateLimit.middleware(),
   ValidationMiddleware.sanitizeInput,
   ValidationMiddleware.validateAccountCreation,
   asyncHandler(AccountController.createAccount)

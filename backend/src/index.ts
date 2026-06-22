@@ -30,6 +30,8 @@ import Redis from 'ioredis';
 import { applySecurityMiddleware } from './middleware/security';
 import { loadVaultSecrets } from './config/secrets';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { getDistributedRateLimiter } from './middleware/distributedRateLimiter';
+import { optionalAuthenticateForRateLimit } from './utils/rateLimitUtils';
 
 const app: express.Application = express();
 
@@ -37,6 +39,8 @@ applySecurityMiddleware(app);
 app.use(express.json({ limit: '10mb' }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
+app.use('/api', optionalAuthenticateForRateLimit);
+app.use('/api', getDistributedRateLimiter().middleware());
 // Health checks remain unversioned and must be matched before the version dispatcher.
 app.use('/api', healthRouter);
 
