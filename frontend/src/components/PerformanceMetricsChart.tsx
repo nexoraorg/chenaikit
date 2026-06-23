@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { PerformanceMetrics, ChartProps, TooltipData } from '@chenaikit/core';
+import { PerformanceMetrics, ChartProps } from '@chenaikit/core';
 import { 
   DEFAULT_CHART_CONFIG, 
   getResponsiveConfig, 
@@ -46,7 +46,6 @@ export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = (
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string } | null>(null);
 
   const chartConfig = { ...DEFAULT_CHART_CONFIG, ...config };
 
@@ -113,7 +112,7 @@ export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = (
   }, [handleResize]);
 
   // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const tooltipContent = generateTooltipContent([
@@ -417,7 +416,6 @@ export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = (
             key={type}
             onClick={() => {
               // This would need to be handled by parent component
-              console.log(`Switch to ${type} chart`);
             }}
             style={{
               padding: '4px 8px',

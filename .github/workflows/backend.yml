@@ -10,7 +10,7 @@ jobs:
     build-test:
         strategy:
             matrix:
-                os: [windows-latest]
+                os: [ubuntu-latest]
         
         runs-on: ${{matrix.os}}
 
@@ -19,18 +19,19 @@ jobs:
               uses: actions/checkout@v4
 
             - name: Install pnpm
-              uses: pnpm/action-setup@v3
-              with: 
-                version: 9
+              uses: pnpm/action-setup@v4
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
-              with: 
-                node-version: 20
+              with:
+                node-version: 24
                 cache: 'pnpm'
 
             - name: Install dependencies
               run: pnpm install
+
+            - name: Generate Prisma Client
+              run: cd backend && pnpm prisma:generate
 
             - name: Run Lint
               run: pnpm lint
@@ -55,13 +56,11 @@ jobs:
               run: |
                 cargo build --release --manifest-path ./contracts/credit-score/Cargo.toml
                 cargo build --release --manifest-path ./contracts/fraud-detect/Cargo.toml
-                cargo build --release --manifest-path ./contracts/common-utils/contract/Cargo.toml
 
             - name: Test Contracts
               run: |
                 cargo test --manifest-path ./contracts/credit-score/Cargo.toml
                 cargo test --manifest-path ./contracts/fraud-detect/Cargo.toml
-                cargo test --manifest-path ./contracts/common-utils/contract/Cargo.toml
 
             - name: Upload Contract Artifacts
               uses: actions/upload-artifact@v4

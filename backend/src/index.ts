@@ -1,16 +1,26 @@
 // ChenAIKit Backend Server
 import 'reflect-metadata';
-import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
+dotenv.config();
+
+// Initialize Sentry first
+import { initSentry, sentryErrorHandler } from './middleware/errorTracking';
+if (process.env.SENTRY_DSN) {
+  initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || 'development');
+}
+
+import express, { Request, Response } from 'express';
 import { log } from './utils/logger';
 import { requestLoggingMiddleware } from './middleware/logging';
 import healthRouter from './routes/health';
 import { metricsService, metricsMiddleware } from './services/metricsService';
 import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
-import authRoutes from './routes/auth';
 import { UserPayload } from './types/auth';
 import { ensureRedisConnection } from './config/redis';
-import accountRoutes from './routes/accounts';
+import { detectVersion, versionHeaders, createVersionRouter } from './middleware/versioning';
+import v1Router from './routes/v1';
+import v2Router from './routes/v2';
+import { API_VERSIONS, LATEST_VERSION, DEFAULT_VERSION } from './utils/versionUtils';
 import { PrismaClient } from '@prisma/client';
 import { ApiKeyService } from './services/apiKeyService';
 import { UsageTrackingService } from './services/usageTrackingService';
@@ -29,34 +39,31 @@ applySecurityMiddleware(app);
 app.use(express.json({ limit: '10mb' }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
+// Health checks remain unversioned and must be matched before the version dispatcher.
 app.use('/api', healthRouter);
-app.use('/api/auth', authRoutes);
-app.use('/api/accounts', accountRoutes);
-// app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
 
-// Gateway-protected endpoints
-app.get('/api/v1/credit-score', (_req: Request, res: Response) => {
+// Version discovery endpoint: lists supported versions and their lifecycle.
+app.get('/api/versions', (_req: Request, res: Response) => {
   res.json({
     success: true,
     data: {
-      score: Math.floor(Math.random() * 850) + 150,
-      factors: ['payment_history', 'credit_utilization', 'account_age'],
-      timestamp: new Date().toISOString(),
+      default: DEFAULT_VERSION,
+      latest: LATEST_VERSION,
+      versions: API_VERSIONS,
     },
   });
 });
 
-app.get('/api/v1/fraud/detect', (_req: Request, res: Response) => {
-  res.json({
-    success: true,
-    data: {
-      riskScore: Math.floor(Math.random() * 100),
-      riskLevel: 'low',
-      factors: ['transaction_amount', 'location', 'device'],
-      timestamp: new Date().toISOString(),
-    },
-  });
-});
+// Versioned API surface.
+// Supports URL path (/api/v1, /api/v2), header (Accept-Version) and query
+// (?version) versioning. Unversioned requests fall back to the default version,
+// keeping existing clients working.
+app.use(
+  '/api',
+  detectVersion(),
+  versionHeaders(),
+  createVersionRouter({ v1: v1Router, v2: v2Router })
+);
 
 // Prometheus metrics endpoint
 app.get('/metrics', async (_req: Request, res: Response) => {
@@ -71,30 +78,15 @@ app.get('/metrics', async (_req: Request, res: Response) => {
 });
 
 // 404 handler
-app.use('*', (req: Request, res: Response) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      code: 'ENDPOINT_NOT_FOUND',
-      message: `Endpoint ${req.method} ${req.originalUrl} not found`,
-      timestamp: new Date().toISOString()
-    }
-  });
-});
+app.use('*', notFoundHandler);
+
+// Sentry error handler (must be before other error handlers)
+if (process.env.SENTRY_DSN) {
+  app.use(sentryErrorHandler());
+}
 
 // Global error handler
-app.use((error: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Unhandled error:', error);
-
-  res.status(500).json({
-    success: false,
-    error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected error occurred',
-      timestamp: new Date().toISOString()
-    }
-  });
-});
+app.use(errorHandler);
 
 export const startServer = async (): Promise<void> => {
   // Load environment variables

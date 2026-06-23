@@ -1,28 +1,31 @@
 import * as Sentry from '@sentry/node';
+import { httpIntegration, expressIntegration, expressErrorHandler } from '@sentry/node';
 import { Request, Response, NextFunction } from 'express';
 
 export function initSentry(dsn: string, environment: string = 'production'): void {
+  const integrations: any[] = [
+    httpIntegration(),
+    expressIntegration(),
+  ];
   Sentry.init({
     dsn,
     environment,
     tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
-    integrations: [
-      new Sentry.Integrations.Http({ tracing: true }),
-      new Sentry.Integrations.Express({ app: undefined as any })
-    ]
+    integrations
   });
 }
 
+// For backward compatibility, these functions can return no-ops or be simplified
 export function sentryRequestHandler() {
-  return Sentry.Handlers.requestHandler();
+  return (_req: Request, _res: Response, next: NextFunction) => next();
 }
 
 export function sentryTracingHandler() {
-  return Sentry.Handlers.tracingHandler();
+  return (_req: Request, _res: Response, next: NextFunction) => next();
 }
 
-export function sentryErrorHandler() {
-  return Sentry.Handlers.errorHandler();
+export function sentryErrorHandler(): any {
+  return expressErrorHandler();
 }
 
 export function errorTrackingMiddleware(
