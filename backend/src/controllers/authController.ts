@@ -4,11 +4,11 @@ import { generateAccessToken } from '../utils/jwt';
 import { prisma } from '../prisma/client';
 import { UserPayload } from '../types/auth';
 import crypto from 'crypto';
-import { z } from 'zod';
 import {
   AuthenticationError,
   ConflictError
 } from '../utils/errors';
+import type { RegisterInput, LoginInput, RefreshTokenInput } from '../schemas';
 
 const durationToMs = (input: string): number => {
   const trimmed = input.trim();
@@ -38,24 +38,9 @@ const getRefreshTokenTtlMs = (): number => {
   return durationToMs(exp);
 };
 
-const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  role: z.enum(['user', 'admin']).optional(),
-});
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
-
-const refreshSchema = z.object({
-  token: z.string().min(1),
-});
-
 export class AuthController {
   async register(req: Request, res: Response) {
-    const { email, password, role } = registerSchema.parse(req.body);
+    const { email, password, role } = req.body as RegisterInput;
     const existing = await prisma.user.findFirst({ where: { email, deletedAt: null } });
     if (existing) {
       throw new ConflictError('Email already registered', { email });
@@ -70,7 +55,7 @@ export class AuthController {
   }
 
   async login(req: Request, res: Response) {
-    const { email, password } = loginSchema.parse(req.body);
+    const { email, password } = req.body as LoginInput;
     const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
     if (!user) {
       throw new AuthenticationError('Invalid credentials');
@@ -98,7 +83,7 @@ export class AuthController {
   }
 
   async refreshToken(req: Request, res: Response) {
-    const { token } = refreshSchema.parse(req.body);
+    const { token } = req.body as RefreshTokenInput;
     const [idPart, tokenPart] = token.split('.', 2);
 
     const id = Number(idPart);

@@ -12,6 +12,8 @@ import accountRoutes from '../accounts';
 import authRoutes from '../auth';
 import { createFeatureFlagRouter } from '../featureFlags';
 import { generateCreditScore, generateFraudResult, toCreditScoreV2, toFraudResultV2 } from '../shared/scoring';
+import { validate } from '../../middleware/validation';
+import { creditScoreQuerySchema, fraudDetectionQuerySchema } from '../../schemas';
 
 const router: ExpressRouter = Router();
 
@@ -20,13 +22,21 @@ router.use('/auth', authRoutes);
 router.use('/feature-flags', createFeatureFlagRouter());
 
 // GET /credit-score - nested v2 contract
-router.get('/credit-score', (_req, res) => {
-  res.json({ success: true, data: toCreditScoreV2(generateCreditScore()) });
-});
+router.get(
+  '/credit-score',
+  validate({ query: creditScoreQuerySchema }),
+  (_req, res) => {
+    res.json({ success: true, data: toCreditScoreV2(generateCreditScore()) });
+  }
+);
 
 // GET /fraud/detect - nested v2 contract
-router.get('/fraud/detect', (_req, res) => {
-  res.json({ success: true, data: toFraudResultV2(generateFraudResult()) });
-});
+router.get(
+  '/fraud/detect',
+  validate({ query: fraudDetectionQuerySchema }),
+  (_req, res) => {
+    res.json({ success: true, data: toFraudResultV2(generateFraudResult()) });
+  }
+);
 
 export default router;
