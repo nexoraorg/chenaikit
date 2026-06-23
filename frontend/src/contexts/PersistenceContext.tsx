@@ -9,8 +9,6 @@ import {
   loadPreferences,
   savePreferences,
   clearPreferences,
-  addRecentSearch,
-  clearRecentSearches,
   type UserPreferences,
 } from '../utils/persistence';
 import { storageClear } from '../utils/storage';
@@ -44,13 +42,21 @@ export const PersistenceProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, []);
 
   const handleAddRecentSearch = useCallback((term: string) => {
-    addRecentSearch(term);
-    setPreferences(loadPreferences());
+    setPreferences((prev) => {
+      const searches = prev.recentSearches ?? [];
+      const filtered = searches.filter((s) => s !== term);
+      const updated = { ...prev, recentSearches: [term, ...filtered].slice(0, 10) };
+      savePreferences(updated);
+      return updated;
+    });
   }, []);
 
   const handleClearRecentSearches = useCallback(() => {
-    clearRecentSearches();
-    setPreferences(loadPreferences());
+    setPreferences((prev) => {
+      const updated = { ...prev, recentSearches: [] };
+      savePreferences(updated);
+      return updated;
+    });
   }, []);
 
   const contextValue = useMemo(
