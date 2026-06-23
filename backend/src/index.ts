@@ -17,11 +17,16 @@ import { metricsService, metricsMiddleware } from './services/metricsService';
 import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
 import { UserPayload } from './types/auth';
 import { ensureRedisConnection } from './config/redis';
+import accountRoutes from './routes/accounts';
+import fileRoutes from './routes/files';
+
 import { detectVersion, versionHeaders, createVersionRouter } from './middleware/versioning';
 import v1Router from './routes/v1';
 import v2Router from './routes/v2';
 import { API_VERSIONS, LATEST_VERSION, DEFAULT_VERSION } from './utils/versionUtils';
+
 import { PrismaClient } from '@prisma/client';
+import { FileStorageService } from './services/fileStorageService';
 import { ApiKeyService } from './services/apiKeyService';
 import { UsageTrackingService } from './services/usageTrackingService';
 import { ApiGateway } from './middleware/apiGateway';
@@ -30,15 +35,23 @@ import Redis from 'ioredis';
 import { applySecurityMiddleware } from './middleware/security';
 import { loadVaultSecrets } from './config/secrets';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { compressionMiddleware, addCompressionHeaders } from './middleware/compression';
 
 const app: express.Application = express();
 
 applySecurityMiddleware(app);
+app.use(addCompressionHeaders);
+app.use(compressionMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
 // Health checks remain unversioned and must be matched before the version dispatcher.
 app.use('/api', healthRouter);
+app.use('/api/auth', authRoutes);
+app.use('/api/accounts', accountRoutes);
+app.use('/api/files', fileRoutes);
+// app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
+>>>>>> main
 
 // Version discovery endpoint: lists supported versions and their lifecycle.
 app.get('/api/versions', (_req: Request, res: Response) => {
@@ -102,6 +115,10 @@ export const startServer = async (): Promise<void> => {
   const usageTrackingService = new UsageTrackingService(prisma);
   const rateLimiter = createTieredRateLimiter(redis);
   const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
+  
+  // Initialize file storage service and set it on app
+  const fileStorageService = new FileStorageService(prisma);
+  app.set('fileStorageService', fileStorageService);
 
   // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
 

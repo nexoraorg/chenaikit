@@ -19,7 +19,10 @@ jobs:
               uses: actions/checkout@v4
 
             - name: Install pnpm
-              uses: pnpm/action-setup@v4
+uses: pnpm/action-setup@v4
+with:
+  version: 9
+main
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
@@ -34,16 +37,16 @@ jobs:
               run: cd backend && pnpm prisma:generate
 
             - name: Run Lint
-              run: pnpm lint
+              run: pnpm run lint
 
             - name: Type Check
-              run: pnpm type-check
+              run: pnpm run type-check
 
             - name: Run Tests
-              run: pnpm test
+              run: pnpm run test
 
             - name: Build project
-              run: pnpm build
+              run: pnpm run build
 
             - name: Setup Rust
               uses: actions-rs/toolchain@v1
