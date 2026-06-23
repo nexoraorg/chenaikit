@@ -1,9 +1,14 @@
 import { Router } from 'express';
 import type { Router as ExpressRouter } from 'express';
 import { AccountController } from '../controllers/accountController';
-import { ValidationMiddleware } from '../middleware/validation';
+import { validate } from '../middleware/validation';
 import { generalRateLimit, createAccountRateLimit } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
+import {
+  accountIdParamsSchema,
+  createAccountBodySchema,
+  paginationQuerySchema,
+} from '../schemas';
 
 const router: ExpressRouter = Router();
 
@@ -13,22 +18,21 @@ router.use(generalRateLimit.middleware());
 // GET /api/accounts/:id - Get account details
 router.get(
   '/:id',
-  ValidationMiddleware.validateAccountId,
+  validate({ params: accountIdParamsSchema }),
   asyncHandler(AccountController.getAccount)
 );
 
 // GET /api/accounts/:id/balance - Get account balance
 router.get(
   '/:id/balance',
-  ValidationMiddleware.validateAccountId,
+  validate({ params: accountIdParamsSchema }),
   asyncHandler(AccountController.getAccountBalance)
 );
 
 // GET /api/accounts/:id/transactions - Get account transactions with pagination
 router.get(
   '/:id/transactions',
-  ValidationMiddleware.validateAccountId,
-  ValidationMiddleware.validatePagination,
+  validate({ params: accountIdParamsSchema, query: paginationQuerySchema }),
   asyncHandler(AccountController.getAccountTransactions)
 );
 
@@ -36,8 +40,7 @@ router.get(
 router.post(
   '/',
   createAccountRateLimit.middleware(),
-  ValidationMiddleware.sanitizeInput,
-  ValidationMiddleware.validateAccountCreation,
+  validate({ body: createAccountBodySchema }),
   asyncHandler(AccountController.createAccount)
 );
 
