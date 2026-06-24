@@ -5,7 +5,7 @@ const path = require('path');
 
 // Configuration
 const LOCALES_DIR = path.join(__dirname, '../src/locales');
-const SUPPORTED_LANGUAGES = ['en', 'es', 'zh'];
+const SUPPORTED_LANGUAGES = ['en', 'es', 'zh', 'ar'];
 
 // Colors for console output
 const colors = {
@@ -84,8 +84,22 @@ function validateTranslations() {
     if (lang === 'en') continue; // Skip base language
     
     const langKeys = getAllKeys(translations[lang]);
-    const missingKeys = baseKeys.filter(key => !langKeys.includes(key));
-    const extraKeys = langKeys.filter(key => !baseKeys.includes(key));
+    
+    const pluralSuffixes = ['_zero', '_one', '_two', '_few', '_many', '_other'];
+    const normaliseKey = (key) => {
+      for (const suffix of pluralSuffixes) {
+        if (key.endsWith(suffix)) {
+          return key.substring(0, key.length - suffix.length);
+        }
+      }
+      return key;
+    };
+
+    const baseNormalised = new Set(baseKeys.map(normaliseKey));
+    const langNormalised = new Set(langKeys.map(normaliseKey));
+    
+    const missingKeys = [...baseNormalised].filter(key => !langNormalised.has(key));
+    const extraKeys = [...langKeys].filter(key => !baseNormalised.has(normaliseKey(key)));
     
     log('yellow', `\n🌍 Validating ${lang.toUpperCase()} (${langKeys.length} keys):`);
     
@@ -96,12 +110,9 @@ function validateTranslations() {
       
       if (missingKeys.length > 0) {
         log('red', `  ❌ Missing ${missingKeys.length} translations:`);
-        missingKeys.slice(0, 5).forEach(key => {
+        missingKeys.forEach(key => {
           log('red', `    - ${key}`);
         });
-        if (missingKeys.length > 5) {
-          log('red', `    ... and ${missingKeys.length - 5} more`);
-        }
       }
       
       if (extraKeys.length > 0) {
@@ -186,6 +197,10 @@ function validateTranslations() {
         if (typeof obj[key] === 'object' && obj[key] !== null) {
           checkPlaceholders(obj[key], fullKey);
         } else {
+          const pluralSuffixes = ['_zero', '_one', '_two', '_few', '_many', '_other'];
+          const isPluralKey = pluralSuffixes.some(suffix => fullKey.endsWith(suffix));
+          if (isPluralKey) continue;
+
           if (basePlaceholders[fullKey]) {
             const placeholders = (obj[key].match(/{{\s*\w+\s*}}/g) || []);
             const basePlaceholdersSet = new Set(basePlaceholders[fullKey]);

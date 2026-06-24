@@ -160,6 +160,30 @@
     "documentation": "文档",
     "contact": "联系"
   },
+  "profile": {
+    "title": "个人资料",
+    "subtitle": "您的账户个人资料",
+    "activity": "活动",
+    "account": "账户",
+    "statistics": "统计数据",
+    "editProfile": "编辑个人资料",
+    "displayName": "显示名称",
+    "email": "电子邮箱",
+    "role": "角色",
+    "memberSince": "成员自",
+    "transactions": "交易",
+    "creditScore": "信用评分",
+    "activeDays": "活跃天数",
+    "uploadAvatar": "上传头像",
+    "changeAvatar": "更改头像",
+    "saveChanges": "保存更改",
+    "recentActivity": "最近活动",
+    "noActivity": "暂无最近活动",
+    "securityStatus": "安全状态",
+    "twoFactorEnabled": "双重身份验证",
+    "passwordSet": "密码",
+    "activeSessions": "活跃会话"
+  },
   "websocket": {
     "connected": "已连接",
     "disconnected": "已断开",
@@ -206,7 +230,10 @@
     "improveScore": "改善您的评分",
     "scoreBreakdown": "评分细分",
     "noDataAvailable": "无信用数据可用",
-    "lastUpdated": "最后更新"
+    "lastUpdated": "最后更新",
+    "outOf": "共 {{max}}",
+    "scoreRange": "评分范围",
+    "points_other": "{{count}} 分"
   },
   "errors": {
     "networkError": "发生网络错误",

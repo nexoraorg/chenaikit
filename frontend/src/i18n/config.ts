@@ -130,6 +130,21 @@ i18n
     }
   });
 
+// Update document direction and lang on language change
+i18n.on('languageChanged', (lng) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.dir = isRTL(lng) ? 'rtl' : 'ltr';
+    document.documentElement.lang = lng;
+  }
+});
+
+// Set initial document attributes
+if (typeof document !== 'undefined') {
+  const initialLng = i18n.language || defaultLanguage;
+  document.documentElement.dir = isRTL(initialLng) ? 'rtl' : 'ltr';
+  document.documentElement.lang = initialLng;
+}
+
 // Export i18n instance
 export default i18n;
 

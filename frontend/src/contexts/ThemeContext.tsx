@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider as MuiThemeProvider, CssBaseline, createTheme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
+import { isRTL } from '../i18n/config';
 import { lightTheme } from '../themes/lightTheme';
 import { darkTheme } from '../themes/darkTheme';
 
@@ -77,7 +79,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => window.removeEventListener('keydown', handler);
   }, [toggleTheme]);
 
-  const activeTheme = mode === 'light' ? lightTheme : darkTheme;
+  const { i18n } = useTranslation();
+  const dir = isRTL(i18n.language) ? 'rtl' : 'ltr';
+
+  const activeTheme = useMemo(() => {
+    const baseTheme = mode === 'light' ? lightTheme : darkTheme;
+    return createTheme({
+      ...baseTheme,
+      direction: dir
+    });
+  }, [mode, dir]);
 
   const contextValue = useMemo(() => ({ mode, userPreference, setTheme, toggleTheme }), [mode, userPreference, setTheme, toggleTheme]);
 
