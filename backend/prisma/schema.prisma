@@ -17,6 +17,7 @@ model User {
   deletedAt     DateTime?
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
+  files         File[]
 
   @@index([createdAt])
 }
@@ -84,5 +85,29 @@ model ApiUsage {
   @@index([statusCode, timestamp])
   @@index([ip, timestamp])
   @@index([timestamp])
+}
+
+model File {
+  id          String   @id @default(cuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int      // in bytes
+  path        String   // storage path or URL
+  storageType String   @default("local") // local, s3, etc.
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  isPublic    Boolean  @default(false)
+  checksum    String?  // MD5 or SHA256 for integrity
+  metadata    String?  // JSON string for additional metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  
+  @@map("files")
+  @@index([userId])
+  @@index([storageType])
+  @@index([createdAt])
+  @@index([deletedAt])
 }
 
