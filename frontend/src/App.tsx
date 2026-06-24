@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ModalProvider } from './contexts/ModalContext';
 import { LoadingProvider } from './contexts/LoadingContext';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import ToastContainer from './components/ToastContainer';
@@ -233,6 +234,10 @@ const App: React.FC = () => {
     <ThemeProvider>
       <LoadingProvider>
       <ToastProvider>
+        <ModalProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
         <AuthProvider>
 
         <BrowserRouter>
@@ -358,9 +363,10 @@ const App: React.FC = () => {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        </BrowserRouter>
-        <ToastContainer />
-      </AuthProvider>
+            </BrowserRouter>
+            <ToastContainer />
+          </AuthProvider>
+        </ModalProvider>
       </ToastProvider>
       </LoadingProvider>
     </ThemeProvider>
