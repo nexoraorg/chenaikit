@@ -34,6 +34,13 @@ export { AnalyticsDashboard } from './AnalyticsDashboard';
 export { default as Toast } from './Toast';
 export { default as ToastContainer } from './ToastContainer';
 
+// Notification Center
+export { default as NotificationCenter } from './NotificationCenter';
+export { default as NotificationItem } from './NotificationItem';
+export { default as NotificationPreferences } from './NotificationPreferences';
+export type { NotificationItemProps } from './NotificationItem';
+export type { NotificationPreferencesProps } from './NotificationPreferences';
+export type { NotificationCenterProps } from './NotificationCenter';
 // File Upload
 export { default as FileUpload } from './FileUpload';
 export { default as DropZone } from './DropZone';
