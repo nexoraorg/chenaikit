@@ -7,11 +7,6 @@ export interface AccessibleTabPanelProps {
   idPrefix: string;
 }
 
-/**
- * WAI-ARIA tab panel wired to MUI Tabs via shared idPrefix.
- * Tab buttons should use id={`${idPrefix}-tab-${index}`} and
- * aria-controls={`${idPrefix}-panel-${index}`}.
- */
 export const AccessibleTabPanel: React.FC<AccessibleTabPanelProps> = ({
   children,
   value,
@@ -23,9 +18,8 @@ export const AccessibleTabPanel: React.FC<AccessibleTabPanelProps> = ({
     id={`${idPrefix}-panel-${index}`}
     aria-labelledby={`${idPrefix}-tab-${index}`}
     hidden={value !== index}
-    tabIndex={0}
   >
-    {value === index && children}
+    {children}
   </div>
 );
 

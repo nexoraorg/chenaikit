@@ -74,8 +74,17 @@ const generateSampleData = () => {
   return { transactions, performanceData, userActivity, nodes, links };
 };
 
+type VizTab = 'flow' | 'performance' | 'heatmap' | 'network';
+
+const VIZ_TABS: Array<{ id: VizTab; label: string }> = [
+  { id: 'flow', label: 'Transaction Flow' },
+  { id: 'performance', label: 'Performance Metrics' },
+  { id: 'heatmap', label: 'User Activity' },
+  { id: 'network', label: 'Network Topology' },
+];
+
 export const DataVisualizationExample: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'flow' | 'performance' | 'heatmap' | 'network'>('flow');
+  const [activeTab, setActiveTab] = useState<VizTab>('flow');
   const [data, setData] = useState(generateSampleData());
   const [isExporting, setIsExporting] = useState(false);
   
@@ -181,77 +190,86 @@ export const DataVisualizationExample: React.FC = () => {
 
       <Tabs
         value={activeTab}
-        onChange={(_, value: 'flow' | 'performance' | 'heatmap' | 'network') => setActiveTab(value)}
+        onChange={(_, value: VizTab) => setActiveTab(value)}
         aria-label="Visualization types"
         sx={{ borderBottom: 1, borderColor: 'divider', mb: 2.5 }}
       >
-        <Tab value="flow" label="Transaction Flow" id="viz-tab-flow" aria-controls="viz-panel-flow" />
-        <Tab value="performance" label="Performance Metrics" id="viz-tab-performance" aria-controls="viz-panel-performance" />
-        <Tab value="heatmap" label="User Activity" id="viz-tab-heatmap" aria-controls="viz-panel-heatmap" />
-        <Tab value="network" label="Network Topology" id="viz-tab-network" aria-controls="viz-panel-network" />
+        {VIZ_TABS.map((tab) => (
+          <Tab
+            key={tab.id}
+            value={tab.id}
+            label={tab.label}
+            id={`viz-tab-${tab.id}`}
+            aria-controls={`viz-panel-${tab.id}`}
+          />
+        ))}
       </Tabs>
 
-      <Box
-        role="tabpanel"
-        id={`viz-panel-${activeTab}`}
-        aria-labelledby={`viz-tab-${activeTab}`}
-        sx={{ height: 600, border: '1px solid #E5E7EB', borderRadius: 1, overflow: 'hidden' }}
-      >
-        {activeTab === 'flow' && (
-          <div ref={flowChartRef} style={{ height: '100%' }}>
-            <TransactionFlowChart
-              data={data.transactions}
-              showLabels={true}
-              showArrows={true}
-              nodeSize={10}
-              linkWidth={3}
-            />
-          </div>
-        )}
+      {VIZ_TABS.map((tab) => (
+        <Box
+          key={tab.id}
+          role="tabpanel"
+          id={`viz-panel-${tab.id}`}
+          aria-labelledby={`viz-tab-${tab.id}`}
+          hidden={activeTab !== tab.id}
+          sx={{ height: 600, border: '1px solid #E5E7EB', borderRadius: 1, overflow: 'hidden' }}
+        >
+          {tab.id === 'flow' && (
+            <div ref={flowChartRef} style={{ height: '100%' }}>
+              <TransactionFlowChart
+                data={data.transactions}
+                showLabels={true}
+                showArrows={true}
+                nodeSize={10}
+                linkWidth={3}
+              />
+            </div>
+          )}
 
-        {activeTab === 'performance' && (
-          <div ref={performanceChartRef} style={{ height: '100%' }}>
-            <PerformanceMetricsChart
-              data={data.performanceData}
-              chartType="line"
-              metrics={['accuracy', 'precision', 'recall', 'f1Score']}
-              showLegend={true}
-              showGrid={true}
-              animate={true}
-            />
-          </div>
-        )}
+          {tab.id === 'performance' && (
+            <div ref={performanceChartRef} style={{ height: '100%' }}>
+              <PerformanceMetricsChart
+                data={data.performanceData}
+                chartType="line"
+                metrics={['accuracy', 'precision', 'recall', 'f1Score']}
+                showLegend={true}
+                showGrid={true}
+                animate={true}
+              />
+            </div>
+          )}
 
-        {activeTab === 'heatmap' && (
-          <div ref={heatmapRef} style={{ height: '100%' }}>
-            <UserActivityHeatmap
-              data={data.userActivity}
-              timeRange="day"
-              aggregation="count"
-              colorScheme="blue"
-              showTooltip={true}
-              showLegend={true}
-            />
-          </div>
-        )}
+          {tab.id === 'heatmap' && (
+            <div ref={heatmapRef} style={{ height: '100%' }}>
+              <UserActivityHeatmap
+                data={data.userActivity}
+                timeRange="day"
+                aggregation="count"
+                colorScheme="blue"
+                showTooltip={true}
+                showLegend={true}
+              />
+            </div>
+          )}
 
-        {activeTab === 'network' && (
-          <div ref={networkRef} style={{ height: '100%' }}>
-            <NetworkTopologyView
-              nodes={data.nodes}
-              links={data.links}
-              layout="force"
-              nodeSize={12}
-              linkWidth={2}
-              showLabels={true}
-              showArrows={true}
-              showNodeValues={false}
-              enableDrag={true}
-              enableZoom={true}
-            />
-          </div>
-        )}
-      </Box>
+          {tab.id === 'network' && (
+            <div ref={networkRef} style={{ height: '100%' }}>
+              <NetworkTopologyView
+                nodes={data.nodes}
+                links={data.links}
+                layout="force"
+                nodeSize={12}
+                linkWidth={2}
+                showLabels={true}
+                showArrows={true}
+                showNodeValues={false}
+                enableDrag={true}
+                enableZoom={true}
+              />
+            </div>
+          )}
+        </Box>
+      ))}
 
       {/* Data Info */}
       <div style={{ marginTop: '20px', padding: '16px', background: '#F9FAFB', borderRadius: '8px' }}>

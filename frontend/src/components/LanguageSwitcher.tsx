@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -30,6 +30,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 }) => {
   const { i18n } = useTranslation();
   const currentLang = getCurrentLanguage();
+  const labelId = useId();
 
   const handleLanguageChange = (event: any) => {
     const newLanguage = event.target.value;
@@ -42,9 +43,9 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 
   const renderSelectVariant = () => (
     <FormControl size={size === 'large' ? 'medium' : size}>
-      <InputLabel id="language-select-label">Language</InputLabel>
+      <InputLabel id={labelId}>Language</InputLabel>
       <Select
-        labelId="language-select-label"
+        labelId={labelId}
         label="Language"
         value={currentLang}
         onChange={handleLanguageChange}

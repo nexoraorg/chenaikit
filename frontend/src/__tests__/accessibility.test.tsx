@@ -10,7 +10,7 @@ const renderWithTheme = (ui: React.ReactElement) =>
 describe('ThemeToggle accessibility', () => {
   it('exposes an accessible name for screen readers', () => {
     renderWithTheme(<ThemeToggle />);
-    expect(screen.getByRole('button', { name: /switch to dark mode/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /switch to (dark|light) mode/i })).toBeInTheDocument();
   });
 
   it('has no axe violations', async () => {

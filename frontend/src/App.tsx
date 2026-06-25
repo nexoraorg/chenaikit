@@ -212,15 +212,19 @@ const DashboardShell: React.FC = () => {
         sx={{ minHeight: 'calc(100vh - 200px)' }}
       >
         <Suspense fallback={<LoadingSpinner fullScreen message="Loading dashboard content" />}>
-          <Box
-            id={`dashboard-panel-${activeDemo}`}
-            role="tabpanel"
-            aria-label={DEMO_TABS.find((t) => t.id === activeDemo)?.label}
-          >
-            {activeDemo === 'analytics' && <AnalyticsDashboard />}
-            {activeDemo === 'forms' && <FormValidationExample />}
-            {activeDemo === 'visualization' && <DataVisualizationExample />}
-          </Box>
+          {DEMO_TABS.map((tab, index) => (
+            <Box
+              key={tab.id}
+              id={`dashboard-panel-${tab.id}`}
+              role="tabpanel"
+              aria-labelledby={`dashboard-tab-${index}`}
+              hidden={activeDemo !== tab.id}
+            >
+              {tab.id === 'analytics' && <AnalyticsDashboard />}
+              {tab.id === 'forms' && <FormValidationExample />}
+              {tab.id === 'visualization' && <DataVisualizationExample />}
+            </Box>
+          ))}
         </Suspense>
       </Box>
 

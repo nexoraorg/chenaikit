@@ -118,12 +118,14 @@ export const DropZone: React.FC<DropZoneProps> = ({
     ? 'Drop files here'
     : 'Drag and drop files here, or click to browse';
 
+  const showInstructions = !isDragReject && !isDragActive;
+
   return (
     <Box
       {...getRootProps({
         'aria-label': 'File upload drop zone',
         'aria-disabled': disabled,
-        'aria-describedby': 'dropzone-instructions',
+        ...(showInstructions ? { 'aria-describedby': 'dropzone-instructions' } : {}),
       })}
       sx={{
         border: '2px dashed',

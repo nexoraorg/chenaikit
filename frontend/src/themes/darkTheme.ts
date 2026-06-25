@@ -71,7 +71,16 @@ export const darkTheme = createTheme({
     },
     MuiButton: {
       styleOverrides: {
-        root: { textTransform: 'none', fontWeight: 600, borderRadius: 8 },
+        root: ({ theme }) => ({
+          textTransform: 'none',
+          fontWeight: 600,
+          borderRadius: 8,
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: theme.palette.primary.main,
+            outlineOffset: 2,
+          },
+        }),
       },
     },
   },

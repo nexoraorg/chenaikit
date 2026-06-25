@@ -38,7 +38,7 @@ export const UsageChart: React.FC<UsageChartProps> = ({ data, forecast, title })
           value: point.value,
         }))}
       />
-      <Box sx={{ width: '100%', height: 320 }} aria-hidden="true">
+      <Box sx={{ width: '100%', height: 320 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={combinedData}>
             <defs>

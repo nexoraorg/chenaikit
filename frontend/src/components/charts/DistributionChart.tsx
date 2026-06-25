@@ -38,7 +38,7 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({ data, titl
           value: entry.value,
         }))}
       />
-      <Box sx={{ width: '100%', height: 320 }} aria-hidden="true">
+      <Box sx={{ width: '100%', height: 320 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

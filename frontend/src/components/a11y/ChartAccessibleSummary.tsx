@@ -13,11 +13,7 @@ export const ChartAccessibleSummary: React.FC<ChartAccessibleSummaryProps> = ({
   title,
   rows,
 }) => (
-  <Box
-    component="table"
-    className="sr-only"
-    aria-label={`${title} data summary`}
-  >
+  <Box component="table" className="sr-only">
     <caption>{title}</caption>
     <thead>
       <tr>

@@ -150,7 +150,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           placeholder={placeholder}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={onKeyDown}
-          aria-labelledby={inputId}
           disabled={isLoading}
           style={{
             flex: 1,
