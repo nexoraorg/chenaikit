@@ -6,7 +6,8 @@ import {
   Tabs,
   Tab,
   Breadcrumbs,
-  Link
+  Link,
+  Button
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
@@ -20,6 +21,8 @@ import AccountSettings from '../components/settings/AccountSettings';
 import NotificationSettings from '../components/settings/NotificationSettings';
 import SecuritySettings from '../components/settings/SecuritySettings';
 import ApiKeysSettings from '../components/settings/ApiKeysSettings';
+import { useShortcutContext } from '../contexts/ShortcutContext';
+import { useShortcutLabel } from '../hooks/useKeyboardShortcuts';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -109,6 +112,8 @@ export const Settings: React.FC<SettingsPageProps> = ({
   onRegenerateApiKey
 }) => {
   const [activeTab, setActiveTab] = useState(0);
+  const { openHelp } = useShortcutContext();
+  const shortcutSettingsLabel = useShortcutLabel('settings.shortcuts');
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: { xs: 2, md: 4 } }}>
@@ -120,11 +125,20 @@ export const Settings: React.FC<SettingsPageProps> = ({
           <Typography color="text.primary">Settings</Typography>
         </Breadcrumbs>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4, flexWrap: 'wrap' }}>
           <SettingsIcon sx={{ fontSize: 32, color: 'text.primary' }} />
           <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
             Settings
           </Typography>
+          <Button
+            aria-keyshortcuts={shortcutSettingsLabel}
+            onClick={openHelp}
+            size="small"
+            sx={{ ml: { xs: 0, sm: 'auto' } }}
+            variant="outlined"
+          >
+            Keyboard Shortcuts ({shortcutSettingsLabel})
+          </Button>
         </Box>
 
         <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>

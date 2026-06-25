@@ -33,6 +33,7 @@ export { AnalyticsDashboard } from './AnalyticsDashboard';
 // Toast
 export { default as Toast } from './Toast';
 export { default as ToastContainer } from './ToastContainer';
+export { default as ShortcutHelp, ShortcutFeedback } from './ShortcutHelp';
 
 // File Upload
 export { default as FileUpload } from './FileUpload';
