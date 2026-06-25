@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import type { Router as ExpressRouter } from 'express';
-import { createAccountRouteLimiter } from '../middleware/expressRouteLimiters';
 import { AccountController } from '../controllers/accountController';
 import { validate } from '../middleware/validation';
 import { asyncHandler } from '../middleware/errorHandler';
@@ -36,7 +35,6 @@ router.get(
 // POST /api/accounts - Create new account
 router.post(
   '/',
-  createAccountRouteLimiter,
   validate({ body: createAccountBodySchema }),
   asyncHandler(AccountController.createAccount),
 );
