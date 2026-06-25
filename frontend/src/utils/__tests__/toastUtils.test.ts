@@ -127,7 +127,7 @@ describe('utils/toastUtils', () => {
     });
 
     it('includes a z-index above dialogs', () => {
-      expect((stackAlignment('top-left') as any).zIndex).toBeGreaterThan(1300);
+      expect((stackAlignment('top-left') as { zIndex?: number | string }).zIndex).toBeGreaterThan(1300);
     });
 
     it('uses string pixel values for gap and padding (not raw numbers)', () => {

@@ -26,6 +26,10 @@ const validRefreshToken = 'refresh-token-abc';
 
 // Set up default interceptors mock — AuthContext uses axios.interceptors
 beforeEach(() => {
+  // Reset storage before every test to prevent order-dependent state leakage
+  window.localStorage.clear();
+  window.sessionStorage.clear();
+
   mockedAxios.interceptors = {
     request: { use: jest.fn(() => 0), eject: jest.fn() },
     response: { use: jest.fn(() => 0), eject: jest.fn() },

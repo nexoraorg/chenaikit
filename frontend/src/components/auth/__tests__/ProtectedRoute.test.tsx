@@ -131,25 +131,24 @@ describe('auth/ProtectedRoute', () => {
       expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
     });
 
-    it('renders content for any role when allowedRoles is an empty array', () => {
-      // Empty array means no roles qualify — user gets redirected
+    it('redirects to / when allowedRoles is an empty array (no roles qualify)', () => {
       mockUseAuth({
         isAuthenticated: true,
         user: { id: 1, email: 'user@test.com', role: 'user' },
       });
       renderProtected({ allowedRoles: [] });
-      // allowedRoles.includes(user.role) is false for empty array → redirect
+      // allowedRoles.includes(user.role) is false for empty array → redirect to /
       expect(screen.getByTestId('home-page')).toBeInTheDocument();
     });
 
-    it('does not apply role check when user is null (authenticated edge case)', () => {
+    it('redirects to / when allowedRoles is set but user is null (deny by default)', () => {
       mockUseAuth({
         isAuthenticated: true,
-        user: null, // no user object
+        user: null, // no user object — role check cannot be satisfied
       });
       renderProtected({ allowedRoles: ['admin'] });
-      // user is null → allowedRoles check is skipped → renders children
-      expect(screen.getByTestId('protected-content')).toBeInTheDocument();
+      // Safer contract: null user cannot satisfy any role requirement → redirect
+      expect(screen.getByTestId('home-page')).toBeInTheDocument();
     });
   });
 

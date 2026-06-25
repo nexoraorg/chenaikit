@@ -1,29 +1,12 @@
 import React from 'react';
 import { render, screen, act, renderHook } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { ToastProvider, useToastContext, ToastContextValue } from '../ToastContext';
+import { ToastProvider, useToastContext } from '../ToastContext';
 
-// ─── helper ───────────────────────────────────────────────────────────────────
+// ─── helpers ──────────────────────────────────────────────────────────────────
 
 const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ToastProvider>{children}</ToastProvider>
 );
-
-// A simple consumer component that renders the first toast message
-const Consumer: React.FC<{ onCtx?: (ctx: ToastContextValue) => void }> = ({ onCtx }) => {
-  const ctx = useToastContext();
-  onCtx?.(ctx);
-  return (
-    <div>
-      <span data-testid="count">{ctx.toasts.length}</span>
-      {ctx.toasts.map((t) => (
-        <div key={t.id} data-testid={`toast-${t.id}`}>
-          {t.message}
-        </div>
-      ))}
-    </div>
-  );
-};
 
 describe('contexts/ToastContext', () => {
   // ─── useToastContext outside provider ─────────────────────────────────────

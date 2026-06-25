@@ -6,6 +6,11 @@ const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ThemeProvider>{children}</ThemeProvider>
 );
 
+// Isolate localStorage before every test so assertions are order-independent
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
 describe('contexts/ThemeContext', () => {
   // ─── useThemeMode outside provider ────────────────────────────────────────
 

@@ -14,7 +14,14 @@ module.exports = {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
+    '^.+\\.(ts|tsx)$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          jsx: 'react-jsx',
+        },
+      },
+    ],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   collectCoverageFrom: [
@@ -41,19 +48,15 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
+  // NOTE: Thresholds are set conservatively to allow the initial test suite to
+  // land. They will be raised incrementally as coverage improves toward the
+  // 80%+ goal stated in the linked issue.
   coverageThreshold: {
     global: {
       branches: 55,
       functions: 60,
       lines: 65,
       statements: 65,
-    },
-  },
-  globals: {
-    'ts-jest': {
-      tsconfig: {
-        jsx: 'react-jsx',
-      },
     },
   },
 };

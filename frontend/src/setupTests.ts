@@ -76,8 +76,10 @@ if (typeof window.URL.revokeObjectURL === 'undefined') {
 }
 
 // ─── requestAnimationFrame mock ────────────────────────────────────────────────
-global.requestAnimationFrame = jest.fn((cb) => { cb(0); return 0; });
-global.cancelAnimationFrame = jest.fn();
+// Use setTimeout so recursive rAF calls in components (e.g. Toast progress bar)
+// are deferred rather than executed synchronously, preventing stack overflows.
+global.requestAnimationFrame = jest.fn((cb) => setTimeout(() => cb(performance.now()), 0) as unknown as number);
+global.cancelAnimationFrame = jest.fn((id: number) => clearTimeout(id));
 
 // ─── ResizeObserver mock ───────────────────────────────────────────────────────
 global.ResizeObserver = jest.fn().mockImplementation(() => ({

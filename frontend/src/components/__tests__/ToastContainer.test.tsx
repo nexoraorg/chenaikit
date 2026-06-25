@@ -22,10 +22,12 @@ const Trigger: React.FC<{
   onMount?: (ctx: ReturnType<typeof useToastContext>) => void;
 }> = ({ onMount }) => {
   const ctx = useToastContext();
+  const didRunRef = React.useRef(false);
   React.useEffect(() => {
+    if (didRunRef.current) return;
+    didRunRef.current = true;
     onMount?.(ctx);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onMount, ctx]);
   return null;
 };
 

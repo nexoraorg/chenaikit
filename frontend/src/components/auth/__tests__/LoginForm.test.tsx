@@ -5,7 +5,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material';
 import { LoginForm } from '../LoginForm';
 import * as AuthContextModule from '../AuthContext';
-import * as CoreModule from '@chenaikit/core';
 
 const theme = createTheme();
 
