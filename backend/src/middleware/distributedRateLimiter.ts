@@ -3,6 +3,7 @@ import Redis from 'ioredis';
 import { createRedisClient } from '../config/redis';
 import { getRateLimitConfig, RateLimitRule } from '../config/rateLimit';
 import {
+  attachUserForRateLimit,
   logRateLimitViolation,
   RateLimitInfo,
   resolveRateLimitRule,
@@ -120,6 +121,8 @@ export class DistributedRateLimiter {
 
   middleware() {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+      attachUserForRateLimit(req);
+
       if (shouldSkipRateLimit(req) || shouldBypassRateLimit(req)) {
         next();
         return;
@@ -149,6 +152,8 @@ export class DistributedRateLimiter {
 
   endpointMiddleware(rule: RateLimitRule, keySuffix: string) {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+      attachUserForRateLimit(req);
+
       if (shouldSkipRateLimit(req) || shouldBypassRateLimit(req)) {
         next();
         return;

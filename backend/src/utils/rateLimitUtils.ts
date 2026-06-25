@@ -149,18 +149,13 @@ export function sendRateLimitExceeded(
   });
 }
 
-export function optionalAuthenticateForRateLimit(
-  req: Request,
-  _res: Response,
-  next: NextFunction,
-): void {
+export function attachUserForRateLimit(req: Request): void {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ')
     ? authHeader.slice('Bearer '.length)
     : authHeader?.split(' ')[1];
 
   if (!token) {
-    next();
     return;
   }
 
@@ -169,7 +164,14 @@ export function optionalAuthenticateForRateLimit(
   } catch {
     // Rate limiting falls back to IP when the token is invalid.
   }
+}
 
+export function optionalAuthenticateForRateLimit(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
+  attachUserForRateLimit(req);
   next();
 }
 
