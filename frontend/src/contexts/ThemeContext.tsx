@@ -66,17 +66,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setUserPreference(next);
   }, [mode]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
-        e.preventDefault();
-        toggleTheme();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [toggleTheme]);
-
   const activeTheme = mode === 'light' ? lightTheme : darkTheme;
 
   const contextValue = useMemo(() => ({ mode, userPreference, setTheme, toggleTheme }), [mode, userPreference, setTheme, toggleTheme]);
