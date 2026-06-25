@@ -5,11 +5,14 @@ import { useThemeMode } from '../contexts/ThemeContext';
 
 export const ThemeToggle: React.FC = () => {
   const { mode, toggleTheme } = useThemeMode();
+  const nextMode = mode === 'light' ? 'dark' : 'light';
 
   return (
-    <Tooltip title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode (Ctrl+D)`}>
+    <Tooltip title={`Switch to ${nextMode} mode (Ctrl+D)`}>
       <IconButton
         onClick={toggleTheme}
+        aria-label={`Switch to ${nextMode} mode`}
+        aria-pressed={mode === 'dark'}
         sx={{
           color: 'rgba(255,255,255,0.8)',
           '&:hover': {
@@ -18,7 +21,7 @@ export const ThemeToggle: React.FC = () => {
           },
         }}
       >
-        {mode === 'light' ? <DarkMode /> : <LightMode />}
+        {mode === 'light' ? <DarkMode aria-hidden="true" /> : <LightMode aria-hidden="true" />}
       </IconButton>
     </Tooltip>
   );

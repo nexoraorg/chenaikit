@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { Box, Button, Tab, Tabs } from '@mui/material';
 import { TransactionData, PerformanceMetrics, UserActivity, NetworkNode, NetworkLink } from '@chenaikit/core';
 import {
   exportVisualization,
@@ -156,78 +157,46 @@ export const DataVisualizationExample: React.FC = () => {
           Interactive data visualization components for blockchain and AI applications
         </p>
         
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-          <button
-            onClick={handleRefreshData}
-            style={{
-              padding: '8px 16px',
-              background: '#3B82F6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2.5 }}>
+          <Button variant="contained" onClick={handleRefreshData} aria-label="Refresh visualization data">
             Refresh Data
-          </button>
-          
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {['png', 'svg', 'csv', 'pdf'].map((format) => (
-              <button
+          </Button>
+
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }} role="group" aria-label="Export options">
+            {(['png', 'svg', 'csv', 'pdf'] as const).map((format) => (
+              <Button
                 key={format}
-                onClick={() => handleExport(format as any)}
+                variant="contained"
+                color="success"
+                onClick={() => handleExport(format)}
                 disabled={isExporting}
-                style={{
-                  padding: '8px 16px',
-                  background: isExporting ? '#9CA3AF' : '#10B981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: isExporting ? 'not-allowed' : 'pointer',
-                  fontSize: '14px'
-                }}
+                aria-label={`Export current view as ${format.toUpperCase()}`}
               >
                 Export {format.toUpperCase()}
-              </button>
+              </Button>
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
       </div>
 
-      {/* Tab Navigation */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #E5E7EB', marginBottom: '20px' }}>
-        {[
-          { key: 'flow', label: 'Transaction Flow', icon: '🔄' },
-          { key: 'performance', label: 'Performance Metrics', icon: '📊' },
-          { key: 'heatmap', label: 'User Activity', icon: '🔥' },
-          { key: 'network', label: 'Network Topology', icon: '🕸️' }
-        ].map(({ key, label, icon }) => (
-          <button
-            key={key}
-            onClick={() => setActiveTab(key as any)}
-            style={{
-              padding: '12px 20px',
-              background: activeTab === key ? '#3B82F6' : 'transparent',
-              color: activeTab === key ? 'white' : '#6B7280',
-              border: 'none',
-              borderBottom: activeTab === key ? '2px solid #3B82F6' : '2px solid transparent',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <span>{icon}</span>
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        value={activeTab}
+        onChange={(_, value: 'flow' | 'performance' | 'heatmap' | 'network') => setActiveTab(value)}
+        aria-label="Visualization types"
+        sx={{ borderBottom: 1, borderColor: 'divider', mb: 2.5 }}
+      >
+        <Tab value="flow" label="Transaction Flow" id="viz-tab-flow" aria-controls="viz-panel-flow" />
+        <Tab value="performance" label="Performance Metrics" id="viz-tab-performance" aria-controls="viz-panel-performance" />
+        <Tab value="heatmap" label="User Activity" id="viz-tab-heatmap" aria-controls="viz-panel-heatmap" />
+        <Tab value="network" label="Network Topology" id="viz-tab-network" aria-controls="viz-panel-network" />
+      </Tabs>
 
-      {/* Chart Content */}
-      <div style={{ height: '600px', border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
+      <Box
+        role="tabpanel"
+        id={`viz-panel-${activeTab}`}
+        aria-labelledby={`viz-tab-${activeTab}`}
+        sx={{ height: 600, border: '1px solid #E5E7EB', borderRadius: 1, overflow: 'hidden' }}
+      >
         {activeTab === 'flow' && (
           <div ref={flowChartRef} style={{ height: '100%' }}>
             <TransactionFlowChart
@@ -282,7 +251,7 @@ export const DataVisualizationExample: React.FC = () => {
             />
           </div>
         )}
-      </div>
+      </Box>
 
       {/* Data Info */}
       <div style={{ marginTop: '20px', padding: '16px', background: '#F9FAFB', borderRadius: '8px' }}>

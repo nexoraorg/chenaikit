@@ -1,5 +1,23 @@
 import '@testing-library/jest-dom';
+import { toHaveNoViolations } from 'jest-axe';
+import '../styles/accessibility.css';
 import mockReact from 'react';
+
+expect.extend(toHaveNoViolations);
+
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
 
 // Mock chart components for testing
 jest.mock('recharts', () => ({
