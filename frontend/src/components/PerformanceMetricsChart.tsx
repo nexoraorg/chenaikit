@@ -149,16 +149,22 @@ export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = (
     return (
       <div className="performance-legend" style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '16px' }}>
         {payload.map((entry: any, index: number) => (
-          <div
+          <button
             key={index}
+            type="button"
             className="legend-item"
+            aria-label={`Toggle ${entry.value} metric`}
+            aria-pressed={selectedMetric === entry.dataKey}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               cursor: 'pointer',
               opacity: selectedMetric && selectedMetric !== entry.dataKey ? 0.5 : 1,
-              transition: 'opacity 0.2s'
+              transition: 'opacity 0.2s',
+              border: 'none',
+              background: 'transparent',
+              padding: 0,
             }}
             onClick={() => {
               const newSelection = selectedMetric === entry.dataKey ? null : entry.dataKey;
@@ -177,7 +183,7 @@ export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = (
             <span style={{ fontSize: '12px', color: '#374151' }}>
               {entry.value}
             </span>
-          </div>
+          </button>
         ))}
       </div>
     );

@@ -1,5 +1,9 @@
 import '@testing-library/jest-dom';
+import { toHaveNoViolations } from 'jest-axe';
+import '../styles/accessibility.css';
 import React from 'react';
+
+expect.extend(toHaveNoViolations);
 
 // ─── Recharts mocks ───────────────────────────────────────────────────────────
 jest.mock('recharts', () => ({
