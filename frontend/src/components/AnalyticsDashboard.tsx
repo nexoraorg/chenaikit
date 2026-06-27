@@ -354,6 +354,13 @@ const HealthStat: React.FC<{
   value: string;
   status: "good" | "warning" | "critical" | "none";
 }> = ({ label, value, status }) => {
+  const statusLabels = {
+    good: "Healthy",
+    warning: "Needs attention",
+    critical: "Critical",
+    none: "Informational",
+  } as const;
+
   const getStatusColor = () => {
     switch (status) {
       case "good":
@@ -372,8 +379,13 @@ const HealthStat: React.FC<{
       <Typography variant="caption" color="textSecondary">
         {label}
       </Typography>
-      <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+      <Box
+        sx={{ display: "flex", alignItems: "center", mt: 0.5 }}
+        aria-label={`${label}: ${value}. Status: ${statusLabels[status]}`}
+      >
         <Box
+          component="span"
+          aria-hidden="true"
           sx={{
             width: 8,
             height: 8,
@@ -382,8 +394,11 @@ const HealthStat: React.FC<{
             mr: 1,
           }}
         />
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+        <Typography variant="h6" component="span" sx={{ fontWeight: 600 }}>
           {value}
+        </Typography>
+        <Typography component="span" className="sr-only">
+          {` (${statusLabels[status]})`}
         </Typography>
       </Box>
     </Grid>

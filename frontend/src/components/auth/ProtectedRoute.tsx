@@ -24,8 +24,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    // If user's role is not authorized, redirect to default landing page
+  if (allowedRoles && (!user || !allowedRoles.includes(user.role))) {
+    // If allowedRoles is set and user is null or role is not authorized,
+    // redirect to default landing page — null user cannot satisfy any role check.
     return <Navigate to="/" replace />;
   }
 
