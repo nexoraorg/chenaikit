@@ -65,7 +65,7 @@ export function memoryCheckStatus(
 // ---------------------------------------------------------------------------
 
 /** Previous CPU usage sample for delta calculation */
-let _prevCpuUsage: NodeJS.CpuUsage | null = null;
+let _prevCpuUsage: ReturnType<typeof process.cpuUsage> | null = null;
 let _prevCpuTime = 0;
 
 export function captureCpuSnapshot(): CpuSnapshot {
@@ -193,6 +193,7 @@ export function deriveOverallStatus(
   checks: Record<string, CheckStatus>
 ): HealthStatus {
   const statuses = Object.values(checks);
+  if (statuses.length === 0) return 'degraded';
   if (statuses.includes('down')) return 'unhealthy';
   if (statuses.includes('degraded')) return 'degraded';
   return 'healthy';
@@ -236,13 +237,22 @@ export function calculateHealthScore(
   const externalWeight =
     externalKeys.length > 0 ? SCORE_WEIGHTS._externalDefault / externalKeys.length : 0;
 
+  // Compute the sum of configured weights for only the checks that are present,
+  // then normalize so the total always reaches 100 regardless of which checks
+  // are enabled.
+  const rawWeights = Object.keys(checks).map((name) =>
+    knownKeys.includes(name) ? (SCORE_WEIGHTS[name] ?? 0) : externalWeight
+  );
+  const totalWeight = rawWeights.reduce((sum, w) => sum + w, 0);
+
   const components: HealthScoreBreakdown['components'] = [];
   let total = 0;
 
   for (const [name, status] of Object.entries(checks)) {
-    const weight = knownKeys.includes(name)
+    const configuredWeight = knownKeys.includes(name)
       ? (SCORE_WEIGHTS[name] ?? 0)
       : externalWeight;
+    const weight = totalWeight > 0 ? configuredWeight / totalWeight : 0;
     const rawScore = checkStatusToScore(status);
     const weightedScore = rawScore * weight;
     total += weightedScore;
@@ -330,6 +340,7 @@ export function calculateHealthTrend(entries: HealthHistoryEntry[]): HealthTrend
 export function generateRecommendations(
   checks: Record<string, CheckStatus>,
   trend: HealthTrend,
+  thresholds: HealthCheckThresholds,
   memSnapshot?: MemorySnapshot,
   diskSnapshot?: DiskSnapshot,
   cpuSnapshot?: CpuSnapshot
@@ -349,11 +360,11 @@ export function generateRecommendations(
   }
 
   if (memSnapshot) {
-    if (memSnapshot.usagePercent > 90) {
+    if (memSnapshot.usagePercent >= thresholds.memoryUsagePercent) {
       recs.push(
         `Heap usage is critically high (${memSnapshot.usagePercent}%). Investigate memory leaks or increase heap limit via --max-old-space-size.`
       );
-    } else if (memSnapshot.usagePercent > 75) {
+    } else if (memSnapshot.usagePercent >= thresholds.memoryUsagePercent * 0.85) {
       recs.push(
         `Heap usage is elevated (${memSnapshot.usagePercent}%). Monitor for upward trends.`
       );
@@ -361,11 +372,11 @@ export function generateRecommendations(
   }
 
   if (diskSnapshot && diskSnapshot.usagePercent > 0) {
-    if (diskSnapshot.usagePercent > 90) {
+    if (diskSnapshot.usagePercent >= thresholds.diskUsagePercent) {
       recs.push(
         `Disk usage is critically high (${diskSnapshot.usagePercent}% on ${diskSnapshot.path}). Free space immediately to avoid write failures.`
       );
-    } else if (diskSnapshot.usagePercent > 80) {
+    } else if (diskSnapshot.usagePercent >= thresholds.diskUsagePercent * 0.9) {
       recs.push(
         `Disk usage is elevated (${diskSnapshot.usagePercent}% on ${diskSnapshot.path}). Plan capacity expansion or clean up old data.`
       );

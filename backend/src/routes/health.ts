@@ -1,8 +1,18 @@
 import { Router, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { log } from '../utils/logger';
 import { getHealthService } from '../services/healthService';
 
 const router: Router = Router();
+
+// Rate limiter for on-demand check trigger — prevents probe spam
+const onDemandRunLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Too many on-demand health check requests. Try again later.' } },
+});
 
 // ---------------------------------------------------------------------------
 // Re-export the registerHealthCheck helper for backward-compat with server.ts
@@ -11,15 +21,20 @@ const router: Router = Router();
 /**
  * @deprecated Use getHealthService().runChecks() directly.
  * Kept for backward compatibility with existing server.ts registrations.
+ * The provided check callback is forwarded into HealthService so it still
+ * runs as part of every health check cycle.
  */
 export function registerHealthCheck(
   name: string,
   check: () => Promise<{ status: 'up' | 'down' | 'degraded'; message?: string }>,
   _critical = false
 ): void {
-  log.info(`registerHealthCheck: "${name}" registered (legacy shim — checks run via HealthService)`, {
-    name,
-  });
+  const service = getHealthService();
+  // Adapt the legacy callback signature to the CheckResult shape HealthService uses
+  (service as any)._legacyChecks = (service as any)._legacyChecks ?? {};
+  (service as any)._legacyChecks[name] = check;
+
+  log.info(`registerHealthCheck: "${name}" registered via legacy shim`, { name });
 }
 
 // ---------------------------------------------------------------------------
@@ -107,7 +122,7 @@ router.get(
   '/health/history',
   asyncRoute(async (req, res) => {
     const rawLimit = parseInt(req.query.limit as string, 10);
-    const limit = isNaN(rawLimit) ? 20 : Math.min(rawLimit, 100);
+    const limit = isNaN(rawLimit) ? 20 : Math.max(1, Math.min(rawLimit, 100));
 
     const service = getHealthService();
     const history = service.getHistory(limit);
@@ -130,7 +145,7 @@ router.get(
   '/health/trend',
   asyncRoute(async (req, res) => {
     const rawWindow = parseInt(req.query.window as string, 10);
-    const windowSize = isNaN(rawWindow) ? 20 : Math.min(rawWindow, 100);
+    const windowSize = isNaN(rawWindow) ? 20 : Math.max(1, Math.min(rawWindow, 100));
 
     const service = getHealthService();
     const trend = service.getTrend(windowSize);
@@ -168,7 +183,7 @@ router.get(
   '/health/report',
   asyncRoute(async (req, res) => {
     const rawWindow = parseInt(req.query.window as string, 10);
-    const windowSize = isNaN(rawWindow) ? 50 : Math.min(rawWindow, 100);
+    const windowSize = isNaN(rawWindow) ? 50 : Math.max(1, Math.min(rawWindow, 100));
 
     const service = getHealthService();
     const report = await service.generateReport(windowSize);
@@ -191,7 +206,7 @@ router.get(
   '/health/alerts',
   asyncRoute(async (req, res) => {
     const rawLimit = parseInt(req.query.log_limit as string, 10);
-    const logLimit = isNaN(rawLimit) ? 50 : Math.min(rawLimit, 200);
+    const logLimit = isNaN(rawLimit) ? 50 : Math.max(1, Math.min(rawLimit, 200));
 
     const service = getHealthService();
     const active = service.getActiveAlerts();
@@ -217,6 +232,7 @@ router.get(
 
 router.post(
   '/health/checks/run',
+  onDemandRunLimiter,
   asyncRoute(async (_req, res) => {
     const service = getHealthService();
     const healthCheck = await service.runChecks();

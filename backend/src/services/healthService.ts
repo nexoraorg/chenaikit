@@ -67,6 +67,9 @@ export class HealthService {
   /** Interval handle for the background monitoring loop */
   private monitoringInterval: ReturnType<typeof setInterval> | null = null;
 
+  /** Guard flag to prevent overlapping check cycles */
+  private monitoringRunInFlight = false;
+
   constructor(options: HealthServiceOptions = {}) {
     this.config = options.config ?? getHealthConfig();
     this.prisma = options.prisma ?? null;
@@ -86,14 +89,10 @@ export class HealthService {
     });
 
     // Run once immediately, then on the interval
-    this.runChecks().catch((err) =>
-      log.error('HealthService: initial check failed', err as Error)
-    );
+    void this.runMonitoringCycle('initial');
 
     this.monitoringInterval = setInterval(() => {
-      this.runChecks().catch((err) =>
-        log.error('HealthService: periodic check failed', err as Error)
-      );
+      void this.runMonitoringCycle('periodic');
     }, this.config.intervalMs);
 
     // Do not keep the process alive solely for this interval
@@ -102,9 +101,24 @@ export class HealthService {
     }
   }
 
+  /** Serialized wrapper — skips the cycle if the previous one is still running. */
+  private async runMonitoringCycle(label: string): Promise<void> {
+    if (this.monitoringRunInFlight) {
+      log.warn(`HealthService: skipping ${label} check — previous cycle still running`);
+      return;
+    }
+    this.monitoringRunInFlight = true;
+    try {
+      await this.runChecks();
+    } catch (err) {
+      log.error(`HealthService: ${label} check failed`, err as Error);
+    } finally {
+      this.monitoringRunInFlight = false;
+    }
+  }
+
   /** Stop the background monitoring loop. */
-  stopMonitoring(): void {
-    if (this.monitoringInterval) {
+  stopMonitoring(): void {    if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
       log.info('HealthService: monitoring stopped');
@@ -165,6 +179,33 @@ export class HealthService {
         const result = await this.checkExternalService(svc.name, svc.url, svc.timeoutMs, svc.expectedStatus);
         checks[svc.name] = result;
         checkStatuses[svc.name] = result.status;
+      }
+    }
+
+    // ---- Legacy registered callbacks ------------------------------------
+    const legacyChecks: Record<string, () => Promise<{ status: 'up' | 'down' | 'degraded'; message?: string }>> =
+      (this as any)._legacyChecks ?? {};
+    for (const [name, fn] of Object.entries(legacyChecks)) {
+      const start = Date.now();
+      const checkedAt = nowIso();
+      try {
+        const raw = await Promise.race([
+          fn(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Legacy check timed out')), this.config.timeoutMs)
+          ),
+        ]);
+        const result = {
+          status: raw.status,
+          responseTimeMs: Date.now() - start,
+          message: raw.message,
+          checkedAt,
+        };
+        checks[name] = result;
+        checkStatuses[name] = result.status;
+      } catch (err) {
+        checks[name] = { status: 'down', responseTimeMs: Date.now() - start, message: (err as Error).message, checkedAt };
+        checkStatuses[name] = 'down';
       }
     }
 
@@ -368,10 +409,27 @@ export class HealthService {
     const start = Date.now();
     const checkedAt = nowIso();
 
+    // Validate URL before attempting a connection
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return {
+        status: 'down',
+        responseTimeMs: 0,
+        message: `Invalid URL: ${url}`,
+        details: { url },
+        checkedAt,
+      };
+    }
+
     return new Promise((resolve) => {
-      const parsedUrl = new URL(url);
       const transport = parsedUrl.protocol === 'https:' ? https : http;
+      let req: ReturnType<typeof transport.get>;
+
       const timer = setTimeout(() => {
+        // Destroy the in-flight request before resolving
+        req?.destroy();
         resolve({
           status: 'down',
           responseTimeMs: Date.now() - start,
@@ -380,7 +438,7 @@ export class HealthService {
         });
       }, timeoutMs);
 
-      const req = transport.get(url, { timeout: timeoutMs }, (res) => {
+      req = transport.get(url, { timeout: timeoutMs }, (res) => {
         clearTimeout(timer);
         const responseTimeMs = Date.now() - start;
         const ok = res.statusCode === expectedStatus;
@@ -664,6 +722,7 @@ export class HealthService {
     const recommendations = generateRecommendations(
       checkStatuses,
       trend,
+      this.config.thresholds,
       memSnap,
       diskSnap,
       cpuSnap
