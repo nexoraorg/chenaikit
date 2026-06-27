@@ -1,184 +1,231 @@
 import { Router, Request, Response } from 'express';
-import { HealthCheckResult } from '../types/monitoring';
 import { log } from '../utils/logger';
-import { metricsService } from '../services/metricsService';
+import { getHealthService } from '../services/healthService';
 
 const router: Router = Router();
-const startTime = Date.now();
 
-interface HealthStatus {
-  status: 'healthy' | 'degraded' | 'unhealthy';
-  timestamp: string;
-  uptime: number;
-  services: Record<string, ServiceHealth>;
-}
+// ---------------------------------------------------------------------------
+// Re-export the registerHealthCheck helper for backward-compat with server.ts
+// ---------------------------------------------------------------------------
 
-interface ServiceHealth {
-  status: 'up' | 'down';
-  responseTime?: number;
-  error?: string;
-}
-
-const healthChecks: Record<string, () => Promise<ServiceHealth>> = {};
-
-interface HealthCheckDependency {
-  name: string;
-  check: () => Promise<ServiceHealth>;
-  critical: boolean;
-}
-
-const dependencies: HealthCheckDependency[] = [];
-
+/**
+ * @deprecated Use getHealthService().runChecks() directly.
+ * Kept for backward compatibility with existing server.ts registrations.
+ */
 export function registerHealthCheck(
   name: string,
-  check: () => Promise<ServiceHealth>,
-  critical: boolean = false
+  check: () => Promise<{ status: 'up' | 'down' | 'degraded'; message?: string }>,
+  _critical = false
 ): void {
-  dependencies.push({ name, check, critical });
-  log.info(`Health check registered: ${name}`, { critical });
+  log.info(`registerHealthCheck: "${name}" registered (legacy shim — checks run via HealthService)`, {
+    name,
+  });
 }
 
-/**
- * Check database connectivity
- */
-async function checkDatabase(): Promise<{ status: 'up' | 'down'; message?: string; responseTime: number }> {
-  const start = Date.now();
-  try {
-    const responseTime = Date.now() - start;
-    return { status: 'up', responseTime };
-  } catch (error) {
-    const err = error as Error;
-    const responseTime = Date.now() - start;
-    return {
-      status: 'down',
-      message: err.message,
-      responseTime
-    };
-  }
-}
+// ---------------------------------------------------------------------------
+// Helper: wrap async route handlers and forward errors
+// ---------------------------------------------------------------------------
 
-/**
- * Check Redis connectivity
- */
-async function checkRedis(): Promise<{ status: 'up' | 'down'; message?: string; responseTime: number }> {
-  const start = Date.now();
-  try {
-    const responseTime = Date.now() - start;
-    return { status: 'up', responseTime };
-  } catch (error) {
-    const err = error as Error;
-    const responseTime = Date.now() - start;
-    return {
-      status: 'down',
-      message: err.message,
-      responseTime
-    };
-  }
-}
+type AsyncHandler = (req: Request, res: Response) => Promise<void>;
 
-/**
- * Check system resources
- */
-function checkSystemResources(): { status: 'up' | 'degraded'; details: any } {
-  const memUsage = process.memoryUsage();
-  const memUsagePercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
-
-  return {
-    status: memUsagePercent > 90 ? 'degraded' : 'up',
-    details: {
-      memory: {
-        heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB` ,
-        heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB` ,
-        usagePercent: `${memUsagePercent.toFixed(2)}%` ,
-      },
-      uptime: Math.floor((Date.now() - startTime) / 1000),
-      pid: process.pid,
-    },
-  };
-}
-
-/**
- * Perform all health checks
- */
-async function performHealthChecks(): Promise<HealthCheckResult> {
-  const checks: HealthCheckResult['checks'] = {};
-  let overallStatus: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
-
-  // System resources check
-  const systemCheck = checkSystemResources();
-  checks.system = {
-    status: systemCheck.status,
-    details: systemCheck.details,
-  };
-
-  if (systemCheck.status === 'degraded') {
-    overallStatus = 'degraded';
-  }
-
-  // Check registered dependencies
-  const results: Record<string, ServiceHealth> = {};
-  for (const dep of dependencies) {
-    const start = Date.now();
-    try {
-      results[dep.name] = await Promise.race([
-        dep.check(),
-        new Promise<ServiceHealth>((_, reject) =>
-          setTimeout(() => reject(new Error('Health check timeout')), 5000)
-        )
-      ]) as ServiceHealth;
-      results[dep.name].responseTime = Date.now() - start;
-    } catch (error) {
-      results[dep.name] = {
-        status: 'down',
-        error: (error as Error).message
-      };
-      overallStatus = 'unhealthy';
-    }
-  }
-
-  const downServices = Object.values(results).filter((s: ServiceHealth) => s.status === 'down').length;
-  if (downServices > 0 && downServices < Object.keys(results).length) {
-    overallStatus = 'degraded';
-  }
-
-  return {
-    status: overallStatus,
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    checks: {
-      ...checks,
-      ...results
-    }
-  };
-}
-
-// Health check endpoint
-router.get('/health', async (req: Request, res: Response) => {
-  const healthResult = await performHealthChecks();
-  const statusCode = healthResult.status === 'healthy' ? 200 : healthResult.status === 'degraded' ? 207 : 503;
-  res.status(statusCode).json(healthResult);
-});
-
-router.get('/health/liveness', (req: Request, res: Response) => {
-  res.status(200).json({ status: 'alive' });
-});
-
-router.get('/health/readiness', async (req: Request, res: Response) => {
-  const criticalServices = ['database', 'stellar'];
-  const results: Record<string, ServiceHealth> = {};
-
-  for (const name of criticalServices) {
-    if (healthChecks[name]) {
-      try {
-        results[name] = await healthChecks[name]();
-      } catch (error) {
-        return res.status(503).json({ status: 'not ready', error: (error as Error).message });
+function asyncRoute(fn: AsyncHandler) {
+  return (req: Request, res: Response): void => {
+    fn(req, res).catch((err: unknown) => {
+      log.error('Health route error', err as Error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          error: { code: 'HEALTH_CHECK_ERROR', message: (err as Error).message },
+        });
       }
-    }
-  }
+    });
+  };
+}
 
-  const allUp = Object.values(results).every(s => s.status === 'up');
-  res.status(allUp ? 200 : 503).json({ status: allUp ? 'ready' : 'not ready', services: results });
+// ---------------------------------------------------------------------------
+// GET /health
+// Full health snapshot — used by monitoring services and CI/CD pipelines.
+// Returns 200 (healthy), 207 (degraded), or 503 (unhealthy).
+// ---------------------------------------------------------------------------
+
+router.get(
+  '/health',
+  asyncRoute(async (_req, res) => {
+    const service = getHealthService();
+    const healthCheck = await service.runChecks();
+
+    res.status(healthCheck.httpStatusCode()).json({
+      success: healthCheck.isHealthy() || healthCheck.isDegraded(),
+      data: healthCheck.toJSON(),
+    });
+  })
+);
+
+// ---------------------------------------------------------------------------
+// GET /health/liveness
+// Kubernetes liveness probe — only verifies the process is alive.
+// Should almost never fail; failure causes k8s to restart the pod.
+// ---------------------------------------------------------------------------
+
+router.get('/health/liveness', (_req: Request, res: Response) => {
+  const service = getHealthService();
+  const result = service.livenessCheck();
+  res.status(200).json({ success: true, data: result });
 });
+
+// ---------------------------------------------------------------------------
+// GET /health/readiness
+// Kubernetes / load-balancer readiness probe.
+// Checks DB and Redis only.  Returns 503 if either is down.
+// ---------------------------------------------------------------------------
+
+router.get(
+  '/health/readiness',
+  asyncRoute(async (_req, res) => {
+    const service = getHealthService();
+    const result = await service.readinessCheck();
+    const statusCode = result.ready ? 200 : 503;
+
+    res.status(statusCode).json({
+      success: result.ready,
+      data: {
+        ready: result.ready,
+        checks: result.checks,
+      },
+    });
+  })
+);
+
+// ---------------------------------------------------------------------------
+// GET /health/history
+// Recent health check history.
+// Query params:
+//   limit  – number of entries to return (default 20, max 100)
+// ---------------------------------------------------------------------------
+
+router.get(
+  '/health/history',
+  asyncRoute(async (req, res) => {
+    const rawLimit = parseInt(req.query.limit as string, 10);
+    const limit = isNaN(rawLimit) ? 20 : Math.min(rawLimit, 100);
+
+    const service = getHealthService();
+    const history = service.getHistory(limit);
+
+    res.status(200).json({
+      success: true,
+      data: history,
+    });
+  })
+);
+
+// ---------------------------------------------------------------------------
+// GET /health/trend
+// Health trend analysis over a sliding window of history entries.
+// Query params:
+//   window – number of history entries to include (default 20, max 100)
+// ---------------------------------------------------------------------------
+
+router.get(
+  '/health/trend',
+  asyncRoute(async (req, res) => {
+    const rawWindow = parseInt(req.query.window as string, 10);
+    const windowSize = isNaN(rawWindow) ? 20 : Math.min(rawWindow, 100);
+
+    const service = getHealthService();
+    const trend = service.getTrend(windowSize);
+
+    res.status(200).json({
+      success: true,
+      data: trend,
+    });
+  })
+);
+
+// ---------------------------------------------------------------------------
+// GET /health/metrics
+// Lightweight dashboard metrics snapshot — no fresh check is triggered.
+// ---------------------------------------------------------------------------
+
+router.get('/health/metrics', (_req: Request, res: Response) => {
+  const service = getHealthService();
+  const metrics = service.getDashboardMetrics();
+
+  res.status(200).json({
+    success: true,
+    data: metrics,
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GET /health/report
+// Full health report with trend, per-check summary, alerts, recommendations.
+// Query params:
+//   window – number of history entries to include in analysis (default 50)
+// ---------------------------------------------------------------------------
+
+router.get(
+  '/health/report',
+  asyncRoute(async (req, res) => {
+    const rawWindow = parseInt(req.query.window as string, 10);
+    const windowSize = isNaN(rawWindow) ? 50 : Math.min(rawWindow, 100);
+
+    const service = getHealthService();
+    const report = await service.generateReport(windowSize);
+
+    res.status(200).json({
+      success: true,
+      data: report,
+    });
+  })
+);
+
+// ---------------------------------------------------------------------------
+// GET /health/alerts
+// Returns active (unresolved) alerts and the recent alert log.
+// Query params:
+//   log_limit – max number of historical alerts to return (default 50)
+// ---------------------------------------------------------------------------
+
+router.get(
+  '/health/alerts',
+  asyncRoute(async (req, res) => {
+    const rawLimit = parseInt(req.query.log_limit as string, 10);
+    const logLimit = isNaN(rawLimit) ? 50 : Math.min(rawLimit, 200);
+
+    const service = getHealthService();
+    const active = service.getActiveAlerts();
+    const alertLog = service.getAlertLog(logLimit);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        activeCount: active.length,
+        active,
+        logCount: alertLog.length,
+        log: alertLog,
+      },
+    });
+  })
+);
+
+// ---------------------------------------------------------------------------
+// POST /health/checks/run
+// Trigger an on-demand health check run outside the background interval.
+// Useful for CI/CD pipelines and monitoring dashboards.
+// ---------------------------------------------------------------------------
+
+router.post(
+  '/health/checks/run',
+  asyncRoute(async (_req, res) => {
+    const service = getHealthService();
+    const healthCheck = await service.runChecks();
+
+    res.status(healthCheck.httpStatusCode()).json({
+      success: healthCheck.isHealthy() || healthCheck.isDegraded(),
+      data: healthCheck.toJSON(),
+    });
+  })
+);
 
 export default router;
