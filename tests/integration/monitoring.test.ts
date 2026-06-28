@@ -63,8 +63,9 @@ describe('Monitoring System Integration', () => {
   let testAccount: TestAccount;
 
   beforeAll(async () => {
+    // Increase timeout for testnet account creation in CI environment
     testAccount = await createTestAccount();
-  });
+  }, 60000);
 
   afterEach(async () => {
     if (monitor) {
