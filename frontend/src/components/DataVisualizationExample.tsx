@@ -12,6 +12,7 @@ import TransactionFlowChart from './TransactionFlowChart';
 import PerformanceMetricsChart from './PerformanceMetricsChart';
 import UserActivityHeatmap from './UserActivityHeatmap';
 import NetworkTopologyView from './NetworkTopologyView';
+import useUndoRedo from '../hooks/useUndoRedo';
 
 // Generate sample data
 const generateSampleData = () => {
@@ -87,6 +88,7 @@ export const DataVisualizationExample: React.FC = () => {
   const [activeTab, setActiveTab] = useState<VizTab>('flow');
   const [data, setData] = useState(generateSampleData());
   const [isExporting, setIsExporting] = useState(false);
+  const { trackAction } = useUndoRedo();
   
   const flowChartRef = useRef<HTMLDivElement>(null);
   const performanceChartRef = useRef<HTMLDivElement>(null);
@@ -153,8 +155,14 @@ export const DataVisualizationExample: React.FC = () => {
 
   // Refresh data
   const handleRefreshData = useCallback(() => {
-    setData(generateSampleData());
-  }, []);
+    const oldData = data;
+    trackAction(
+      'data_modification',
+      'Refreshed visualization data',
+      () => setData(generateSampleData()),
+      () => setData(oldData),
+    );
+  }, [data, trackAction]);
 
   return (
     <div className="data-visualization-example" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>

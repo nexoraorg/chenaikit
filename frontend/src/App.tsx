@@ -71,6 +71,8 @@ const PrivacyPage: React.FC = () => {
 const DashboardShell: React.FC = () => {
   const [activeDemo, setActiveDemo] = useState<DemoView>('analytics');
   const { user, logout } = useAuth();
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const { undoStack } = useUndoRedoContext();
 
   return (
     <div className="App">
@@ -242,6 +244,15 @@ const DashboardShell: React.FC = () => {
       >
         Built with ChenaiKit - Advanced AI and Blockchain Solutions
       </Box>
+
+      <Drawer
+        anchor="right"
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        PaperProps={{ sx: { width: 320, maxWidth: '100vw' } }}
+      >
+        <ActionHistory />
+      </Drawer>
     </div>
   );
 };
@@ -251,6 +262,7 @@ const App: React.FC = () => {
     <ThemeProvider>
       <LoadingProvider>
       <ToastProvider>
+        <UndoRedoProvider maxHistorySize={50}>
         <AuthProvider>
 
         <BrowserRouter>
@@ -379,6 +391,7 @@ const App: React.FC = () => {
         </BrowserRouter>
         <ToastContainer />
       </AuthProvider>
+      </UndoRedoProvider>
       </ToastProvider>
       </LoadingProvider>
     </ThemeProvider>
