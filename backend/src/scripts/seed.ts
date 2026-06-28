@@ -98,7 +98,7 @@ async function main() {
         console.log(`API Keys with users: ${apiKeysWithUsers}`);
         
         const orphanedUsage = await prisma.apiUsage.count({
-          where: { apiKey: null }
+          where: { apiKeyId: null } as any
         });
         
         if (orphanedUsage > 0) {

@@ -1,7 +1,7 @@
-import { Prisma } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { createUserFactory, createApiKeyFactory } from '../factories';
 
-export async function seedProduction(prisma: Prisma.Client, options: { 
+export async function seedProduction(prisma: PrismaClient, options: { 
   adminEmail?: string;
   adminPassword?: string;
   apiKeyName?: string;
@@ -18,15 +18,19 @@ export async function seedProduction(prisma: Prisma.Client, options: {
   console.log(`[seed:prod] Creating admin user: ${adminEmail}`);
   const hashedPassword = await import('bcrypt').then(bcrypt => bcrypt.hash(adminPassword, 12));
   
-  const user = await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {},
-    create: {
-      email: adminEmail,
-      password: hashedPassword,
-      role: 'admin',
-    },
+  let user = await prisma.user.findFirst({
+    where: { email: adminEmail } as any,
   });
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email: adminEmail,
+        password: hashedPassword,
+        role: 'admin',
+      },
+    });
+  }
 
   // Create admin API key
   if (apiKeyName) {
@@ -35,19 +39,24 @@ export async function seedProduction(prisma: Prisma.Client, options: {
     const keyHash = createHash('sha256').update(plainApiKey).digest('hex');
     
     console.log(`[seed:prod] Creating API key: ${apiKeyName}`);
-    await prisma.apiKey.upsert({
-      where: { keyHash },
-      update: {},
-      create: {
-        keyHash,
-        name: apiKeyName,
-        tier: 'ENTERPRISE',
-        userId: user.id,
-        isActive: true,
-        allowedIps: '[]',
-        allowedPaths: '[]',
-      },
+    
+    let apiKey = await prisma.apiKey.findFirst({
+      where: { keyHash } as any,
     });
+
+    if (!apiKey) {
+      apiKey = await prisma.apiKey.create({
+        data: {
+          keyHash,
+          name: apiKeyName,
+          tier: 'ENTERPRISE',
+          userId: user.id,
+          isActive: true,
+          allowedIps: '[]',
+          allowedPaths: '[]',
+        },
+      });
+    }
 
     if (process.env.SEED_LOG_SECRETS_LOCAL === 'true') {
       console.warn(`[seed:prod] Admin API Key (store securely): ${plainApiKey}`);
@@ -63,14 +72,19 @@ export async function seedProduction(prisma: Prisma.Client, options: {
 
   for (const userData of sampleUsers) {
     const hashedUserPassword = await import('bcrypt').then(bcrypt => bcrypt.hash(userData.password, 12));
-    await prisma.user.upsert({
-      where: { email: userData.email },
-      update: {},
-      create: {
-        ...userData,
-        password: hashedUserPassword,
-      },
+    
+    let existingUser = await prisma.user.findFirst({
+      where: { email: userData.email } as any,
     });
+
+    if (!existingUser) {
+      await prisma.user.create({
+        data: {
+          ...userData,
+          password: hashedUserPassword,
+        },
+      });
+    }
   }
 
   console.log('[seed:prod] Production seed completed successfully!');

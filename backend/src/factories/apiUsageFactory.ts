@@ -13,7 +13,7 @@ export interface ApiUsageFactoryOptions {
 export function createApiUsageFactory(options: ApiUsageFactoryOptions = {}) {
   const { count = 1, apiKeyId, daysBack = 30 } = options;
 
-  const usageRecords: Prisma.ApiUsageCreateManyInput[] = [];
+  const usageRecords: any[] = [];
   const endDate = new Date();
   const startDate = new Date();
   startDate.setDate(endDate.getDate() - daysBack);
@@ -31,7 +31,7 @@ export function createApiUsageFactory(options: ApiUsageFactoryOptions = {}) {
   for (let i = 0; i < count; i++) {
     const timestamp = new Date(startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime()));
     
-    const usage: Prisma.ApiUsageCreateManyInput = {
+    const usage: any = {
       apiKeyId: apiKeyId || randomUUID(),
       endpoint: randomItem(endpoints),
       method: randomItem(methods),
@@ -52,7 +52,7 @@ export function createApiUsageFactory(options: ApiUsageFactoryOptions = {}) {
   return usageRecords;
 }
 
-export function createApiUsageCreateInput(overrides: Partial<Prisma.ApiUsageCreateInput> = {}): Prisma.ApiUsageCreateInput {
+export function createApiUsageCreateInput(overrides: any = {}): any {
   return {
     apiKeyId: overrides.apiKeyId || randomUUID(),
     endpoint: overrides.endpoint || '/api/v1/users',

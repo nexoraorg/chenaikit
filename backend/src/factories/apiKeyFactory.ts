@@ -14,18 +14,18 @@ export interface ApiKeyFactoryOptions {
 export function createApiKeyFactory(options: ApiKeyFactoryOptions = {}) {
   const { count = 1, userId, name, tier } = options;
 
-  const apiKeys: Prisma.ApiKeyCreateManyInput[] = [];
+  const apiKeys: any[] = [];
   
   for (let i = 0; i < count; i++) {
     const plainKey = randomBytes(32).toString('hex');
     const keyHash = createHash('sha256').update(plainKey).digest('hex');
     
-    const apiKey: Prisma.ApiKeyCreateManyInput = {
+    const apiKey: any = {
       keyHash,
       name: name || `API Key ${randomUUID().slice(0, 8)}`,
       tier: tier || randomItem(['FREE', 'PRO', 'ENTERPRISE']),
       userId: userId,
-      isActive: Math.random() > 0.1, // 90% active
+      isActive: Math.random() > 0.1,
       allowedIps: JSON.stringify([]),
       allowedPaths: JSON.stringify(['/api/*']),
       createdAt: new Date(Date.now() - randomInt(0, 30 * 24 * 60 * 60 * 1000)),
@@ -44,7 +44,7 @@ export function createApiKeyFactory(options: ApiKeyFactoryOptions = {}) {
   return { apiKeys, plainKeys: [] };
 }
 
-export function createApiKeyCreateInput(overrides: Partial<Prisma.ApiKeyCreateInput> = {}): Prisma.ApiKeyCreateInput {
+export function createApiKeyCreateInput(overrides: any = {}): any {
   const plainKey = randomBytes(32).toString('hex');
   const keyHash = createHash('sha256').update(plainKey).digest('hex');
   

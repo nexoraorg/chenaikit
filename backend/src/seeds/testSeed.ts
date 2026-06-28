@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { createUserFactory, createApiKeyFactory, createApiUsageFactory } from '../factories';
 
 export interface TestSeedData {
@@ -46,7 +46,7 @@ export async function generateTestSeed(options: {
   };
 }
 
-export async function seedTest(prisma: Prisma.Client, options: { 
+export async function seedTest(prisma: PrismaClient, options: { 
   reset?: boolean; 
   userCount?: number; 
   apiKeyCount?: number; 

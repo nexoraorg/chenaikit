@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { createUserFactory, createApiKeyFactory, createApiUsageFactory } from '../factories';
 
 export interface DevelopmentSeedData {
@@ -43,7 +43,7 @@ export async function generateDevelopmentSeed(options: {
   };
 }
 
-export async function seedDevelopment(prisma: Prisma.Client, options: { 
+export async function seedDevelopment(prisma: PrismaClient, options: { 
   reset?: boolean; 
   userCount?: number; 
   apiKeyCount?: number; 
@@ -65,7 +65,7 @@ export async function seedDevelopment(prisma: Prisma.Client, options: {
   console.log(`[seed:dev] Inserting ${seedData.users.length} users...`);
   for (const user of seedData.users) {
     await prisma.user.upsert({
-      where: { email: user.email },
+      where: { id: user.id } as any,
       update: {},
       create: user,
     });
