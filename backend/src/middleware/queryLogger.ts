@@ -372,7 +372,7 @@ export function createQueryLoggingMiddleware(logger: QueryLogger) {
 
       logger.logQuery({
         timestamp: new Date(),
-        query: `${}.${action}`,
+        query: `${model}.${action}`,
         params: logger.config.includeQueryParams ? params.args : undefined,
         duration,
         model,
