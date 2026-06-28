@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { QueryLogger, QueryLogEntry } from '../middleware/queryLogger';
 
 /**
@@ -225,10 +224,10 @@ export class QueryOptimizer {
   /**
    * Optimize a Prisma query
    */
-  optimizeQuery<T extends Prisma.ArgsAny>(
-    query: T,
+  optimizeQuery(
+    query: any,
     model: string
-  ): T {
+  ): any {
     if (!this.config.autoOptimize) {
       return query;
     }
@@ -611,10 +610,10 @@ export class QueryOptimizer {
   /**
    * Add common select fields to a query
    */
-  private addCommonSelect<T extends Prisma.ArgsAny>(
-    query: T,
+  private addCommonSelect(
+    query: any,
     model: string
-  ): T {
+  ): any {
     const commonFields: Record<string, string[]> = {
       User: ['id', 'email', 'role', 'createdAt'],
       ApiKey: ['id', 'name', 'tier', 'isActive', 'createdAt'],
@@ -630,7 +629,7 @@ export class QueryOptimizer {
     return {
       ...query,
       select,
-    } as T;
+    } as any;
   }
 
   /**

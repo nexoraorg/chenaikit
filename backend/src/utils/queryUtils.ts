@@ -1,5 +1,3 @@
-import { Prisma } from '@prisma/client';
-
 /**
  * Query utility functions for database optimization
  */
@@ -7,44 +5,44 @@ import { Prisma } from '@prisma/client';
 /**
  * Paginate a Prisma query
  */
-export function paginate<T extends Prisma.ArgsAny>(
-  query: T,
+export function paginate(
+  query: any,
   page: number = 1,
   pageSize: number = 10
-): T {
+): any {
   const skip = (page - 1) * pageSize;
   return {
     ...query,
     skip,
     take: pageSize,
-  } as T;
+  } as any;
 }
 
 /**
  * Add sorting to a Prisma query
  */
-export function addSorting<T extends Prisma.ArgsAny>(
-  query: T,
+export function addSorting(
+  query: any,
   sortBy: string,
   sortOrder: 'asc' | 'desc' = 'desc'
-): T {
+): any {
   return {
     ...query,
     orderBy: {
       [sortBy]: sortOrder,
     },
-  } as T;
+  } as any;
 }
 
 /**
  * Add date range filter to a Prisma query
  */
-export function addDateRange<T extends Prisma.ArgsAny>(
-  query: T,
+export function addDateRange(
+  query: any,
   field: string,
   startDate?: Date,
   endDate?: Date
-): T {
+): any {
   const where = query.where || {};
   const dateFilter: any = {};
 
@@ -71,16 +69,16 @@ export function addDateRange<T extends Prisma.ArgsAny>(
       ...where,
       ...dateFilter,
     },
-  } as T;
+  } as any;
 }
 
 /**
  * Add soft delete filter to a Prisma query
  */
-export function addSoftDeleteFilter<T extends Prisma.ArgsAny>(
-  query: T,
+export function addSoftDeleteFilter(
+  query: any,
   includeDeleted: boolean = false
-): T {
+): any {
   const where = query.where || {};
 
   if (!includeDeleted) {
@@ -90,7 +88,7 @@ export function addSoftDeleteFilter<T extends Prisma.ArgsAny>(
         ...where,
         deletedAt: null,
       },
-    } as T;
+    } as any;
   }
 
   return query;
@@ -99,7 +97,7 @@ export function addSoftDeleteFilter<T extends Prisma.ArgsAny>(
 /**
  * Build a Prisma where clause from search criteria
  */
-export function buildWhereClause(criteria: Record<string, any>): Prisma.ArgsAny['where'] {
+export function buildWhereClause(criteria: Record<string, any>): any {
   const where: any = {};
 
   for (const [key, value] of Object.entries(criteria)) {
@@ -125,10 +123,10 @@ export function buildWhereClause(criteria: Record<string, any>): Prisma.ArgsAny[
 /**
  * Select specific fields from a Prisma query
  */
-export function selectFields<T extends Prisma.ArgsAny>(
-  query: T,
+export function selectFields(
+  query: any,
   fields: string[]
-): T {
+): any {
   const select: Record<string, boolean> = {};
   fields.forEach(field => {
     select[field] = true;
@@ -137,20 +135,20 @@ export function selectFields<T extends Prisma.ArgsAny>(
   return {
     ...query,
     select,
-  } as T;
+  } as any;
 }
 
 /**
  * Include related entities in a Prisma query
  */
-export function includeRelations<T extends Prisma.ArgsAny>(
-  query: T,
-  relations: Record<string, boolean | Prisma.ArgsAny['include']>
-): T {
+export function includeRelations(
+  query: any,
+  relations: Record<string, boolean | any>
+): any {
   return {
     ...query,
     include: relations,
-  } as T;
+  } as any;
 }
 
 /**
@@ -158,7 +156,7 @@ export function includeRelations<T extends Prisma.ArgsAny>(
  */
 export async function getCount<T>(
   model: any,
-  where?: Prisma.ArgsAny['where']
+  where?: any
 ): Promise<number> {
   return await model.count({ where });
 }
@@ -322,7 +320,7 @@ export async function measureQuery<T>(
  * Validate query complexity before execution
  */
 export function validateQueryComplexity(
-  query: Prisma.ArgsAny,
+  query: any,
   maxJoins: number = 5,
   maxFilters: number = 10
 ): { valid: boolean; reason?: string } {
@@ -352,7 +350,7 @@ export function validateQueryComplexity(
 export function buildSearchQuery(
   searchFields: string[],
   searchTerm: string
-): Prisma.ArgsAny['where'] {
+): any {
   if (!searchTerm || searchFields.length === 0) {
     return {};
   }
@@ -372,11 +370,11 @@ export function buildSearchQuery(
 /**
  * Add cursor-based pagination to a query
  */
-export function addCursorPagination<T extends Prisma.ArgsAny>(
-  query: T,
+export function addCursorPagination(
+  query: any,
   cursor?: string,
   cursorField: string = 'id'
-): T {
+): any {
   if (!cursor) {
     return query;
   }
@@ -386,5 +384,5 @@ export function addCursorPagination<T extends Prisma.ArgsAny>(
     cursor: {
       [cursorField]: cursor,
     },
-  } as T;
+  } as any;
 }

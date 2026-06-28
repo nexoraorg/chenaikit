@@ -53,6 +53,11 @@ export class QueryLogger {
   private statistics: QueryStatistics;
   private maxLogEntries: number = 1000;
 
+  /** Expose includeQueryParams for middleware access */
+  get includeQueryParams(): boolean {
+    return this.config.includeQueryParams;
+  }
+
   constructor(config?: Partial<QueryLoggerConfig>) {
     this.config = {
       enabled: true,
@@ -373,7 +378,7 @@ export function createQueryLoggingMiddleware(logger: QueryLogger) {
       logger.logQuery({
         timestamp: new Date(),
         query: `${model}.${action}`,
-        params: logger.config.includeQueryParams ? params.args : undefined,
+        params: logger.includeQueryParams ? params.args : undefined,
         duration,
         model,
         action,
@@ -388,7 +393,7 @@ export function createQueryLoggingMiddleware(logger: QueryLogger) {
       logger.logQuery({
         timestamp: new Date(),
         query: `${model}.${action}`,
-        params: logger.config.includeQueryParams ? params.args : undefined,
+        params: logger.includeQueryParams ? params.args : undefined,
         duration,
         model,
         action,
