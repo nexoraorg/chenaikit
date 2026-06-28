@@ -31,6 +31,7 @@ import { applySecurityMiddleware } from './middleware/security';
 import { loadVaultSecrets } from './config/secrets';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { getDistributedRateLimiter } from './middleware/distributedRateLimiter';
+import { getHealthService } from './services/healthService';
 
 const app: express.Application = express();
 
@@ -106,6 +107,8 @@ export const startServer = async (): Promise<void> => {
   const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
 
   // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
+  const healthService = getHealthService(prisma);
+  healthService.startMonitoring();
 
   const PORT = process.env.PORT || 5000;
 
@@ -113,6 +116,7 @@ export const startServer = async (): Promise<void> => {
 
   const shutdown = async () => {
     try {
+      healthService.stopMonitoring();
       await shutdownMonitoring();
       await redis.quit();
       await prisma.$disconnect();
