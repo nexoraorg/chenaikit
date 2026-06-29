@@ -75,10 +75,9 @@ export class UsageTrackingService {
         statusDistribution,
       ] = await Promise.all([
         this.prisma.apiUsage.count({ where: whereClause }),
-        this.prisma.apiUsage.findMany({
+        this.prisma.apiUsage.groupBy({
+          by: ['apiKeyId'],
           where: whereClause,
-          select: { apiKeyId: true },
-          distinct: ['apiKeyId'],
         }).then(results => results.length),
         this.prisma.apiUsage.aggregate({
           where: whereClause,
@@ -272,6 +271,7 @@ export class UsageTrackingService {
         requestsLastHour,
         activeApiKeys,
         recentMetrics,
+        errorCount,
       ] = await Promise.all([
         this.prisma.apiUsage.count({
           where: {
@@ -285,13 +285,12 @@ export class UsageTrackingService {
             deletedAt: null,
           },
         }),
-        this.prisma.apiUsage.findMany({
+        this.prisma.apiUsage.groupBy({
+          by: ['apiKeyId'],
           where: {
             timestamp: { gte: oneMinuteAgo },
             deletedAt: null,
           },
-          select: { apiKeyId: true },
-          distinct: ['apiKeyId'],
         }).then(results => results.length),
         this.prisma.apiUsage.aggregate({
           where: {
@@ -301,15 +300,14 @@ export class UsageTrackingService {
           _avg: { responseTime: true },
           _count: true,
         }),
+        this.prisma.apiUsage.count({
+          where: {
+            timestamp: { gte: oneMinuteAgo },
+            statusCode: { gte: 400 },
+            deletedAt: null,
+          },
+        }),
       ]);
-
-      const errorCount = await this.prisma.apiUsage.count({
-        where: {
-          timestamp: { gte: oneMinuteAgo },
-          statusCode: { gte: 400 },
-          deletedAt: null,
-        },
-      });
 
       const errorRate = recentMetrics._count > 0 ? (errorCount / recentMetrics._count) * 100 : 0;
 
