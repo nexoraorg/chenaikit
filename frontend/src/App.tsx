@@ -10,6 +10,8 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LoadingProvider, useLoading } from './contexts/LoadingContext';
+import { ErrorProvider } from './contexts/ErrorContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import ToastContainer from './components/ToastContainer';
 import ThemeToggle from './components/ThemeToggle';
@@ -222,9 +224,16 @@ const DashboardShell: React.FC = () => {
               aria-labelledby={`dashboard-tab-${index}`}
               hidden={activeDemo !== tab.id}
             >
-              {tab.id === 'analytics' && <AnalyticsDashboard />}
-              {tab.id === 'forms' && <FormValidationExample />}
-              {tab.id === 'visualization' && <DataVisualizationExample />}
+              <ErrorBoundary
+                name={`${tab.label} section`}
+                compact
+                resetKeys={[activeDemo]}
+                fallbackMessage="This dashboard section failed to render. Try resetting the section or switching tabs."
+              >
+                {tab.id === 'analytics' && <AnalyticsDashboard />}
+                {tab.id === 'forms' && <FormValidationExample />}
+                {tab.id === 'visualization' && <DataVisualizationExample />}
+              </ErrorBoundary>
             </Box>
           ))}
         </Suspense>
@@ -310,164 +319,172 @@ const AppRoutes: React.FC = () => {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <DashboardShell />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile
-                user={{
-                  id: 1,
-                  email: 'user@example.com',
-                  name: 'Demo User',
-                  role: 'user'
-                }}
-                stats={{
-                  transactions: 156,
-                  score: 720,
-                  activeDays: 45
-                }}
-                activity={[]}
-                onUpdateProfile={async () => {
-                  // TODO: Integrate with backend API
-                }}
-              />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Settings
-                user={settingsUser}
-                notificationPreferences={{
-                  emailNotifications: true,
-                  pushNotifications: true,
-                  transactionAlerts: true,
-                  scoreChanges: true,
-                  marketingEmails: false,
-                  securityAlerts: true,
-                  weeklyReport: false,
-                  priceAlerts: true
-                }}
-                securitySettings={{
-                  twoFactorEnabled: false,
-                  sessions: [
-                    {
-                      id: '1',
-                      device: 'Chrome on macOS',
-                      location: 'San Francisco, CA',
-                      lastActive: 'Just now',
-                      current: true
-                    }
-                  ],
-                  loginHistory: [
-                    {
-                      id: '1',
-                      date: '2024-01-15 10:30 AM',
-                      device: 'Chrome on macOS',
-                      location: 'San Francisco, CA',
-                      status: 'success'
-                    }
-                  ]
-                }}
-                apiKeys={[]}
-                onUpdateAccount={async (data) => {
-                  await runSettingsRequest(
-                    () => requestSettingsApi({ method: 'put', url: '/api/v2/account/profile', data }),
-                    'Profile updated successfully.'
-                  );
-                }}
-                onDeleteAccount={async () => {
-                  await runSettingsRequest(
-                    () => requestSettingsApi({ method: 'delete', url: '/api/v2/account/profile' }),
-                    'Account deleted successfully.'
-                  );
-                }}
-                onUpdateNotificationPreferences={async (data) => {
-                  await runSettingsRequest(
-                    () => requestSettingsApi({ method: 'put', url: '/api/v2/account/notifications', data }),
-                    'Notification preferences updated.'
-                  );
-                }}
-                onChangePassword={async (currentPassword, newPassword) => {
-                  await runSettingsRequest(
-                    () => requestSettingsApi({ method: 'put', url: '/api/v2/account/password', data: { currentPassword, newPassword } }),
-                    'Password changed successfully.'
-                  );
-                }}
-                onEnableTwoFactor={async () => {
-                  await runSettingsRequest(
-                    () => requestSettingsApi({ method: 'post', url: '/api/v2/account/two-factor/enable' }),
-                    'Two-factor authentication enabled.'
-                  );
-                }}
-                onDisableTwoFactor={async () => {
-                  await runSettingsRequest(
-                    () => requestSettingsApi({ method: 'post', url: '/api/v2/account/two-factor/disable' }),
-                    'Two-factor authentication disabled.'
-                  );
-                }}
-                onRevokeSession={async (sessionId) => {
-                  await runSettingsRequest(
-                    () => requestSettingsApi({ method: 'delete', url: `/api/v2/account/sessions/${sessionId}` }),
-                    'Session revoked.'
-                  );
-                }}
-                onRevokeAllSessions={async () => {
-                  await runSettingsRequest(
-                    () => requestSettingsApi({ method: 'delete', url: '/api/v2/account/sessions' }),
-                    'All sessions revoked.'
-                  );
-                }}
-                onCreateApiKey={async (name, permissions) => {
-                  const response = await runSettingsRequest(
-                    () => requestSettingsApi({ method: 'post', url: '/api/v2/account/api-keys', data: { name, permissions } }),
-                    'API key created.'
-                  );
-                  const key = extractApiKey(response);
-                  if (!key) {
-                    throw new Error('The server did not return a new API key.');
-                  }
-                  return { key };
-                }}
-                onDeleteApiKey={async (id) => {
-                  await runSettingsRequest(
-                    () => requestSettingsApi({ method: 'delete', url: `/api/v2/account/api-keys/${id}` }),
-                    'API key deleted.'
-                  );
-                }}
-                onRegenerateApiKey={async (id) => {
-                  const response = await runSettingsRequest(
-                    () => requestSettingsApi({ method: 'put', url: `/api/v2/account/api-keys/${id}/regenerate` }),
-                    'API key regenerated.'
-                  );
-                  const key = extractApiKey(response);
-                  if (!key) {
-                    throw new Error('The server did not return a regenerated API key.');
-                  }
-                  return { key };
-                }}
-              />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<LoadingSpinner fullScreen message="Loading page" />}>
+        <Routes>
+          <Route path="/login" element={<ErrorBoundary name="Login page"><Login /></ErrorBoundary>} />
+          <Route path="/signup" element={<ErrorBoundary name="Signup page"><Signup /></ErrorBoundary>} />
+          <Route path="/forgot-password" element={<ErrorBoundary name="Password reset page"><ForgotPasswordPage /></ErrorBoundary>} />
+          <Route path="/terms" element={<ErrorBoundary name="Terms page"><TermsPage /></ErrorBoundary>} />
+          <Route path="/privacy" element={<ErrorBoundary name="Privacy page"><PrivacyPage /></ErrorBoundary>} />
+          <Route
+            path="/"
+            element={
+              <ErrorBoundary name="Dashboard page">
+                <ProtectedRoute>
+                  <DashboardShell />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ErrorBoundary name="Profile page">
+                <ProtectedRoute>
+                  <Profile
+                    user={{
+                      id: 1,
+                      email: 'user@example.com',
+                      name: 'Demo User',
+                      role: 'user'
+                    }}
+                    stats={{
+                      transactions: 156,
+                      score: 720,
+                      activeDays: 45
+                    }}
+                    activity={[]}
+                    onUpdateProfile={async () => {
+                      // TODO: Integrate with backend API
+                    }}
+                  />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ErrorBoundary name="Settings page">
+                <ProtectedRoute>
+                  <Settings
+                    user={settingsUser}
+                    notificationPreferences={{
+                      emailNotifications: true,
+                      pushNotifications: true,
+                      transactionAlerts: true,
+                      scoreChanges: true,
+                      marketingEmails: false,
+                      securityAlerts: true,
+                      weeklyReport: false,
+                      priceAlerts: true
+                    }}
+                    securitySettings={{
+                      twoFactorEnabled: false,
+                      sessions: [
+                        {
+                          id: '1',
+                          device: 'Chrome on macOS',
+                          location: 'San Francisco, CA',
+                          lastActive: 'Just now',
+                          current: true
+                        }
+                      ],
+                      loginHistory: [
+                        {
+                          id: '1',
+                          date: '2024-01-15 10:30 AM',
+                          device: 'Chrome on macOS',
+                          location: 'San Francisco, CA',
+                          status: 'success'
+                        }
+                      ]
+                    }}
+                    apiKeys={[]}
+                    onUpdateAccount={async (data) => {
+                      await runSettingsRequest(
+                        () => requestSettingsApi({ method: 'put', url: '/api/v2/account/profile', data }),
+                        'Profile updated successfully.'
+                      );
+                    }}
+                    onDeleteAccount={async () => {
+                      await runSettingsRequest(
+                        () => requestSettingsApi({ method: 'delete', url: '/api/v2/account/profile' }),
+                        'Account deleted successfully.'
+                      );
+                    }}
+                    onUpdateNotificationPreferences={async (data) => {
+                      await runSettingsRequest(
+                        () => requestSettingsApi({ method: 'put', url: '/api/v2/account/notifications', data }),
+                        'Notification preferences updated.'
+                      );
+                    }}
+                    onChangePassword={async (currentPassword, newPassword) => {
+                      await runSettingsRequest(
+                        () => requestSettingsApi({ method: 'put', url: '/api/v2/account/password', data: { currentPassword, newPassword } }),
+                        'Password changed successfully.'
+                      );
+                    }}
+                    onEnableTwoFactor={async () => {
+                      await runSettingsRequest(
+                        () => requestSettingsApi({ method: 'post', url: '/api/v2/account/two-factor/enable' }),
+                        'Two-factor authentication enabled.'
+                      );
+                    }}
+                    onDisableTwoFactor={async () => {
+                      await runSettingsRequest(
+                        () => requestSettingsApi({ method: 'post', url: '/api/v2/account/two-factor/disable' }),
+                        'Two-factor authentication disabled.'
+                      );
+                    }}
+                    onRevokeSession={async (sessionId) => {
+                      await runSettingsRequest(
+                        () => requestSettingsApi({ method: 'delete', url: `/api/v2/account/sessions/${sessionId}` }),
+                        'Session revoked.'
+                      );
+                    }}
+                    onRevokeAllSessions={async () => {
+                      await runSettingsRequest(
+                        () => requestSettingsApi({ method: 'delete', url: '/api/v2/account/sessions' }),
+                        'All sessions revoked.'
+                      );
+                    }}
+                    onCreateApiKey={async (name, permissions) => {
+                      const response = await runSettingsRequest(
+                        () => requestSettingsApi({ method: 'post', url: '/api/v2/account/api-keys', data: { name, permissions } }),
+                        'API key created.'
+                      );
+                      const key = extractApiKey(response);
+                      if (!key) {
+                        throw new Error('The server did not return a new API key.');
+                      }
+                      return { key };
+                    }}
+                    onDeleteApiKey={async (id) => {
+                      await runSettingsRequest(
+                        () => requestSettingsApi({ method: 'delete', url: `/api/v2/account/api-keys/${id}` }),
+                        'API key deleted.'
+                      );
+                    }}
+                    onRegenerateApiKey={async (id) => {
+                      const response = await runSettingsRequest(
+                        () => requestSettingsApi({ method: 'put', url: `/api/v2/account/api-keys/${id}/regenerate` }),
+                        'API key regenerated.'
+                      );
+                      const key = extractApiKey(response);
+                      if (!key) {
+                        throw new Error('The server did not return a regenerated API key.');
+                      }
+                      return { key };
+                    }}
+                  />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 };
@@ -477,10 +494,14 @@ const App: React.FC = () => {
     <ThemeProvider>
       <LoadingProvider>
         <ToastProvider>
-          <AuthProvider>
-            <AppRoutes />
-            <ToastContainer />
-          </AuthProvider>
+          <ErrorProvider>
+            <ErrorBoundary name="Root application" fallbackTitle="ChenaiKit could not render">
+              <AuthProvider>
+                <AppRoutes />
+                <ToastContainer />
+              </AuthProvider>
+            </ErrorBoundary>
+          </ErrorProvider>
         </ToastProvider>
       </LoadingProvider>
     </ThemeProvider>

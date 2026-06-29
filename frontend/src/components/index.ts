@@ -34,6 +34,10 @@ export { AnalyticsDashboard } from './AnalyticsDashboard';
 export { default as Toast } from './Toast';
 export { default as ToastContainer } from './ToastContainer';
 
+// Error handling
+export { default as ErrorBoundary } from './ErrorBoundary';
+export { default as ErrorFallback } from './ErrorFallback';
+
 // File Upload
 export { default as FileUpload } from './FileUpload';
 export { default as DropZone } from './DropZone';
