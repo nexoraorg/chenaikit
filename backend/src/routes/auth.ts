@@ -18,6 +18,14 @@ router.post(
   asyncHandler(controller.register.bind(controller)),
 );
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: 'Too many requests, try again later.' },
+  // Skip rate limiting entirely in test environments so test suites don't
+  // exhaust the window when the in-process app is reused across test files.
+  skip: () => process.env.NODE_ENV === 'test',
+});
 router.post(
   '/login',
   validate({ body: loginBodySchema }),

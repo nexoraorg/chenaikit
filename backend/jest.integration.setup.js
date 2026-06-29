@@ -1,48 +1,33 @@
-// Jest setup for integration tests
+/**
+ * Jest integration test bootstrap (JavaScript, loaded by Jest before ts-jest).
+ *
+ * Sets environment variables so they are available when modules are first
+ * imported (before any TypeScript setup file runs).  Heavy lifecycle work
+ * (DB push, prisma connect) lives in src/__tests__/setup.ts which runs
+ * after the framework is initialised.
+ */
+
 process.env.NODE_ENV = 'test';
 
-// Mock external services
-jest.mock('@stellar/stellar-sdk', () => ({
-  Server: jest.fn(),
-  Horizon: jest.fn(),
-  TransactionBuilder: jest.fn(),
-  Keypair: jest.fn(),
-  Asset: jest.fn(),
-  Operation: jest.fn(),
-}));
+// Prevent Sentry / OpenTelemetry from initialising in tests
+delete process.env.SENTRY_DSN;
+delete process.env.OTEL_ENABLED;
 
-jest.mock('axios', () => ({
-  create: jest.fn(() => ({
-    get: jest.fn(),
-    post: jest.fn(),
-    put: jest.fn(),
-    delete: jest.fn(),
-  })),
-}));
+// Use SQLite in-process – the actual path is finalised in setup.ts
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'file:./prisma/test.db';
 
-// Mock database
-jest.mock('../generated/prisma', () => ({
-  PrismaClient: jest.fn(() => ({
-    apiKey: {
-      create: jest.fn(),
-      findFirst: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      findMany: jest.fn(),
-    },
-    apiUsage: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-      aggregate: jest.fn(),
-      groupBy: jest.fn(),
-      deleteMany: jest.fn(),
-    },
-    $queryRaw: jest.fn(),
-    $disconnect: jest.fn(),
-  })),
-}));
+// JWT secrets for the test environment
+process.env.ACCESS_TOKEN_SECRET =
+  process.env.ACCESS_TOKEN_SECRET || 'integration_test_access_secret';
+process.env.REFRESH_TOKEN_SECRET =
+  process.env.REFRESH_TOKEN_SECRET || 'integration_test_refresh_secret';
 
-// Set test timeout
+// Suppress noisy log output from the application
+process.env.LOG_LEVEL = 'error';
+
+// Point Redis at localhost — AdvancedRateLimiter bypasses Redis in NODE_ENV=test
+// so a real Redis connection is not required; the client just needs to not crash.
+process.env.REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+
+// Set generous timeout (also set in jest config, but belt-and-suspenders)
 jest.setTimeout(30000);
