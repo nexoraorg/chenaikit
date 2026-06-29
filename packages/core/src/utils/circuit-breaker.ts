@@ -1,7 +1,7 @@
 export enum CircuitState {
-  CLOSED = 'CLOSED',
-  OPEN = 'OPEN',
-  HALF_OPEN = 'HALF_OPEN'
+  CLOSED = "CLOSED",
+  OPEN = "OPEN",
+  HALF_OPEN = "HALF_OPEN",
 }
 
 export interface CircuitBreakerOptions {
@@ -17,24 +17,24 @@ export class CircuitBreaker<T> {
   private failureCount = 0;
   private successCount = 0;
   private nextAttempt = Date.now();
-  
+
   constructor(
     private fn: (...args: any[]) => Promise<T>,
-    private options: CircuitBreakerOptions = {}
+    private options: CircuitBreakerOptions = {},
   ) {
     this.options = {
       failureThreshold: 5,
       successThreshold: 2,
       timeout: 60000,
       resetTimeout: 30000,
-      ...options
+      ...options,
     };
   }
 
   async execute(...args: any[]): Promise<T> {
     if (this.state === CircuitState.OPEN) {
       if (Date.now() < this.nextAttempt) {
-        throw new Error('Circuit breaker is OPEN');
+        throw new Error("Circuit breaker is OPEN");
       }
       this.setState(CircuitState.HALF_OPEN);
     }
@@ -42,7 +42,7 @@ export class CircuitBreaker<T> {
     try {
       const result = await Promise.race([
         this.fn(...args),
-        this.timeoutPromise()
+        this.timeoutPromise(),
       ]);
 
       this.onSuccess();
@@ -84,7 +84,10 @@ export class CircuitBreaker<T> {
 
   private timeoutPromise(): Promise<never> {
     return new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Operation timeout')), this.options.timeout)
+      setTimeout(
+        () => reject(new Error("Operation timeout")),
+        this.options.timeout,
+      ),
     );
   }
 

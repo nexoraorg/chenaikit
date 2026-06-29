@@ -25,50 +25,62 @@ The form validation system is split between two packages:
 ### Validation Rules
 
 ```typescript
-import { ValidationRules } from '@chenaikit/core';
+import { ValidationRules } from "@chenaikit/core";
 
 // Common validations
-const emailRule = ValidationRules.email('Please enter a valid email');
-const requiredRule = ValidationRules.required('This field is required');
-const minLengthRule = ValidationRules.minLength(8, 'Must be at least 8 characters');
-const maxLengthRule = ValidationRules.maxLength(100, 'Must be less than 100 characters');
-const numberRule = ValidationRules.number('Please enter a valid number');
-const positiveNumberRule = ValidationRules.positiveNumber('Must be greater than 0');
-const urlRule = ValidationRules.url('Please enter a valid URL');
-const phoneRule = ValidationRules.phone('Please enter a valid phone number');
+const emailRule = ValidationRules.email("Please enter a valid email");
+const requiredRule = ValidationRules.required("This field is required");
+const minLengthRule = ValidationRules.minLength(
+  8,
+  "Must be at least 8 characters",
+);
+const maxLengthRule = ValidationRules.maxLength(
+  100,
+  "Must be less than 100 characters",
+);
+const numberRule = ValidationRules.number("Please enter a valid number");
+const positiveNumberRule = ValidationRules.positiveNumber(
+  "Must be greater than 0",
+);
+const urlRule = ValidationRules.url("Please enter a valid URL");
+const phoneRule = ValidationRules.phone("Please enter a valid phone number");
 
 // Blockchain-specific validations
-const stellarAddressRule = ValidationRules.stellarAddress('Please enter a valid Stellar address');
-const stellarSecretKeyRule = ValidationRules.stellarSecretKey('Please enter a valid Stellar secret key');
+const stellarAddressRule = ValidationRules.stellarAddress(
+  "Please enter a valid Stellar address",
+);
+const stellarSecretKeyRule = ValidationRules.stellarSecretKey(
+  "Please enter a valid Stellar secret key",
+);
 
 // Custom validations
 const customRule = ValidationRules.custom((value) => {
-  if (value === 'invalid') return 'This value is not allowed';
+  if (value === "invalid") return "This value is not allowed";
   return null;
 });
 
 // Async validations
 const asyncRule = ValidationRules.async(async (value) => {
   const exists = await checkIfExists(value);
-  return exists ? null : 'This value does not exist';
+  return exists ? null : "This value does not exist";
 });
 ```
 
 ### Validation Functions
 
 ```typescript
-import { validateField, validateFields } from '@chenaikit/core';
+import { validateField, validateFields } from "@chenaikit/core";
 
 // Validate a single field
-const error = await validateField('test@example.com', ValidationRules.email());
+const error = await validateField("test@example.com", ValidationRules.email());
 
 // Validate multiple fields
 const errors = await validateFields(
-  { email: 'test@example.com', name: 'John' },
-  { 
-    email: ValidationRules.email(), 
-    name: ValidationRules.required() 
-  }
+  { email: "test@example.com", name: "John" },
+  {
+    email: ValidationRules.email(),
+    name: ValidationRules.required(),
+  },
 );
 ```
 
@@ -168,7 +180,7 @@ Validation occurs as users type with configurable debouncing:
 const { handleChange } = useFormValidation({
   // ... other options
   validateOnChange: true,
-  debounceMs: 300 // Wait 300ms after user stops typing
+  debounceMs: 300, // Wait 300ms after user stops typing
 });
 ```
 
@@ -181,9 +193,9 @@ const asyncValidationRule = ValidationRules.async(async (value) => {
   try {
     const response = await fetch(`/api/validate/${value}`);
     const result = await response.json();
-    return result.valid ? null : 'Validation failed';
+    return result.valid ? null : "Validation failed";
   } catch {
-    return 'Unable to validate at this time';
+    return "Unable to validate at this time";
   }
 });
 ```
@@ -195,10 +207,10 @@ Create custom validation logic:
 ```typescript
 const customRule = ValidationRules.custom((value) => {
   if (value && value.length < 3) {
-    return 'Must be at least 3 characters';
+    return "Must be at least 3 characters";
   }
   if (value && !/^[A-Z]/.test(value)) {
-    return 'Must start with uppercase letter';
+    return "Must start with uppercase letter";
   }
   return null;
 });

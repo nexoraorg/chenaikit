@@ -11,6 +11,7 @@ Demonstrates how to use `DexConnector` and `DexAnalytics` from `@chenaikit/core`
 - Lists available liquidity pools
 
 ## Run
+
 ```bash
 npx ts-node examples/dex-trading-bot/index.ts
 ```
@@ -20,6 +21,7 @@ npx ts-node examples/dex-trading-bot/index.ts
 `placeOrder()`, `depositLiquidity()`, and `executePathPayment()` require
 `@stellar/stellar-sdk` for transaction signing. Install it and implement
 the keypair signing logic in `packages/core/src/stellar/dex.ts`.
+
 ```bash
 npm install @stellar/stellar-sdk
 ```

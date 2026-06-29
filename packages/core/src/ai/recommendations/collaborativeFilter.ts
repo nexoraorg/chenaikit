@@ -1,5 +1,5 @@
 // packages/core/src/ai/recommendations/collaborativeFilter.ts
-import { Interaction, Recommendation } from './types';
+import { Interaction, Recommendation } from "./types";
 
 type NumMatrix = number[][];
 
@@ -22,9 +22,9 @@ export class CollaborativeFilter {
   private items: string[] = [];
   private userIndex = new Map<string, number>();
   private itemIndex = new Map<string, number>();
-  private userItemMatrix: NumMatrix = []; 
+  private userItemMatrix: NumMatrix = [];
   private itemVectorsCache = new Map<number, number[]>();
-  private simCache = new Map<string, number>(); 
+  private simCache = new Map<string, number>();
 
   fit(interactions: Interaction[]) {
     const usersSet = new Set<string>();
@@ -45,7 +45,7 @@ export class CollaborativeFilter {
     interactions.forEach((it) => {
       const u = this.userIndex.get(it.userId)!;
       const i = this.itemIndex.get(it.itemId)!;
-      const r = typeof it.rating === 'number' ? it.rating : 1;
+      const r = typeof it.rating === "number" ? it.rating : 1;
       this.userItemMatrix[u][i] = Math.max(this.userItemMatrix[u][i], r);
     });
 
@@ -88,7 +88,7 @@ export class CollaborativeFilter {
     const scores: Map<number, number> = new Map();
 
     for (let j = 0; j < this.items.length; j++) {
-      if (seenItems.has(j)) continue; 
+      if (seenItems.has(j)) continue;
       let num = 0;
       let denom = 0;
 

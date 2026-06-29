@@ -1,17 +1,21 @@
-import * as Sentry from '@sentry/node';
-import { httpIntegration, expressIntegration, expressErrorHandler } from '@sentry/node';
-import { Request, Response, NextFunction } from 'express';
+import * as Sentry from "@sentry/node";
+import {
+  httpIntegration,
+  expressIntegration,
+  expressErrorHandler,
+} from "@sentry/node";
+import { Request, Response, NextFunction } from "express";
 
-export function initSentry(dsn: string, environment: string = 'production'): void {
-  const integrations: any[] = [
-    httpIntegration(),
-    expressIntegration(),
-  ];
+export function initSentry(
+  dsn: string,
+  environment: string = "production",
+): void {
+  const integrations: any[] = [httpIntegration(), expressIntegration()];
   Sentry.init({
     dsn,
     environment,
-    tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
-    integrations
+    tracesSampleRate: environment === "production" ? 0.1 : 1.0,
+    integrations,
   });
 }
 
@@ -31,29 +35,32 @@ export function sentryErrorHandler(): any {
 export function errorTrackingMiddleware(
   err: Error,
   req: Request,
-  res: Response
+  res: Response,
 ): void {
   Sentry.captureException(err, {
     user: { id: req.user?.id },
     tags: {
       path: req.path,
-      method: req.method
+      method: req.method,
     },
     extra: {
       body: req.body,
-      query: req.query
-    }
+      query: req.query,
+    },
   });
 
   const statusCode = (err as any).statusCode || 500;
   res.status(statusCode).json({
     error: {
       message: err.message,
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    }
+      ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+    },
   });
 }
 
-export function captureError(error: Error, context?: Record<string, any>): void {
+export function captureError(
+  error: Error,
+  context?: Record<string, any>,
+): void {
   Sentry.captureException(error, { extra: context });
 }

@@ -1,8 +1,13 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from "crypto";
 
-export type FlagType = 'boolean' | 'multivariate' | 'remote_config' | 'ab_test' | 'kill_switch';
+export type FlagType =
+  | "boolean"
+  | "multivariate"
+  | "remote_config"
+  | "ab_test"
+  | "kill_switch";
 
-export type TargetingType = 'user' | 'segment' | 'percentage' | 'property';
+export type TargetingType = "user" | "segment" | "percentage" | "property";
 
 export interface TargetingRule {
   type: TargetingType;
@@ -66,7 +71,7 @@ export interface FlagContext {
 
 export interface AuditEntry {
   id: string;
-  action: 'create' | 'update' | 'delete' | 'toggle' | 'evaluate';
+  action: "create" | "update" | "delete" | "toggle" | "evaluate";
   flagKey: string;
   actor?: string;
   changes?: Record<string, unknown>;
@@ -77,7 +82,13 @@ export interface FlagEvaluation {
   flagKey: string;
   value: unknown;
   reason: string;
-  source: 'default' | 'override' | 'targeting' | 'dependency' | 'rollout' | 'schedule';
+  source:
+    | "default"
+    | "override"
+    | "targeting"
+    | "dependency"
+    | "rollout"
+    | "schedule";
   timestamp: Date;
 }
 
@@ -100,7 +111,7 @@ export class FeatureFlag {
     public metadata: Record<string, unknown>,
     public version: number,
     public createdAt: Date,
-    public updatedAt: Date
+    public updatedAt: Date,
   ) {}
 
   static create(input: FeatureFlagCreateInput): FeatureFlag {
@@ -108,7 +119,7 @@ export class FeatureFlag {
       randomUUID(),
       input.key,
       input.name,
-      input.description || '',
+      input.description || "",
       input.type,
       input.enabled,
       input.defaultValue,
@@ -122,7 +133,7 @@ export class FeatureFlag {
       input.metadata || {},
       1,
       new Date(),
-      new Date()
+      new Date(),
     );
   }
 
@@ -131,11 +142,14 @@ export class FeatureFlag {
     if (input.description !== undefined) this.description = input.description;
     if (input.type !== undefined) this.type = input.type;
     if (input.enabled !== undefined) this.enabled = input.enabled;
-    if (input.defaultValue !== undefined) this.defaultValue = input.defaultValue;
+    if (input.defaultValue !== undefined)
+      this.defaultValue = input.defaultValue;
     if (input.variants !== undefined) this.variants = input.variants;
     if (input.targeting !== undefined) this.targeting = input.targeting;
-    if (input.rolloutPercentage !== undefined) this.rolloutPercentage = input.rolloutPercentage;
-    if (input.dependencies !== undefined) this.dependencies = input.dependencies;
+    if (input.rolloutPercentage !== undefined)
+      this.rolloutPercentage = input.rolloutPercentage;
+    if (input.dependencies !== undefined)
+      this.dependencies = input.dependencies;
     if (input.schedule !== undefined) this.schedule = input.schedule;
     if (input.overrides !== undefined) this.overrides = input.overrides;
     if (input.tags !== undefined) this.tags = input.tags;
@@ -146,12 +160,17 @@ export class FeatureFlag {
 
   isScheduledActive(): boolean {
     const now = new Date();
-    if (this.schedule?.startDate && new Date(this.schedule.startDate) > now) return false;
-    if (this.schedule?.endDate && new Date(this.schedule.endDate) < now) return false;
+    if (this.schedule?.startDate && new Date(this.schedule.startDate) > now)
+      return false;
+    if (this.schedule?.endDate && new Date(this.schedule.endDate) < now)
+      return false;
     return true;
   }
 
-  isDependencySatisfied(flags: Map<string, FeatureFlag>): { satisfied: boolean; missing: string[] } {
+  isDependencySatisfied(flags: Map<string, FeatureFlag>): {
+    satisfied: boolean;
+    missing: string[];
+  } {
     const missing: string[] = [];
     for (const depKey of this.dependencies) {
       const dep = flags.get(depKey);

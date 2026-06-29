@@ -1,7 +1,7 @@
 /**
  * Governance Analytics Module
  * @module governance/analytics
- * 
+ *
  * Comprehensive analytics for governance proposals, voting patterns, and participation
  */
 
@@ -17,7 +17,7 @@ import {
   GovernanceErrorType,
   GovernanceContracts,
   ProposalQuery,
-} from './types';
+} from "./types";
 
 /**
  * Governance Analytics Engine
@@ -39,22 +39,22 @@ export class GovernanceAnalytics {
   async fetchProposal(proposalId: string | bigint): Promise<Proposal> {
     try {
       const id = BigInt(proposalId);
-      
+
       const result = await this.networkClient.readContract({
         contractId: this.contracts.proposalManager,
-        method: 'get_proposal',
+        method: "get_proposal",
         args: [id],
       });
 
       const proposal = this._parseProposal(result);
-      
+
       // Get current state
       const stateResult = await this.networkClient.readContract({
         contractId: this.contracts.proposalManager,
-        method: 'state',
+        method: "state",
         args: [id],
       });
-      
+
       proposal.state = stateResult as ProposalState;
 
       return proposal;
@@ -62,7 +62,7 @@ export class GovernanceAnalytics {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to fetch proposal: ${error}`,
-        { proposalId, error }
+        { proposalId, error },
       );
     }
   }
@@ -76,7 +76,7 @@ export class GovernanceAnalytics {
     try {
       const totalCount = await this.networkClient.readContract({
         contractId: this.contracts.proposalManager,
-        method: 'proposal_count',
+        method: "proposal_count",
         args: [],
       });
 
@@ -91,7 +91,7 @@ export class GovernanceAnalytics {
 
         try {
           const proposal = await this.fetchProposal(BigInt(i));
-          
+
           // Apply filters
           if (query?.state !== undefined && proposal.state !== query.state) {
             continue;
@@ -118,7 +118,7 @@ export class GovernanceAnalytics {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to fetch proposals: ${error}`,
-        { query, error }
+        { query, error },
       );
     }
   }
@@ -131,18 +131,18 @@ export class GovernanceAnalytics {
   async computeTurnout(proposalId: string | bigint): Promise<number> {
     try {
       const id = BigInt(proposalId);
-      
+
       // Get proposal to access vote counts
       const proposal = await this.fetchProposal(id);
-      
+
       const turnout = await this.networkClient.readContract({
         contractId: this.contracts.votingSystem,
-        method: 'get_turnout',
+        method: "get_turnout",
         args: [
           this.contracts.token,
           proposal.forVotes,
           proposal.againstVotes,
-          proposal.abstainVotes
+          proposal.abstainVotes,
         ],
       });
 
@@ -151,7 +151,7 @@ export class GovernanceAnalytics {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to compute turnout: ${error}`,
-        { proposalId, error }
+        { proposalId, error },
       );
     }
   }
@@ -164,14 +164,16 @@ export class GovernanceAnalytics {
   async getVoteDistribution(proposalId: string | bigint): Promise<VoteCounts> {
     try {
       const id = BigInt(proposalId);
-      
-      const [forVotes, againstVotes, abstainVotes] = await this.networkClient.readContract({
-        contractId: this.contracts.votingSystem,
-        method: 'get_votes',
-        args: [id],
-      });
 
-      const totalVotes = BigInt(forVotes) + BigInt(againstVotes) + BigInt(abstainVotes);
+      const [forVotes, againstVotes, abstainVotes] =
+        await this.networkClient.readContract({
+          contractId: this.contracts.votingSystem,
+          method: "get_votes",
+          args: [id],
+        });
+
+      const totalVotes =
+        BigInt(forVotes) + BigInt(againstVotes) + BigInt(abstainVotes);
 
       return {
         forVotes: BigInt(forVotes),
@@ -183,7 +185,7 @@ export class GovernanceAnalytics {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to get vote distribution: ${error}`,
-        { proposalId, error }
+        { proposalId, error },
       );
     }
   }
@@ -196,25 +198,25 @@ export class GovernanceAnalytics {
   async checkQuorumReached(proposalId: string | bigint): Promise<boolean> {
     try {
       const id = BigInt(proposalId);
-      
+
       // Get proposal to access vote counts
       const proposal = await this.fetchProposal(id);
-      
+
       const config = await this.networkClient.readContract({
         contractId: this.contracts.proposalManager,
-        method: 'get_config',
+        method: "get_config",
         args: [],
       });
 
       const quorumReached = await this.networkClient.readContract({
         contractId: this.contracts.votingSystem,
-        method: 'quorum_reached',
+        method: "quorum_reached",
         args: [
           this.contracts.token,
           proposal.forVotes,
           proposal.againstVotes,
           proposal.abstainVotes,
-          config.quorum_numerator
+          config.quorum_numerator,
         ],
       });
 
@@ -223,7 +225,7 @@ export class GovernanceAnalytics {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to check quorum: ${error}`,
-        { proposalId, error }
+        { proposalId, error },
       );
     }
   }
@@ -233,7 +235,9 @@ export class GovernanceAnalytics {
    * @param proposalId - Proposal ID
    * @returns Detailed proposal analytics
    */
-  async getProposalAnalytics(proposalId: string | bigint): Promise<ProposalAnalytics> {
+  async getProposalAnalytics(
+    proposalId: string | bigint,
+  ): Promise<ProposalAnalytics> {
     const proposal = await this.fetchProposal(proposalId);
     const voteCounts = await this.getVoteDistribution(proposalId);
     const turnout = await this.computeTurnout(proposalId);
@@ -241,15 +245,18 @@ export class GovernanceAnalytics {
 
     // Calculate percentages
     const totalVotes = voteCounts.totalVotes;
-    const forPercentage = totalVotes > 0 
-      ? Number((voteCounts.forVotes * 10000n) / totalVotes) / 100
-      : 0;
-    const againstPercentage = totalVotes > 0
-      ? Number((voteCounts.againstVotes * 10000n) / totalVotes) / 100
-      : 0;
-    const abstainPercentage = totalVotes > 0
-      ? Number((voteCounts.abstainVotes * 10000n) / totalVotes) / 100
-      : 0;
+    const forPercentage =
+      totalVotes > 0
+        ? Number((voteCounts.forVotes * 10000n) / totalVotes) / 100
+        : 0;
+    const againstPercentage =
+      totalVotes > 0
+        ? Number((voteCounts.againstVotes * 10000n) / totalVotes) / 100
+        : 0;
+    const abstainPercentage =
+      totalVotes > 0
+        ? Number((voteCounts.abstainVotes * 10000n) / totalVotes) / 100
+        : 0;
 
     return {
       proposalId: proposal.id,
@@ -273,7 +280,7 @@ export class GovernanceAnalytics {
   async getActiveDelegatedPower(): Promise<bigint> {
     // This requires scanning all accounts or using an indexer
     // For now, return a placeholder
-    throw new Error('Not implemented - requires indexer integration');
+    throw new Error("Not implemented - requires indexer integration");
   }
 
   /**
@@ -281,23 +288,26 @@ export class GovernanceAnalytics {
    * @param blockNumber - Block number for snapshot
    * @returns Governance snapshot
    */
-  async getHistoricalSnapshot(blockNumber: bigint): Promise<GovernanceSnapshot> {
+  async getHistoricalSnapshot(
+    blockNumber: bigint,
+  ): Promise<GovernanceSnapshot> {
     try {
       const totalSupply = await this.networkClient.readContract({
         contractId: this.contracts.token,
-        method: 'total_supply',
+        method: "total_supply",
         args: [],
       });
 
       const proposalCount = await this.networkClient.readContract({
         contractId: this.contracts.proposalManager,
-        method: 'proposal_count',
+        method: "proposal_count",
         args: [],
       });
 
       const proposals = await this.fetchProposals();
       const activeProposals = proposals.filter(
-        p => p.state === ProposalState.Active || p.state === ProposalState.Pending
+        (p) =>
+          p.state === ProposalState.Active || p.state === ProposalState.Pending,
       ).length;
 
       return {
@@ -313,7 +323,7 @@ export class GovernanceAnalytics {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to get historical snapshot: ${error}`,
-        { blockNumber, error }
+        { blockNumber, error },
       );
     }
   }
@@ -324,7 +334,10 @@ export class GovernanceAnalytics {
    * @param voterAddress - Voter address
    * @returns Voter information
    */
-  async getVoterInfo(proposalId: string | bigint, voterAddress: string): Promise<VoterInfo> {
+  async getVoterInfo(
+    proposalId: string | bigint,
+    voterAddress: string,
+  ): Promise<VoterInfo> {
     try {
       const id = BigInt(proposalId);
       const proposal = await this.fetchProposal(id);
@@ -332,28 +345,28 @@ export class GovernanceAnalytics {
       // Get voting power at snapshot
       const votingPower = await this.networkClient.readContract({
         contractId: this.contracts.token,
-        method: 'get_prior_votes',
+        method: "get_prior_votes",
         args: [voterAddress, proposal.startBlock],
       });
 
       // Get current token balance
       const tokenBalance = await this.networkClient.readContract({
         contractId: this.contracts.token,
-        method: 'balance_of',
+        method: "balance_of",
         args: [voterAddress],
       });
 
       // Get delegated votes (voting power)
       const delegatedVotes = await this.networkClient.readContract({
         contractId: this.contracts.token,
-        method: 'get_current_votes',
+        method: "get_current_votes",
         args: [voterAddress],
       });
 
       // Check if voted
       const hasVoted = await this.networkClient.readContract({
         contractId: this.contracts.votingSystem,
-        method: 'has_voted',
+        method: "has_voted",
         args: [id, voterAddress],
       });
 
@@ -361,7 +374,7 @@ export class GovernanceAnalytics {
       if (hasVoted) {
         const receipt = await this.networkClient.readContract({
           contractId: this.contracts.votingSystem,
-          method: 'get_receipt',
+          method: "get_receipt",
           args: [id, voterAddress],
         });
         voteSupport = receipt?.support;
@@ -379,7 +392,7 @@ export class GovernanceAnalytics {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to get voter info: ${error}`,
-        { proposalId, voterAddress, error }
+        { proposalId, voterAddress, error },
       );
     }
   }
@@ -390,7 +403,10 @@ export class GovernanceAnalytics {
    * @param toBlock - Ending block (optional)
    * @returns Average participation rate percentage
    */
-  async getParticipationRate(fromBlock?: bigint, toBlock?: bigint): Promise<number> {
+  async getParticipationRate(
+    fromBlock?: bigint,
+    toBlock?: bigint,
+  ): Promise<number> {
     const proposals = await this.fetchProposals({
       fromBlock,
       toBlock,
@@ -416,16 +432,19 @@ export class GovernanceAnalytics {
    * @returns Top proposals sorted by turnout
    */
   async getTopProposalsByParticipation(
-    limit: number = 10
+    limit: number = 10,
   ): Promise<Array<{ proposal: Proposal; turnout: number }>> {
     const proposals = await this.fetchProposals();
-    const proposalsWithTurnout: Array<{ proposal: Proposal; turnout: number }> = [];
+    const proposalsWithTurnout: Array<{ proposal: Proposal; turnout: number }> =
+      [];
 
     for (const proposal of proposals) {
-      if (proposal.state === ProposalState.Active || 
-          proposal.state === ProposalState.Executed ||
-          proposal.state === ProposalState.Succeeded ||
-          proposal.state === ProposalState.Defeated) {
+      if (
+        proposal.state === ProposalState.Active ||
+        proposal.state === ProposalState.Executed ||
+        proposal.state === ProposalState.Succeeded ||
+        proposal.state === ProposalState.Defeated
+      ) {
         const turnout = await this.computeTurnout(proposal.id);
         proposalsWithTurnout.push({ proposal, turnout });
       }
@@ -448,7 +467,7 @@ export class GovernanceAnalytics {
       targets: raw.targets || [],
       values: (raw.values || []).map((v: any) => BigInt(v)),
       calldatas: raw.calldatas || [],
-      description: raw.description || '',
+      description: raw.description || "",
       startBlock: BigInt(raw.start_block || raw.startBlock || 0),
       endBlock: BigInt(raw.end_block || raw.endBlock || 0),
       forVotes: BigInt(raw.for_votes || raw.forVotes || 0),
@@ -467,7 +486,10 @@ export class GovernanceAnalytics {
  * @param quorumNumerator - Quorum numerator (out of 100)
  * @returns Required quorum amount
  */
-export function calculateQuorum(totalSupply: bigint, quorumNumerator: number): bigint {
+export function calculateQuorum(
+  totalSupply: bigint,
+  quorumNumerator: number,
+): bigint {
   return (totalSupply * BigInt(quorumNumerator)) / 100n;
 }
 
@@ -484,7 +506,7 @@ export function hasProposalPassed(
   againstVotes: bigint,
   abstainVotes: bigint,
   totalSupply: bigint,
-  quorumNumerator: number
+  quorumNumerator: number,
 ): boolean {
   const quorum = calculateQuorum(totalSupply, quorumNumerator);
   const totalVotes = forVotes + againstVotes + abstainVotes;
@@ -498,16 +520,21 @@ export function hasProposalPassed(
  * @param decimals - Token decimals
  * @returns Formatted string
  */
-export function formatVotingPower(votes: bigint, decimals: number = 18): string {
+export function formatVotingPower(
+  votes: bigint,
+  decimals: number = 18,
+): string {
   const divisor = 10n ** BigInt(decimals);
   const whole = votes / divisor;
   const fraction = votes % divisor;
-  
+
   if (fraction === 0n) {
     return whole.toString();
   }
 
-  const fractionStr = fraction.toString().padStart(decimals, '0').replace(/0+$/, '');
+  const fractionStr = fraction
+    .toString()
+    .padStart(decimals, "0")
+    .replace(/0+$/, "");
   return `${whole}.${fractionStr}`;
 }
-

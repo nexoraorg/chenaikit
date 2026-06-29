@@ -49,26 +49,29 @@ header.
         { "name": "account_age", "weight": null }
       ]
     },
-    "meta": { "generatedAt": "2026-06-18T00:00:00.000Z", "model": "credit-score-v2" }
+    "meta": {
+      "generatedAt": "2026-06-18T00:00:00.000Z",
+      "model": "credit-score-v2"
+    }
   }
 }
 ```
 
-| v1 field          | v2 field                       |
-| ----------------- | ------------------------------ |
-| `data.score`      | `data.creditScore.value`       |
+| v1 field          | v2 field                           |
+| ----------------- | ---------------------------------- |
+| `data.score`      | `data.creditScore.value`           |
 | `data.factors[i]` | `data.creditScore.factors[i].name` |
-| `data.timestamp`  | `data.meta.generatedAt`        |
-| —                 | `data.creditScore.band` (new)  |
+| `data.timestamp`  | `data.meta.generatedAt`            |
+| —                 | `data.creditScore.band` (new)      |
 
 ### `GET /fraud/detect`
 
-| v1 field          | v2 field                    |
-| ----------------- | --------------------------- |
-| `data.riskScore`  | `data.fraud.riskScore`      |
-| `data.riskLevel`  | `data.fraud.riskLevel`      |
-| `data.factors[i]` | `data.fraud.factors[i].name`|
-| `data.timestamp`  | `data.meta.generatedAt`     |
+| v1 field          | v2 field                     |
+| ----------------- | ---------------------------- |
+| `data.riskScore`  | `data.fraud.riskScore`       |
+| `data.riskLevel`  | `data.fraud.riskLevel`       |
+| `data.factors[i]` | `data.fraud.factors[i].name` |
+| `data.timestamp`  | `data.meta.generatedAt`      |
 
 ## 3. Compatibility layer
 

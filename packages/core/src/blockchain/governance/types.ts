@@ -1,7 +1,7 @@
 /**
  * Governance System TypeScript Types
  * @module governance/types
- * 
+ *
  * Shared types and interfaces for the on-chain governance system
  * Compatible with Soroban governance contracts
  */
@@ -71,11 +71,11 @@ export interface VoteRecord {
  * Governance configuration parameters
  */
 export interface GovernanceConfig {
-  votingDelay: bigint;       // Blocks to wait before voting starts
-  votingPeriod: bigint;      // Blocks for voting duration
+  votingDelay: bigint; // Blocks to wait before voting starts
+  votingPeriod: bigint; // Blocks for voting duration
   proposalThreshold: bigint; // Minimum tokens to create proposal
-  quorumNumerator: bigint;   // Numerator for quorum calculation (out of 100)
-  timelockDelay: bigint;     // Seconds to wait before execution
+  quorumNumerator: bigint; // Numerator for quorum calculation (out of 100)
+  timelockDelay: bigint; // Seconds to wait before execution
 }
 
 /**
@@ -169,13 +169,13 @@ export interface TimelockTransaction {
  * Governance event types
  */
 export enum GovernanceEventType {
-  ProposalCreated = 'ProposalCreated',
-  VoteCast = 'VoteCast',
-  ProposalQueued = 'ProposalQueued',
-  ProposalExecuted = 'ProposalExecuted',
-  ProposalCanceled = 'ProposalCanceled',
-  DelegateChanged = 'DelegateChanged',
-  DelegateVotesChanged = 'DelegateVotesChanged',
+  ProposalCreated = "ProposalCreated",
+  VoteCast = "VoteCast",
+  ProposalQueued = "ProposalQueued",
+  ProposalExecuted = "ProposalExecuted",
+  ProposalCanceled = "ProposalCanceled",
+  DelegateChanged = "DelegateChanged",
+  DelegateVotesChanged = "DelegateVotesChanged",
 }
 
 /**
@@ -193,22 +193,22 @@ export interface GovernanceEvent {
  * Error types for governance operations
  */
 export enum GovernanceErrorType {
-  Unauthorized = 'Unauthorized',
-  InsufficientBalance = 'InsufficientBalance',
-  InvalidProposal = 'InvalidProposal',
-  ProposalNotActive = 'ProposalNotActive',
-  AlreadyVoted = 'AlreadyVoted',
-  BelowProposalThreshold = 'BelowProposalThreshold',
-  ProposalNotSucceeded = 'ProposalNotSucceeded',
-  TimelockNotExpired = 'TimelockNotExpired',
-  ProposalAlreadyExecuted = 'ProposalAlreadyExecuted',
-  ExecutionFailed = 'ExecutionFailed',
-  InvalidState = 'InvalidState',
-  QuorumNotReached = 'QuorumNotReached',
-  InvalidCheckpoint = 'InvalidCheckpoint',
-  ArrayLengthMismatch = 'ArrayLengthMismatch',
-  NetworkError = 'NetworkError',
-  ContractError = 'ContractError',
+  Unauthorized = "Unauthorized",
+  InsufficientBalance = "InsufficientBalance",
+  InvalidProposal = "InvalidProposal",
+  ProposalNotActive = "ProposalNotActive",
+  AlreadyVoted = "AlreadyVoted",
+  BelowProposalThreshold = "BelowProposalThreshold",
+  ProposalNotSucceeded = "ProposalNotSucceeded",
+  TimelockNotExpired = "TimelockNotExpired",
+  ProposalAlreadyExecuted = "ProposalAlreadyExecuted",
+  ExecutionFailed = "ExecutionFailed",
+  InvalidState = "InvalidState",
+  QuorumNotReached = "QuorumNotReached",
+  InvalidCheckpoint = "InvalidCheckpoint",
+  ArrayLengthMismatch = "ArrayLengthMismatch",
+  NetworkError = "NetworkError",
+  ContractError = "ContractError",
 }
 
 /**
@@ -218,10 +218,10 @@ export class GovernanceError extends Error {
   constructor(
     public type: GovernanceErrorType,
     message: string,
-    public details?: any
+    public details?: any,
   ) {
     super(message);
-    this.name = 'GovernanceError';
+    this.name = "GovernanceError";
   }
 }
 
@@ -265,4 +265,3 @@ export interface DelegationHistory {
   to: string;
   votingPower: bigint;
 }
-

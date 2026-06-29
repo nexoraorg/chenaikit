@@ -1,5 +1,5 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { EventEmitter } from 'events';
+import axios, { AxiosInstance, AxiosResponse } from "axios";
+import { EventEmitter } from "events";
 
 // TypeScript interfaces for Stellar Horizon API responses
 export interface HorizonAccount {
@@ -125,7 +125,7 @@ export interface HorizonLedger {
 }
 
 export interface HorizonPaymentOperation extends HorizonOperation {
-  type: 'payment';
+  type: "payment";
   from: string;
   to: string;
   asset_type: string;
@@ -136,7 +136,7 @@ export interface HorizonPaymentOperation extends HorizonOperation {
 
 export interface PaginationOptions {
   cursor?: string;
-  order?: 'asc' | 'desc';
+  order?: "asc" | "desc";
   limit?: number;
 }
 
@@ -188,18 +188,20 @@ export class HorizonConnector extends EventEmitter {
       rateLimit: {
         requestsPerMinute: 60,
         burstLimit: 10,
-        retryAfterMs: 1000
+        retryAfterMs: 1000,
       },
-      ...config
+      ...config,
     };
 
     this.httpClient = axios.create({
       baseURL: this.config.horizonUrl,
       timeout: this.config.timeout,
       headers: {
-        'Content-Type': 'application/json',
-        ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` })
-      }
+        "Content-Type": "application/json",
+        ...(this.config.apiKey && {
+          Authorization: `Bearer ${this.config.apiKey}`,
+        }),
+      },
     });
 
     this.setupInterceptors();
@@ -212,7 +214,7 @@ export class HorizonConnector extends EventEmitter {
         await this.enforceRateLimit();
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
     );
 
     // Response interceptor for error handling
@@ -221,20 +223,22 @@ export class HorizonConnector extends EventEmitter {
       async (error) => {
         if (error.response?.status === 429) {
           // Rate limited - wait and retry
-          const retryAfter = error.response.headers['retry-after'];
-          const delay = retryAfter ? parseInt(retryAfter) * 1000 : this.config.rateLimit!.retryAfterMs;
+          const retryAfter = error.response.headers["retry-after"];
+          const delay = retryAfter
+            ? parseInt(retryAfter) * 1000
+            : this.config.rateLimit!.retryAfterMs;
           await this.delay(delay);
           return this.httpClient.request(error.config);
         }
         return Promise.reject(this.handleError(error));
-      }
+      },
     );
   }
 
   private async enforceRateLimit(): Promise<void> {
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
-    
+
     // Reset counter if a minute has passed
     if (timeSinceLastRequest > 60000) {
       this.requestCount = 0;
@@ -256,26 +260,33 @@ export class HorizonConnector extends EventEmitter {
   }
 
   private async delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private handleError(error: any): Error {
     if (error.response?.data) {
       const horizonError = error.response.data as HorizonError;
-      return new Error(`Horizon API Error (${horizonError.status}): ${horizonError.detail}`);
+      return new Error(
+        `Horizon API Error (${horizonError.status}): ${horizonError.detail}`,
+      );
     }
-    if (error.code === 'ECONNABORTED') {
-      return new Error('Request timeout - Horizon API is not responding');
+    if (error.code === "ECONNABORTED") {
+      return new Error("Request timeout - Horizon API is not responding");
     }
-    if (error.code === 'ENOTFOUND') {
-      return new Error('Network error - Cannot reach Horizon API');
+    if (error.code === "ENOTFOUND") {
+      return new Error("Network error - Cannot reach Horizon API");
     }
     return new Error(`Request failed: ${error.message}`);
   }
 
-  private async makeRequest<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
+  private async makeRequest<T>(
+    endpoint: string,
+    params?: Record<string, any>,
+  ): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await this.httpClient.get(endpoint, { params });
+      const response: AxiosResponse<T> = await this.httpClient.get(endpoint, {
+        params,
+      });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -283,9 +294,9 @@ export class HorizonConnector extends EventEmitter {
   }
 
   private async makeRequestWithRetry<T>(
-    endpoint: string, 
+    endpoint: string,
     params?: Record<string, any>,
-    attempt: number = 1
+    attempt: number = 1,
   ): Promise<T> {
     try {
       return await this.makeRequest<T>(endpoint, params);
@@ -301,13 +312,15 @@ export class HorizonConnector extends EventEmitter {
   // Account data fetching methods
   async getAccount(accountId: string): Promise<HorizonAccount> {
     if (!this.isValidStellarAddress(accountId)) {
-      throw new Error('Invalid Stellar address format');
+      throw new Error("Invalid Stellar address format");
     }
 
     try {
-      return await this.makeRequestWithRetry<HorizonAccount>(`/accounts/${accountId}`);
+      return await this.makeRequestWithRetry<HorizonAccount>(
+        `/accounts/${accountId}`,
+      );
     } catch (error) {
-      if ((error as Error).message.includes('404')) {
+      if ((error as Error).message.includes("404")) {
         throw new Error(`Account not found: ${accountId}`);
       }
       throw error;
@@ -320,11 +333,11 @@ export class HorizonConnector extends EventEmitter {
   }
 
   async getAccountTransactions(
-    accountId: string, 
-    options: PaginationOptions = {}
+    accountId: string,
+    options: PaginationOptions = {},
   ): Promise<{ records: HorizonTransaction[]; next?: string; prev?: string }> {
     if (!this.isValidStellarAddress(accountId)) {
-      throw new Error('Invalid Stellar address format');
+      throw new Error("Invalid Stellar address format");
     }
 
     const params: Record<string, any> = {};
@@ -340,16 +353,20 @@ export class HorizonConnector extends EventEmitter {
     return {
       records: response._embedded.records,
       next: response._links.next?.href,
-      prev: response._links.prev?.href
+      prev: response._links.prev?.href,
     };
   }
 
   async getAccountPayments(
-    accountId: string, 
-    options: PaginationOptions = {}
-  ): Promise<{ records: HorizonPaymentOperation[]; next?: string; prev?: string }> {
+    accountId: string,
+    options: PaginationOptions = {},
+  ): Promise<{
+    records: HorizonPaymentOperation[];
+    next?: string;
+    prev?: string;
+  }> {
     if (!this.isValidStellarAddress(accountId)) {
-      throw new Error('Invalid Stellar address format');
+      throw new Error("Invalid Stellar address format");
     }
 
     const params: Record<string, any> = {};
@@ -365,20 +382,22 @@ export class HorizonConnector extends EventEmitter {
     return {
       records: response._embedded.records,
       next: response._links.next?.href,
-      prev: response._links.prev?.href
+      prev: response._links.prev?.href,
     };
   }
 
   // Transaction methods
   async getTransaction(transactionHash: string): Promise<HorizonTransaction> {
     if (!this.isValidTransactionHash(transactionHash)) {
-      throw new Error('Invalid transaction hash format');
+      throw new Error("Invalid transaction hash format");
     }
 
     try {
-      return await this.makeRequestWithRetry<HorizonTransaction>(`/transactions/${transactionHash}`);
+      return await this.makeRequestWithRetry<HorizonTransaction>(
+        `/transactions/${transactionHash}`,
+      );
     } catch (error) {
-      if ((error as Error).message.includes('404')) {
+      if ((error as Error).message.includes("404")) {
         throw new Error(`Transaction not found: ${transactionHash}`);
       }
       throw error;
@@ -387,10 +406,10 @@ export class HorizonConnector extends EventEmitter {
 
   async getTransactionOperations(
     transactionHash: string,
-    options: PaginationOptions = {}
+    options: PaginationOptions = {},
   ): Promise<{ records: HorizonOperation[]; next?: string; prev?: string }> {
     if (!this.isValidTransactionHash(transactionHash)) {
-      throw new Error('Invalid transaction hash format');
+      throw new Error("Invalid transaction hash format");
     }
 
     const params: Record<string, any> = {};
@@ -406,16 +425,16 @@ export class HorizonConnector extends EventEmitter {
     return {
       records: response._embedded.records,
       next: response._links.next?.href,
-      prev: response._links.prev?.href
+      prev: response._links.prev?.href,
     };
   }
 
   async getTransactionEffects(
     transactionHash: string,
-    options: PaginationOptions = {}
+    options: PaginationOptions = {},
   ): Promise<{ records: HorizonEffect[]; next?: string; prev?: string }> {
     if (!this.isValidTransactionHash(transactionHash)) {
-      throw new Error('Invalid transaction hash format');
+      throw new Error("Invalid transaction hash format");
     }
 
     const params: Record<string, any> = {};
@@ -431,23 +450,27 @@ export class HorizonConnector extends EventEmitter {
     return {
       records: response._embedded.records,
       next: response._links.next?.href,
-      prev: response._links.prev?.href
+      prev: response._links.prev?.href,
     };
   }
 
   // Ledger methods
   async getLedger(ledgerSequence: number): Promise<HorizonLedger> {
     try {
-      return await this.makeRequestWithRetry<HorizonLedger>(`/ledgers/${ledgerSequence}`);
+      return await this.makeRequestWithRetry<HorizonLedger>(
+        `/ledgers/${ledgerSequence}`,
+      );
     } catch (error) {
-      if ((error as Error).message.includes('404')) {
+      if ((error as Error).message.includes("404")) {
         throw new Error(`Ledger not found: ${ledgerSequence}`);
       }
       throw error;
     }
   }
 
-  async getLedgers(options: PaginationOptions = {}): Promise<{ records: HorizonLedger[]; next?: string; prev?: string }> {
+  async getLedgers(
+    options: PaginationOptions = {},
+  ): Promise<{ records: HorizonLedger[]; next?: string; prev?: string }> {
     const params: Record<string, any> = {};
     if (options.cursor) params.cursor = options.cursor;
     if (options.order) params.order = options.order;
@@ -456,22 +479,22 @@ export class HorizonConnector extends EventEmitter {
     const response = await this.makeRequestWithRetry<{
       _embedded: { records: HorizonLedger[] };
       _links: { next?: { href: string }; prev?: { href: string } };
-    }>('/ledgers', params);
+    }>("/ledgers", params);
 
     return {
       records: response._embedded.records,
       next: response._links.next?.href,
-      prev: response._links.prev?.href
+      prev: response._links.prev?.href,
     };
   }
 
   // Network info methods
   async getNetworkInfo(): Promise<any> {
-    return await this.makeRequestWithRetry('/');
+    return await this.makeRequestWithRetry("/");
   }
 
   async getFeeStats(): Promise<any> {
-    return await this.makeRequestWithRetry('/fee_stats');
+    return await this.makeRequestWithRetry("/fee_stats");
   }
 
   // Utility methods
@@ -486,21 +509,24 @@ export class HorizonConnector extends EventEmitter {
   }
 
   // Event streaming methods (for real-time updates)
-  async streamAccount(accountId: string, callback: (data: any) => void): Promise<void> {
+  async streamAccount(
+    accountId: string,
+    callback: (data: any) => void,
+  ): Promise<void> {
     if (!this.isValidStellarAddress(accountId)) {
-      throw new Error('Invalid Stellar address format');
+      throw new Error("Invalid Stellar address format");
     }
 
     // This would typically use Server-Sent Events or WebSocket
     // For now, we'll implement a polling mechanism
     const pollInterval = 5000; // 5 seconds
-    
+
     const poll = async () => {
       try {
         const account = await this.getAccount(accountId);
         callback(account);
       } catch (error) {
-        this.emit('error', error as Error);
+        this.emit("error", error as Error);
       }
     };
 
@@ -510,7 +536,7 @@ export class HorizonConnector extends EventEmitter {
 
     // Return cleanup function
     return new Promise<void>((resolve) => {
-      this.once('stop-streaming', () => {
+      this.once("stop-streaming", () => {
         clearInterval(intervalId);
         resolve();
       });
@@ -518,7 +544,7 @@ export class HorizonConnector extends EventEmitter {
   }
 
   stopStreaming(): void {
-    this.emit('stop-streaming');
+    this.emit("stop-streaming");
   }
 
   // Health check

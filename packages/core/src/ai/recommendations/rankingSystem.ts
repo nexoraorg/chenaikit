@@ -1,5 +1,5 @@
 // packages/core/src/ai/recommendations/rankingSystem.ts
-import { Recommendation } from './types';
+import { Recommendation } from "./types";
 
 export function normalizeScores(values: number[]) {
   if (values.length === 0) return [];
@@ -9,15 +9,20 @@ export function normalizeScores(values: number[]) {
   return values.map((v) => (v - min) / (max - min));
 }
 
-export function applyBusinessBoosts(recs: Recommendation[], boosts: Record<string, number>) {
-  return recs.map((r) => ({ ...r, score: r.score * (boosts[r.itemId] ?? 1) })).sort((a, b) => b.score - a.score);
+export function applyBusinessBoosts(
+  recs: Recommendation[],
+  boosts: Record<string, number>,
+) {
+  return recs
+    .map((r) => ({ ...r, score: r.score * (boosts[r.itemId] ?? 1) }))
+    .sort((a, b) => b.score - a.score);
 }
 
 export function mmr(
   recs: Recommendation[],
   k: number,
   lambda = 0.6,
-  itemSimilarities: (a: string, b: string) => number = () => 0
+  itemSimilarities: (a: string, b: string) => number = () => 0,
 ): Recommendation[] {
   if (recs.length <= k) return recs.slice(0, k);
 
@@ -28,7 +33,7 @@ export function mmr(
     let bestVal = -Infinity;
     for (let i = 0; i < candidates.length; i++) {
       const c = candidates[i];
- 
+
       const rel = c.score;
 
       let maxSim = 0;
@@ -47,7 +52,11 @@ export function mmr(
   return selected;
 }
 
-export function precisionAtK(recs: string[], groundTruth: Set<string>, k: number) {
+export function precisionAtK(
+  recs: string[],
+  groundTruth: Set<string>,
+  k: number,
+) {
   const topk = recs.slice(0, k);
   let hit = 0;
   for (const id of topk) if (groundTruth.has(id)) hit++;
@@ -75,12 +84,10 @@ export function ndcgAtK(recs: string[], groundTruth: Set<string>, k: number) {
   return idcg === 0 ? 0 : dcg / idcg;
 }
 
-
 export class ABTestManager {
   private assignments = new Map<string, string>();
 
   private hash(s: string) {
-
     let h = 2166136261 >>> 0;
     for (let i = 0; i < s.length; i++) {
       h ^= s.charCodeAt(i);

@@ -1,4 +1,11 @@
-import { ConfidenceInterval, ForecastMetrics, ForecastPoint, ForecastResult, ForecasterOptions, TimeSeriesPoint } from './types';
+import {
+  ConfidenceInterval,
+  ForecastMetrics,
+  ForecastPoint,
+  ForecastResult,
+  ForecasterOptions,
+  TimeSeriesPoint,
+} from "./types";
 
 function mean(values: number[]): number {
   if (!values.length) return 0;
@@ -16,11 +23,15 @@ function zValueFor(level: number): number {
   // Normal approximation z-values for common confidence levels
   if (level >= 0.99) return 2.576;
   if (level >= 0.975) return 1.96; // ~95%
-  if (level >= 0.90) return 1.645;
+  if (level >= 0.9) return 1.645;
   return 1.96;
 }
 
-function detectSeasonalityPeriod(series: number[], minP = 4, maxP = 24): number | undefined {
+function detectSeasonalityPeriod(
+  series: number[],
+  minP = 4,
+  maxP = 24,
+): number | undefined {
   if (series.length < minP * 2) return undefined;
   let bestPeriod: number | undefined;
   let bestStrength = -Infinity;
@@ -45,7 +56,11 @@ function detectSeasonalityPeriod(series: number[], minP = 4, maxP = 24): number 
 }
 
 export class TimeSeriesForecaster {
-  forecast(points: TimeSeriesPoint[], horizon: number, options: ForecasterOptions = {}): ForecastResult {
+  forecast(
+    points: TimeSeriesPoint[],
+    horizon: number,
+    options: ForecasterOptions = {},
+  ): ForecastResult {
     const values = points.map((p) => p.value);
     const dates = points.map((p) => p.date);
     const confidenceLevel = options.confidenceLevel ?? 0.95;
@@ -69,7 +84,9 @@ export class TimeSeriesForecaster {
         seasonalCounts[idx] += 1;
       }
       const avg = mean(values);
-      s = seasonalSums.map((sum, i) => (seasonalCounts[i] ? sum / seasonalCounts[i] - avg : 0));
+      s = seasonalSums.map((sum, i) =>
+        seasonalCounts[i] ? sum / seasonalCounts[i] - avg : 0,
+      );
     }
 
     const fitted: number[] = [];
@@ -109,7 +126,10 @@ export class TimeSeriesForecaster {
     const metrics: ForecastMetrics = {
       rmse: Math.sqrt(mean(residuals.map((e) => e * e))) || 0,
       mae: mean(residuals.map((e) => Math.abs(e))) || 0,
-      mape: mean(residuals.map((e, i) => (actuals[i] ? Math.abs(e / actuals[i]) : 0))) || 0,
+      mape:
+        mean(
+          residuals.map((e, i) => (actuals[i] ? Math.abs(e / actuals[i]) : 0)),
+        ) || 0,
       coverage: confidenceLevel,
     };
 

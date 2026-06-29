@@ -1,6 +1,10 @@
-
-import { FeeBumpTransaction, Transaction, Keypair, TransactionBuilder } from '@stellar/stellar-sdk';
-import { StellarConnector } from './connector';
+import {
+  FeeBumpTransaction,
+  Transaction,
+  Keypair,
+  TransactionBuilder,
+} from "@stellar/stellar-sdk";
+import { StellarConnector } from "./connector";
 
 /**
  * Gets the current network fee.
@@ -8,7 +12,9 @@ import { StellarConnector } from './connector';
  * @param {StellarConnector} stellarConnector - The Stellar connector instance.
  * @returns {Promise<string>}
  */
-export async function getNetworkFee(stellarConnector: StellarConnector): Promise<string> {
+export async function getNetworkFee(
+  stellarConnector: StellarConnector,
+): Promise<string> {
   return await stellarConnector.getFee();
 }
 
@@ -23,7 +29,7 @@ export async function getNetworkFee(stellarConnector: StellarConnector): Promise
 export async function createFeeBumpTransaction(
   stellarConnector: StellarConnector,
   feeSourceSecret: string,
-  transaction: Transaction
+  transaction: Transaction,
 ): Promise<FeeBumpTransaction> {
   const feeSourceKeypair = Keypair.fromSecret(feeSourceSecret);
 
@@ -31,7 +37,7 @@ export async function createFeeBumpTransaction(
     feeSourceKeypair.publicKey(),
     await stellarConnector.getFee(),
     transaction,
-    await stellarConnector.getNetworkPassphrase()
+    await stellarConnector.getNetworkPassphrase(),
   );
 
   feeBumpTransaction.sign(feeSourceKeypair);

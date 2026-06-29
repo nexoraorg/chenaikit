@@ -9,6 +9,7 @@ ChenAIKit uses [react-i18next](https://react.i18next.com/) for internationalizat
 ## Supported Languages
 
 Currently supported languages:
+
 - **English (en)** - Default language
 - **Spanish (es)** - Español
 - **Chinese (zh)** - 中文
@@ -16,6 +17,7 @@ Currently supported languages:
 ## Translation Files
 
 Translation files are located in `frontend/src/locales/`:
+
 ```
 frontend/src/locales/
 ├── en.json          # English (default)
@@ -59,20 +61,38 @@ Create a new JSON file in `frontend/src/locales/` with the appropriate language 
 Update `frontend/src/i18n/config.ts`:
 
 ```typescript
-import fr from '../locales/fr.json';
+import fr from "../locales/fr.json";
 
 const resources = {
   en: { translation: en },
   es: { translation: es },
   zh: { translation: zh },
-  fr: { translation: fr }  // Add new language
+  fr: { translation: fr }, // Add new language
 };
 
 export const supportedLanguages = [
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸', rtl: false },
-  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', rtl: false },
-  { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳', rtl: false },
-  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷', rtl: false }  // Add new language
+  {
+    code: "en",
+    name: "English",
+    nativeName: "English",
+    flag: "🇺🇸",
+    rtl: false,
+  },
+  {
+    code: "es",
+    name: "Spanish",
+    nativeName: "Español",
+    flag: "🇪🇸",
+    rtl: false,
+  },
+  { code: "zh", name: "Chinese", nativeName: "中文", flag: "🇨🇳", rtl: false },
+  {
+    code: "fr",
+    name: "French",
+    nativeName: "Français",
+    flag: "🇫🇷",
+    rtl: false,
+  }, // Add new language
 ];
 ```
 
@@ -112,9 +132,10 @@ Use ICU message format for pluralization:
 ```
 
 Usage in React:
+
 ```tsx
 const { t } = useTranslation();
-t('messages', { count: messageCount });
+t("messages", { count: messageCount });
 ```
 
 ### 4. Variables
@@ -143,15 +164,15 @@ For rich text, maintain HTML structure:
 ### 1. Basic Usage
 
 ```tsx
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 
 function MyComponent() {
   const { t } = useTranslation();
-  
+
   return (
     <div>
-      <h1>{t('dashboard.title')}</h1>
-      <p>{t('dashboard.subtitle')}</p>
+      <h1>{t("dashboard.title")}</h1>
+      <p>{t("dashboard.subtitle")}</p>
     </div>
   );
 }
@@ -160,21 +181,21 @@ function MyComponent() {
 ### 2. With Variables
 
 ```tsx
-const message = t('welcome', { name: 'John' });
+const message = t("welcome", { name: "John" });
 ```
 
 ### 3. Pluralization
 
 ```tsx
-const message = t('messages', { count: messageCount });
+const message = t("messages", { count: messageCount });
 ```
 
 ### 4. Date/Number Formatting
 
 ```tsx
-import { formatCurrency, formatDate } from '../i18n/config';
+import { formatCurrency, formatDate } from "../i18n/config";
 
-const price = formatCurrency(1000, 'USD');
+const price = formatCurrency(1000, "USD");
 const date = formatDate(new Date());
 ```
 
@@ -258,6 +279,7 @@ git checkout -b translation/your-language-code
 ### 4. Submit Pull Request
 
 Create a pull request with:
+
 - Clear description of changes
 - Language code and name
 - Any special considerations (RTL, character sets, etc.)
@@ -276,6 +298,7 @@ npx i18next-scanner "src/**/*.{js,jsx,ts,tsx}"
 ### 2. Translation Management Platforms
 
 For community translations, consider using:
+
 - **Crowdin** - Crowdsourced translation platform
 - **Lokalise** - Translation management system
 - **Phrase** - Translation platform for developers
@@ -298,12 +321,12 @@ For community translations, consider using:
 
 ```typescript
 // Test translation completeness
-describe('Translation Coverage', () => {
-  const languages = ['en', 'es', 'zh'];
-  const namespaces = ['app', 'dashboard', 'transactions'];
-  
-  languages.forEach(lang => {
-    namespaces.forEach(ns => {
+describe("Translation Coverage", () => {
+  const languages = ["en", "es", "zh"];
+  const namespaces = ["app", "dashboard", "transactions"];
+
+  languages.forEach((lang) => {
+    namespaces.forEach((ns) => {
       it(`should have all keys for ${lang}/${ns}`, () => {
         // Test implementation
       });
@@ -322,8 +345,8 @@ Translations are loaded on-demand:
 // Automatic lazy loading with react-i18next
 i18n.use(initReactI18next).init({
   react: {
-    useSuspense: false
-  }
+    useSuspense: false,
+  },
 });
 ```
 
@@ -339,6 +362,7 @@ npm run build -- --analyze
 ### 1. Missing Translations
 
 If you see missing translation keys:
+
 - Check if the key exists in the translation file
 - Verify the namespace is correct
 - Ensure the language is properly configured
@@ -346,6 +370,7 @@ If you see missing translation keys:
 ### 2. Language Not Switching
 
 If language switching doesn't work:
+
 - Check browser localStorage for `i18nextLng`
 - Verify language detection configuration
 - Ensure translation files are properly loaded
@@ -353,6 +378,7 @@ If language switching doesn't work:
 ### 3. RTL Layout Issues
 
 For RTL languages:
+
 - Add CSS direction support
 - Test layout with different text lengths
 - Consider margin/padding adjustments
@@ -368,6 +394,7 @@ For RTL languages:
 ## Community
 
 Join our translation community:
+
 - **Discord**: #translations channel
 - **GitHub**: Issues and discussions
 - **Email**: translations@chenaikit.dev

@@ -3,6 +3,7 @@
 ## Common Commands
 
 ### Check Current Version
+
 ```bash
 soroban contract invoke \
   --id $CONTRACT_ID \
@@ -11,11 +12,13 @@ soroban contract invoke \
 ```
 
 ### Upgrade Contract (Automated)
+
 ```bash
 ./contracts/scripts/upgrade-contract.sh credit-score testnet
 ```
 
 ### Upgrade Contract (Manual)
+
 ```bash
 # 1. Build
 cd contracts/credit-score
@@ -37,11 +40,13 @@ soroban contract invoke \
 ```
 
 ### Rollback (Automated)
+
 ```bash
 ./contracts/scripts/rollback-contract.sh credit-score testnet
 ```
 
 ### Rollback (Manual)
+
 ```bash
 soroban contract invoke \
   --id $CONTRACT_ID \
@@ -52,6 +57,7 @@ soroban contract invoke \
 ```
 
 ### Get Upgrade History
+
 ```bash
 soroban contract invoke \
   --id $CONTRACT_ID \
@@ -62,6 +68,7 @@ soroban contract invoke \
 ## Governance Upgrade Commands
 
 ### Initialize Upgrade Manager
+
 ```bash
 soroban contract invoke \
   --id $UPGRADE_MANAGER_ID \
@@ -73,6 +80,7 @@ soroban contract invoke \
 ```
 
 ### Add Authorized Upgrader
+
 ```bash
 soroban contract invoke \
   --id $UPGRADE_MANAGER_ID \
@@ -83,6 +91,7 @@ soroban contract invoke \
 ```
 
 ### Propose Upgrade
+
 ```bash
 soroban contract invoke \
   --id $UPGRADE_MANAGER_ID \
@@ -97,6 +106,7 @@ soroban contract invoke \
 ```
 
 ### Approve Upgrade
+
 ```bash
 soroban contract invoke \
   --id $UPGRADE_MANAGER_ID \
@@ -107,6 +117,7 @@ soroban contract invoke \
 ```
 
 ### Execute Upgrade
+
 ```bash
 soroban contract invoke \
   --id $UPGRADE_MANAGER_ID \
@@ -117,6 +128,7 @@ soroban contract invoke \
 ```
 
 ### Check Proposal Status
+
 ```bash
 soroban contract invoke \
   --id $UPGRADE_MANAGER_ID \
@@ -128,6 +140,7 @@ soroban contract invoke \
 ## Environment Variables
 
 ### Required
+
 ```bash
 export ADMIN_ADDRESS="GXXX..."
 export CONTRACT_ID="CXXX..."
@@ -135,6 +148,7 @@ export UPGRADE_MANAGER_ID="CXXX..."
 ```
 
 ### Optional
+
 ```bash
 export CREDIT_SCORE_CONTRACT_ID="CXXX..."
 export FRAUD_DETECT_CONTRACT_ID="CXXX..."
@@ -145,6 +159,7 @@ export SOROBAN_RPC_URL="https://soroban-testnet.stellar.org"
 ## Contract Functions
 
 ### Credit Score Contract
+
 ```rust
 // Upgrade functions
 pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>)
@@ -155,6 +170,7 @@ pub fn get_upgrade_history(env: Env) -> Vec<UpgradeRecord>
 ```
 
 ### Fraud Detection Contract
+
 ```rust
 // Upgrade functions
 pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>)
@@ -165,6 +181,7 @@ pub fn get_upgrade_history(env: Env) -> Vec<UpgradeRecord>
 ```
 
 ### Upgrade Manager Contract
+
 ```rust
 // Management functions
 pub fn initialize(env: Env, admin: Address, required_approvals: u32, approval_timeout: u64)
@@ -197,12 +214,14 @@ enum UpgradeType {
 ## Error Codes
 
 ### Upgrade Errors
+
 - `NotAdmin = 1` - Caller is not admin
 - `InvalidVersion = 2` - Invalid version transition
 - `MigrationFailed = 3` - Migration failed
 - `RollbackNotAvailable = 4` - No rollback hash stored
 
 ### Governance Errors
+
 - `Unauthorized = 1` - Not authorized
 - `InvalidProposal = 3` - Invalid proposal
 - `AlreadyVoted = 5` - Already approved
@@ -212,22 +231,26 @@ enum UpgradeType {
 ## Testing Commands
 
 ### Run All Tests
+
 ```bash
 cd contracts
 cargo test upgrade
 ```
 
 ### Run Specific Test
+
 ```bash
 cargo test test_upgrade_with_migration
 ```
 
 ### Run with Output
+
 ```bash
 cargo test upgrade -- --nocapture
 ```
 
 ### Build for Testing
+
 ```bash
 soroban contract build
 soroban contract optimize --wasm target/wasm32-unknown-unknown/release/contract.wasm
@@ -236,6 +259,7 @@ soroban contract optimize --wasm target/wasm32-unknown-unknown/release/contract.
 ## Monitoring
 
 ### Check Contract Health
+
 ```bash
 # Version
 soroban contract invoke --id $CONTRACT_ID --fn get_version
@@ -248,6 +272,7 @@ soroban events --id $CONTRACT_ID --start-ledger $START
 ```
 
 ### Monitor Upgrade
+
 ```bash
 # Watch for upgrade events
 soroban events --id $CONTRACT_ID --start-ledger $UPGRADE_LEDGER | grep "upgraded"
@@ -259,6 +284,7 @@ soroban contract invoke --id $CONTRACT_ID --fn get_version
 ## Troubleshooting
 
 ### Upgrade Failed
+
 ```bash
 # Check current version
 soroban contract invoke --id $CONTRACT_ID --fn get_version
@@ -271,6 +297,7 @@ soroban contract invoke --id $CONTRACT_ID --fn get_upgrade_history
 ```
 
 ### Version Mismatch
+
 ```bash
 # Get expected version from code
 grep "CURRENT_VERSION" contracts/*/src/upgrade.rs
@@ -283,6 +310,7 @@ soroban contract invoke --id $CONTRACT_ID --fn get_upgrade_history
 ```
 
 ### Storage Issues
+
 ```bash
 # Check if contract is responsive
 soroban contract invoke --id $CONTRACT_ID --fn get_version
@@ -297,21 +325,25 @@ soroban contract invoke --id $CONTRACT_ID --fn get_config
 ## File Locations
 
 ### Documentation
+
 - `docs/contracts/upgrade-guide.md` - Comprehensive guide
 - `contracts/UPGRADE_README.md` - Quick start
 - `contracts/UPGRADE_CHECKLIST.md` - Upgrade checklist
 - `contracts/docs/upgrade-proposal-template.md` - Proposal template
 
 ### Scripts
+
 - `contracts/scripts/upgrade-contract.sh` - Automated upgrade
 - `contracts/scripts/rollback-contract.sh` - Automated rollback
 
 ### Source Code
+
 - `contracts/governance/src/upgrade_proposal.rs` - Upgrade manager
 - `contracts/credit-score/src/upgrade.rs` - Credit score upgrades
 - `contracts/fraud-detect/src/upgrade.rs` - Fraud detect upgrades
 
 ### Tests
+
 - `contracts/tests/upgrade.test.rs` - Upgrade tests
 
 ## Best Practices
@@ -330,10 +362,12 @@ soroban contract invoke --id $CONTRACT_ID --fn get_config
 ## Emergency Contacts
 
 ### Testnet Issues
+
 - Check Stellar Discord #soroban
 - Review Soroban docs: https://soroban.stellar.org
 
 ### Mainnet Issues
+
 - Contact admin team immediately
 - Execute rollback if critical
 - Document all actions

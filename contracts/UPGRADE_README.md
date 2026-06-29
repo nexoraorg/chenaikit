@@ -125,14 +125,14 @@ contracts/
 pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) {
     admin.require_auth();
     verify_admin(&env, &admin);
-    
+
     // Execute migrations
     let old_version = get_version(&env);
     execute_migrations(&env, old_version, old_version + 1);
-    
+
     // Perform upgrade
     env.deployer().update_current_contract_wasm(new_wasm_hash);
-    
+
     // Update version
     set_version(&env, old_version + 1);
 }
@@ -149,18 +149,18 @@ pub fn upgrade_with_migration(
 ) {
     admin.require_auth();
     verify_admin(&env, &admin);
-    
+
     let old_version = get_version(&env);
-    
+
     // Store rollback hash
     store_rollback_hash(&env, &new_wasm_hash);
-    
+
     // Execute migrations
     execute_migrations(&env, old_version, old_version + 1);
-    
+
     // Perform upgrade
     env.deployer().update_current_contract_wasm(new_wasm_hash);
-    
+
     // Record upgrade
     record_upgrade(&env, old_version, old_version + 1, new_wasm_hash, admin, migration_notes);
 }
@@ -172,12 +172,12 @@ pub fn upgrade_with_migration(
 pub fn rollback(env: Env, admin: Address) {
     admin.require_auth();
     verify_admin(&env, &admin);
-    
+
     let rollback_hash = get_rollback_hash(&env)
         .expect("No rollback available");
-    
+
     env.deployer().update_current_contract_wasm(rollback_hash);
-    
+
     let current_version = get_version(&env);
     set_version(&env, current_version - 1);
 }
@@ -244,7 +244,7 @@ fn migrate_v1_to_v2(env: &Env) {
         new_field: default_value(),
     };
     set_config(env, &new_config);
-    
+
     // Extend TTL
     extend_storage_ttl(env);
 }
@@ -305,6 +305,7 @@ Automated upgrade script with safety checks.
 ```
 
 Features:
+
 - Builds and optimizes WASM
 - Uploads to network
 - Creates backup
@@ -325,6 +326,7 @@ Automated rollback script.
 ```
 
 Features:
+
 - Attempts automatic rollback
 - Falls back to manual process
 - Shows upgrade history
@@ -391,13 +393,13 @@ fn store_rollback_hash(env: &Env, current_hash: &BytesN<32>) {
 ```rust
 fn extend_storage_ttl(env: &Env) {
     const YEAR_LEDGERS: u32 = 6_307_200;
-    
+
     let keys = vec![
         symbol_short!("config"),
         symbol_short!("admin"),
         symbol_short!("data"),
     ];
-    
+
     for key in keys {
         if env.storage().persistent().has(&key) {
             env.storage().persistent().extend_ttl(&key, YEAR_LEDGERS, YEAR_LEDGERS);
@@ -463,6 +465,7 @@ soroban contract invoke --id $CONTRACT_ID --fn get_upgrade_history
 ## Support
 
 For questions or issues:
+
 - Open an issue on GitHub
 - Join our Discord community
 - Email: support@example.com

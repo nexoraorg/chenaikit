@@ -5,6 +5,7 @@ A comprehensive, reusable library of utilities for building robust Soroban smart
 ## Features
 
 ### 📊 Math Utilities (`math.rs`)
+
 - **SafeMath**: Overflow/underflow protected arithmetic operations
 - **Percentage**: Precise percentage calculations using basis points
 - **FixedPoint**: Fixed-point arithmetic for financial calculations (7 decimal precision)
@@ -12,6 +13,7 @@ A comprehensive, reusable library of utilities for building robust Soroban smart
 - **Weighted Average**: Statistical calculations
 
 ### ⏰ Time Utilities (`time.rs`)
+
 - Current timestamp access
 - Duration calculations and conversions
 - Deadline management
@@ -20,12 +22,14 @@ A comprehensive, reusable library of utilities for building robust Soroban smart
 - Constants for common time periods
 
 ### 🔐 Access Control (`access.rs`)
+
 - **Ownable**: Single owner pattern with ownership transfer
 - **Pausable**: Emergency stop mechanism
 - **AccessControl**: Role-based access control (RBAC)
 - **Whitelist**: Address whitelist management
 
 ### 💾 Storage Helpers (`storage.rs`)
+
 - Storage type abstraction (Temporary/Persistent/Instance)
 - TTL management utilities
 - Counter and mapping utilities
@@ -33,11 +37,13 @@ A comprehensive, reusable library of utilities for building robust Soroban smart
 - Safe get/set operations with error handling
 
 ### 📢 Event Utilities (`events.rs`)
+
 - Event emission helpers (1-4 topics)
 - Standard events (Transfer, Approval, Ownership, etc.)
 - Event builder pattern
 
 ### ⚠️ Error Handling (`errors.rs`)
+
 - Common error types
 - Standardized error codes
 - Result type alias
@@ -209,6 +215,7 @@ cargo test --lib
 **Test Results:** ✅ **15/15 tests passing (100%)**
 
 All functionality is fully tested and working:
+
 - ✅ All math operations (SafeMath, Percentage, FixedPoint)
 - ✅ All time utilities (TimeHelpers, Deadline)
 - ✅ All storage helpers (StorageHelpers, Counter)

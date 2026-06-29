@@ -5,8 +5,8 @@ export interface TransactionData {
   amount: number;
   asset: string;
   timestamp: Date;
-  type: 'payment' | 'trust' | 'offer' | 'account_merge';
-  status: 'success' | 'failed' | 'pending';
+  type: "payment" | "trust" | "offer" | "account_merge";
+  status: "success" | "failed" | "pending";
   fee: number;
   memo?: string;
 }
@@ -34,7 +34,7 @@ export interface UserActivity {
 export interface NetworkNode {
   id: string;
   label: string;
-  type: 'account' | 'asset' | 'contract';
+  type: "account" | "asset" | "contract";
   connections: number;
   value: number;
   position: { x: number; y: number };
@@ -45,7 +45,7 @@ export interface NetworkLink {
   source: string;
   target: string;
   weight: number;
-  type: 'transaction' | 'trust' | 'offer';
+  type: "transaction" | "trust" | "offer";
   timestamp: Date;
 }
 
@@ -66,7 +66,7 @@ export interface TooltipData {
 }
 
 export interface ExportOptions {
-  format: 'png' | 'svg' | 'csv' | 'pdf';
+  format: "png" | "svg" | "csv" | "pdf";
   filename: string;
   quality?: number;
   backgroundColor?: string;
@@ -85,8 +85,8 @@ export interface ChartProps {
   onZoom?: (state: ZoomState) => void;
   className?: string;
   id?: string;
-  'aria-label'?: string;
-  'aria-describedby'?: string;
+  "aria-label"?: string;
+  "aria-describedby"?: string;
 }
 
 export interface HeatmapData {

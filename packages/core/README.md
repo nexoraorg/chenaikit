@@ -23,20 +23,20 @@ yarn add @chenaikit/core
 ## Quick Start
 
 ```typescript
-import { StellarConnector, AIService } from '@chenaikit/core';
+import { StellarConnector, AIService } from "@chenaikit/core";
 
 // Initialize Stellar connection
 const stellar = new StellarConnector({
-  network: 'testnet'
+  network: "testnet",
 });
 
 // Initialize AI service
 const ai = new AIService({
-  apiKey: process.env.AI_API_KEY
+  apiKey: process.env.AI_API_KEY,
 });
 
 // Get account data
-const account = await stellar.getAccount('G...');
+const account = await stellar.getAccount("G...");
 
 // Run credit scoring
 const score = await ai.calculateCreditScore(account);

@@ -17,6 +17,7 @@ Welcome to ChenAIKit! We're excited to have you contribute to this AI-powered bl
 We have **24 beginner-friendly issues** organized by category:
 
 ### 🎨 Frontend (6 issues)
+
 - **frontend-01-react-components.md** - Implement React components for credit score dashboard
 - **frontend-02-wallet-ui.md** - Create wallet interface components
 - **frontend-03-fraud-alerts.md** - Build fraud detection alert system
@@ -25,6 +26,7 @@ We have **24 beginner-friendly issues** organized by category:
 - **frontend-06-responsive-layout.md** - Create responsive layouts
 
 ### 🔧 Backend (6 issues)
+
 - **backend-01-api-endpoints.md** - Implement REST API endpoints
 - **backend-02-database-models.md** - Create database models
 - **backend-03-authentication.md** - Add authentication system
@@ -33,6 +35,7 @@ We have **24 beginner-friendly issues** organized by category:
 - **backend-06-monitoring.md** - Add monitoring and logging
 
 ### 🤖 AI (6 issues)
+
 - **ai-01-model-integration.md** - Create AI model integration base class
 - **ai-02-fraud-detection.md** - Implement fraud detection AI model
 - **ai-03-nlp-processing.md** - Add NLP processing capabilities
@@ -41,6 +44,7 @@ We have **24 beginner-friendly issues** organized by category:
 - **ai-06-model-ops.md** - Add model operations and monitoring
 
 ### ⛓️ Blockchain (6 issues)
+
 - **blockchain-01-stellar-integration.md** - Implement Stellar Horizon API connector
 - **blockchain-02-soroban-contracts.md** - Create Soroban smart contract connector
 - **blockchain-03-transaction-monitoring.md** - Build transaction monitoring system
@@ -66,11 +70,13 @@ chenaikit/
 ## 🛠️ Development Setup
 
 ### Prerequisites
+
 - Node.js 20.x
 - pnpm 8.x
 - Rust (for blockchain development)
 
 ### Commands
+
 ```bash
 # Install dependencies
 pnpm install

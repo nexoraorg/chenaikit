@@ -1,10 +1,10 @@
-import Queue from 'bull';
-import { captureError } from '../middleware/errorTracking';
+import Queue from "bull";
+import { captureError } from "../middleware/errorTracking";
 
 export interface JobConfig {
   attempts?: number;
   backoff?: {
-    type: 'exponential' | 'fixed';
+    type: "exponential" | "fixed";
     delay: number;
   };
   removeOnComplete?: boolean;
@@ -19,15 +19,15 @@ export class JobQueue {
     this.queue = new Queue(name, redisUrl, {
       defaultJobOptions: {
         attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 },
+        backoff: { type: "exponential", delay: 2000 },
         removeOnComplete: true,
-        removeOnFail: false
-      }
+        removeOnFail: false,
+      },
     });
 
     this.deadLetterQueue = new Queue(`${name}-dlq`, redisUrl);
 
-    this.queue.on('failed', async (job, err) => {
+    this.queue.on("failed", async (job, err) => {
       // eslint-disable-next-line no-console
       console.error(`Job ${job.id} failed:`, err);
       captureError(err, { jobId: job.id, jobData: job.data });
@@ -35,7 +35,7 @@ export class JobQueue {
       if (job.attemptsMade >= job.opts.attempts!) {
         await this.deadLetterQueue.add(job.data, {
           jobId: `dlq-${job.id}`,
-          removeOnComplete: false
+          removeOnComplete: false,
         });
       }
     });
@@ -45,7 +45,10 @@ export class JobQueue {
     return this.queue.add(data, config);
   }
 
-  process(concurrency: number, handler: (job: Queue.Job) => Promise<any>): void {
+  process(
+    concurrency: number,
+    handler: (job: Queue.Job) => Promise<any>,
+  ): void {
     this.queue.process(concurrency, async (job) => {
       try {
         return await handler(job);
@@ -66,7 +69,13 @@ export class JobQueue {
   }
 
   async getDeadLetterJobs(): Promise<Queue.Job[]> {
-    return this.deadLetterQueue.getJobs(['completed', 'waiting', 'active', 'delayed', 'failed']);
+    return this.deadLetterQueue.getJobs([
+      "completed",
+      "waiting",
+      "active",
+      "delayed",
+      "failed",
+    ]);
   }
 
   async close(): Promise<void> {

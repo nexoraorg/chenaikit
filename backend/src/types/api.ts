@@ -1,4 +1,4 @@
-import { ApiResponse } from '@chenaikit/core/src/types/common';
+import { ApiResponse } from "@chenaikit/core/src/types/common";
 
 // Account types
 export interface Account {
@@ -22,19 +22,19 @@ export interface Transaction {
   id: string;
   accountId: string;
   amount: number;
-  type: 'credit' | 'debit';
+  type: "credit" | "debit";
   description: string;
   timestamp: string;
   fromAccount?: string;
   toAccount?: string;
-  status: 'pending' | 'completed' | 'failed';
+  status: "pending" | "completed" | "failed";
 }
 
 export interface PaginationQuery {
   page?: string;
   limit?: string;
-  sortBy?: 'timestamp' | 'amount';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "timestamp" | "amount";
+  sortOrder?: "asc" | "desc";
 }
 
 export interface PaginatedResponse<T> {
@@ -51,8 +51,13 @@ export interface PaginatedResponse<T> {
 
 // API Response types
 export interface AccountResponse extends ApiResponse<Account> {}
-export interface AccountBalanceResponse extends ApiResponse<{ balance: number; accountId: string }> {}
-export interface TransactionsResponse extends ApiResponse<PaginatedResponse<Transaction>> {}
+export interface AccountBalanceResponse extends ApiResponse<{
+  balance: number;
+  accountId: string;
+}> {}
+export interface TransactionsResponse extends ApiResponse<
+  PaginatedResponse<Transaction>
+> {}
 export interface AccountCreationResponse extends ApiResponse<Account> {}
 
 // Error types

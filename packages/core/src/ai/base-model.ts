@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance } from "axios";
 
 /**
  * Configuration options for AI model providers
@@ -38,7 +38,7 @@ export interface ModelInput {
   systemMessage?: string;
   /** Conversation history for chat models */
   messages?: Array<{
-    role: 'system' | 'user' | 'assistant';
+    role: "system" | "user" | "assistant";
     content: string;
   }>;
 }
@@ -70,10 +70,10 @@ export class AIModelError extends Error {
     message: string,
     public code: string,
     public statusCode?: number,
-    public retryable: boolean = false
+    public retryable: boolean = false,
   ) {
     super(message);
-    this.name = 'AIModelError';
+    this.name = "AIModelError";
   }
 }
 
@@ -108,7 +108,7 @@ export abstract class AIModel {
       baseURL: this.config.baseUrl,
       timeout: this.config.timeout,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...this.config.headers,
       },
     });
@@ -161,7 +161,7 @@ export abstract class AIModel {
    */
   async generateBatch(inputs: ModelInput[]): Promise<ModelOutput[]> {
     const results: ModelOutput[] = [];
-    
+
     for (const input of inputs) {
       try {
         const result = await this.generate(input);
@@ -169,12 +169,14 @@ export abstract class AIModel {
       } catch (error) {
         // Add error result for failed requests
         results.push({
-          text: '',
+          text: "",
           metadata: {
             model: this.getModelName(),
-            finishReason: 'error',
+            finishReason: "error",
           },
-          rawResponse: { error: error instanceof Error ? error.message : 'Unknown error' },
+          rawResponse: {
+            error: error instanceof Error ? error.message : "Unknown error",
+          },
         });
       }
     }
@@ -200,7 +202,7 @@ export abstract class AIModel {
         }
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
     );
 
     // Response interceptor for error handling
@@ -211,54 +213,49 @@ export abstract class AIModel {
           // API returned an error response
           const statusCode = error.response.status;
           const message = error.response.data?.message || error.message;
-          
+
           if (statusCode === 429) {
             throw new AIModelError(
-              'Rate limit exceeded',
-              'RATE_LIMIT_EXCEEDED',
+              "Rate limit exceeded",
+              "RATE_LIMIT_EXCEEDED",
               statusCode,
-              true
+              true,
             );
           } else if (statusCode >= 500) {
             throw new AIModelError(
-              'Server error',
-              'SERVER_ERROR',
+              "Server error",
+              "SERVER_ERROR",
               statusCode,
-              true
+              true,
             );
           } else if (statusCode === 401) {
             throw new AIModelError(
-              'Invalid API key',
-              'INVALID_API_KEY',
+              "Invalid API key",
+              "INVALID_API_KEY",
               statusCode,
-              false
+              false,
             );
           } else {
-            throw new AIModelError(
-              message,
-              'API_ERROR',
-              statusCode,
-              false
-            );
+            throw new AIModelError(message, "API_ERROR", statusCode, false);
           }
         } else if (error.request) {
           // Network error
           throw new AIModelError(
-            'Network error - no response received',
-            'NETWORK_ERROR',
+            "Network error - no response received",
+            "NETWORK_ERROR",
             undefined,
-            true
+            true,
           );
         } else {
           // Other error
           throw new AIModelError(
             error.message,
-            'UNKNOWN_ERROR',
+            "UNKNOWN_ERROR",
             undefined,
-            false
+            false,
           );
         }
-      }
+      },
     );
   }
 
@@ -269,7 +266,8 @@ export abstract class AIModel {
     if (!this.rateLimitConfig) return;
 
     const now = Date.now();
-    const { maxRequests, windowMs, currentRequests, windowStart } = this.rateLimitConfig;
+    const { maxRequests, windowMs, currentRequests, windowStart } =
+      this.rateLimitConfig;
 
     // Reset window if needed
     if (now - windowStart >= windowMs) {
@@ -282,9 +280,9 @@ export abstract class AIModel {
       const waitTime = windowMs - (now - windowStart);
       throw new AIModelError(
         `Rate limit exceeded. Try again in ${Math.ceil(waitTime / 1000)} seconds`,
-        'RATE_LIMIT_EXCEEDED',
+        "RATE_LIMIT_EXCEEDED",
         undefined,
-        true
+        true,
       );
     }
 
@@ -296,20 +294,29 @@ export abstract class AIModel {
    * Validate input parameters
    */
   private validateInput(input: ModelInput): void {
-    if (!input.prompt || typeof input.prompt !== 'string') {
-      throw new AIModelError('Prompt is required and must be a string', 'INVALID_INPUT');
+    if (!input.prompt || typeof input.prompt !== "string") {
+      throw new AIModelError(
+        "Prompt is required and must be a string",
+        "INVALID_INPUT",
+      );
     }
 
     if (input.maxTokens && (input.maxTokens < 1 || input.maxTokens > 4000)) {
-      throw new AIModelError('maxTokens must be between 1 and 4000', 'INVALID_INPUT');
+      throw new AIModelError(
+        "maxTokens must be between 1 and 4000",
+        "INVALID_INPUT",
+      );
     }
 
     if (input.temperature && (input.temperature < 0 || input.temperature > 2)) {
-      throw new AIModelError('temperature must be between 0 and 2', 'INVALID_INPUT');
+      throw new AIModelError(
+        "temperature must be between 0 and 2",
+        "INVALID_INPUT",
+      );
     }
 
     if (input.topP && (input.topP < 0 || input.topP > 1)) {
-      throw new AIModelError('topP must be between 0 and 1', 'INVALID_INPUT');
+      throw new AIModelError("topP must be between 0 and 1", "INVALID_INPUT");
     }
   }
 
@@ -317,8 +324,11 @@ export abstract class AIModel {
    * Validate output format
    */
   private validateOutput(output: ModelOutput): void {
-    if (!output.text || typeof output.text !== 'string') {
-      throw new AIModelError('Invalid output format: text is required', 'INVALID_OUTPUT');
+    if (!output.text || typeof output.text !== "string") {
+      throw new AIModelError(
+        "Invalid output format: text is required",
+        "INVALID_OUTPUT",
+      );
     }
   }
 
@@ -330,29 +340,24 @@ export abstract class AIModel {
       return error;
     }
 
-    if (error.code === 'ECONNABORTED') {
-      return new AIModelError(
-        'Request timeout',
-        'TIMEOUT',
-        undefined,
-        true
-      );
+    if (error.code === "ECONNABORTED") {
+      return new AIModelError("Request timeout", "TIMEOUT", undefined, true);
     }
 
-    if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+    if (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED") {
       return new AIModelError(
-        'Network connection failed',
-        'NETWORK_ERROR',
+        "Network connection failed",
+        "NETWORK_ERROR",
         undefined,
-        true
+        true,
       );
     }
 
     return new AIModelError(
-      error.message || 'Unknown error occurred',
-      'UNKNOWN_ERROR',
+      error.message || "Unknown error occurred",
+      "UNKNOWN_ERROR",
       undefined,
-      false
+      false,
     );
   }
 
@@ -368,12 +373,12 @@ export abstract class AIModel {
    */
   updateConfig(newConfig: Partial<ModelConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    
+
     // Update HTTP client configuration
     if (newConfig.baseUrl) {
       this.httpClient.defaults.baseURL = newConfig.baseUrl;
     }
-    
+
     if (newConfig.timeout) {
       this.httpClient.defaults.timeout = newConfig.timeout;
     }
@@ -395,10 +400,10 @@ export abstract class AIModel {
   async testConnection(): Promise<boolean> {
     try {
       const testInput: ModelInput = {
-        prompt: 'test',
+        prompt: "test",
         maxTokens: 1,
       };
-      
+
       await this.generate(testInput);
       return true;
     } catch (error) {
@@ -409,12 +414,17 @@ export abstract class AIModel {
   /**
    * Get rate limit status
    */
-  getRateLimitStatus(): { current: number; max: number; resetTime: number } | null {
+  getRateLimitStatus(): {
+    current: number;
+    max: number;
+    resetTime: number;
+  } | null {
     if (!this.rateLimitConfig) return null;
 
     const now = Date.now();
-    const { maxRequests, windowMs, currentRequests, windowStart } = this.rateLimitConfig;
-    
+    const { maxRequests, windowMs, currentRequests, windowStart } =
+      this.rateLimitConfig;
+
     const resetTime = windowStart + windowMs;
     const timeUntilReset = Math.max(0, resetTime - now);
 

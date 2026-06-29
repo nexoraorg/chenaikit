@@ -15,6 +15,7 @@ new StellarConnector(config: StellarConfig)
 ```
 
 **Parameters:**
+
 - `config.network` - Network to connect to (`'testnet'` | `'mainnet'`)
 - `config.horizonUrl` - Optional custom Horizon URL
 
@@ -25,6 +26,7 @@ new StellarConnector(config: StellarConfig)
 Fetches account information from Stellar network.
 
 **Parameters:**
+
 - `accountId` - Stellar account ID
 
 **Returns:** Promise<AccountData>
@@ -34,6 +36,7 @@ Fetches account information from Stellar network.
 Fetches account balances.
 
 **Parameters:**
+
 - `accountId` - Stellar account ID
 
 **Returns:** Promise<Balance[]>
@@ -43,6 +46,7 @@ Fetches account balances.
 Fetches account transaction history.
 
 **Parameters:**
+
 - `accountId` - Stellar account ID
 - `limit` - Maximum number of transactions (default: 10)
 
@@ -59,6 +63,7 @@ new AIService(config: AIConfig)
 ```
 
 **Parameters:**
+
 - `config.apiKey` - AI service API key
 - `config.baseUrl` - Optional custom base URL
 
@@ -69,6 +74,7 @@ new AIService(config: AIConfig)
 Calculates credit score for account data.
 
 **Parameters:**
+
 - `accountData` - Account information object
 
 **Returns:** Promise<number>
@@ -78,6 +84,7 @@ Calculates credit score for account data.
 Detects fraud in transaction data.
 
 **Parameters:**
+
 - `transactionData` - Transaction information object
 
 **Returns:** Promise<boolean>
@@ -151,7 +158,7 @@ chenaikit contract deploy <contract>
 
 ```typescript
 interface StellarConfig {
-  network: 'testnet' | 'mainnet';
+  network: "testnet" | "mainnet";
   horizonUrl?: string;
 }
 ```
@@ -196,3 +203,4 @@ interface Transaction {
   created_at: string;
   // ... other Stellar transaction fields
 }
+```

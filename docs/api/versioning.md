@@ -9,12 +9,12 @@ supported versions, and the deprecation/sunset policy.
 Clients may select a version using any of the following (resolved in this order
 of precedence):
 
-| Strategy        | Example                                            |
-| --------------- | -------------------------------------------------- |
-| URL path        | `GET /api/v2/credit-score`                         |
-| Header          | `GET /api/credit-score` + `Accept-Version: v2`     |
-| Query parameter | `GET /api/credit-score?version=v2`                 |
-| Default         | `GET /api/credit-score` (resolves to the default)  |
+| Strategy        | Example                                           |
+| --------------- | ------------------------------------------------- |
+| URL path        | `GET /api/v2/credit-score`                        |
+| Header          | `GET /api/credit-score` + `Accept-Version: v2`    |
+| Query parameter | `GET /api/credit-score?version=v2`                |
+| Default         | `GET /api/credit-score` (resolves to the default) |
 
 Accepted version formats are flexible: `v2`, `V2`, `2`, and `2.0.0` all resolve
 to `v2`. For query versioning, `version`, `api-version`, and `v` are all
@@ -25,10 +25,10 @@ with `400 UNSUPPORTED_API_VERSION` and lists the supported versions.
 
 ## Supported versions
 
-| Version | Semver  | Status     | Released   | Deprecated | Sunset     |
-| ------- | ------- | ---------- | ---------- | ---------- | ---------- |
-| `v1`    | 1.0.0   | deprecated | 2025-01-01 | 2026-01-01 | 2026-12-31 |
-| `v2`    | 2.0.0   | active     | 2026-01-01 | —          | —          |
+| Version | Semver | Status     | Released   | Deprecated | Sunset     |
+| ------- | ------ | ---------- | ---------- | ---------- | ---------- |
+| `v1`    | 1.0.0  | deprecated | 2025-01-01 | 2026-01-01 | 2026-12-31 |
+| `v2`    | 2.0.0  | active     | 2026-01-01 | —          | —          |
 
 - **Default version:** `v1` (keeps existing, unversioned clients working).
 - **Latest version:** `v2`.
@@ -39,14 +39,14 @@ The live registry is available at `GET /api/versions`.
 
 Every response carries version metadata:
 
-| Header                  | Meaning                                            |
-| ----------------------- | -------------------------------------------------- |
-| `X-API-Version`         | The version that served the request.               |
-| `X-API-Version-Latest`  | The newest available version.                      |
-| `Deprecation`           | (Deprecated versions) RFC 8594 deprecation date.   |
-| `Sunset`                | (Versions with a sunset) RFC 8594 retirement date. |
-| `Warning`               | (Deprecated versions) human-readable warning.      |
-| `Link`                  | (Deprecated versions) link to the migration guide. |
+| Header                 | Meaning                                            |
+| ---------------------- | -------------------------------------------------- |
+| `X-API-Version`        | The version that served the request.               |
+| `X-API-Version-Latest` | The newest available version.                      |
+| `Deprecation`          | (Deprecated versions) RFC 8594 deprecation date.   |
+| `Sunset`               | (Versions with a sunset) RFC 8594 retirement date. |
+| `Warning`              | (Deprecated versions) human-readable warning.      |
+| `Link`                 | (Deprecated versions) link to the migration guide. |
 
 ## Deprecation & sunset policy
 

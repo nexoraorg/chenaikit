@@ -1,13 +1,21 @@
-import React, { createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
-import { TransactionMonitor } from '@chenaikit/core';
-import { 
-  TransactionEvent, 
-  TransactionAnalysis, 
-  Alert, 
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  ReactNode,
+} from "react";
+import { useTranslation } from "react-i18next";
+import { TransactionMonitor } from "@chenaikit/core";
+import {
+  TransactionEvent,
+  TransactionAnalysis,
+  Alert,
   ConnectionStatus,
-  MonitoringConfig 
-} from '@chenaikit/core';
+  MonitoringConfig,
+} from "@chenaikit/core";
 
 interface WebSocketContextType {
   isConnected: boolean;
@@ -32,7 +40,10 @@ interface WebSocketProviderProps {
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
   autoConnect?: boolean;
-  onTransaction?: (transaction: TransactionEvent, analysis: TransactionAnalysis) => void;
+  onTransaction?: (
+    transaction: TransactionEvent,
+    analysis: TransactionAnalysis,
+  ) => void;
   onAlert?: (alert: Alert) => void;
   onConnectionChange?: (status: ConnectionStatus) => void;
   onError?: (error: Error) => void;
@@ -40,14 +51,14 @@ interface WebSocketProviderProps {
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
-  url = 'ws://localhost:8080',
+  url = "ws://localhost:8080",
   reconnectInterval = 5000,
   maxReconnectAttempts = 10,
   autoConnect = true,
   onTransaction,
   onAlert,
   onConnectionChange,
-  onError
+  onError,
 }) => {
   const { t } = useTranslation();
   const [state, setState] = useState({
@@ -55,10 +66,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     isReconnecting: false,
     reconnectAttempts: 0,
     lastError: undefined as string | undefined,
-    lastConnected: undefined as Date | undefined
+    lastConnected: undefined as Date | undefined,
   });
 
-  const [recentTransactions, setRecentTransactions] = useState<TransactionEvent[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<
+    TransactionEvent[]
+  >([]);
   const [recentAlerts, setRecentAlerts] = useState<Alert[]>([]);
   const [metrics, setMetrics] = useState({});
 
@@ -69,44 +82,55 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const initializeMonitor = useCallback(() => {
     const config: MonitoringConfig = {
       horizonUrl: url,
-      network: 'testnet',
+      network: "testnet",
       reconnectInterval,
-      maxReconnectAttempts
+      maxReconnectAttempts,
     };
 
     const monitor = new TransactionMonitor(config);
 
     // Set up event listeners
-    monitor.on('connected', () => {
-      setState(prev => ({
+    monitor.on("connected", () => {
+      setState((prev) => ({
         ...prev,
         isConnected: true,
         isReconnecting: false,
         reconnectAttempts: 0,
         lastConnected: new Date(),
-        lastError: undefined
+        lastError: undefined,
       }));
       onConnectionChange?.(monitor.getConnectionStatus());
     });
 
-    monitor.on('transaction', (transaction: TransactionEvent, analysis: TransactionAnalysis) => {
-      setRecentTransactions(prev => [transaction, ...prev.slice(0, 49)]);
-      onTransaction?.(transaction, analysis);
-    });
+    monitor.on(
+      "transaction",
+      (transaction: TransactionEvent, analysis: TransactionAnalysis) => {
+        setRecentTransactions((prev) => [transaction, ...prev.slice(0, 49)]);
+        onTransaction?.(transaction, analysis);
+      },
+    );
 
-    monitor.on('alert', (alert: Alert) => {
-      setRecentAlerts(prev => [alert, ...prev.slice(0, 19)]);
+    monitor.on("alert", (alert: Alert) => {
+      setRecentAlerts((prev) => [alert, ...prev.slice(0, 19)]);
       onAlert?.(alert);
     });
 
-    monitor.on('error', (error: Error) => {
-      setState(prev => ({ ...prev, lastError: error.message }));
+    monitor.on("error", (error: Error) => {
+      setState((prev) => ({ ...prev, lastError: error.message }));
       onError?.(error);
     });
 
     monitorRef.current = monitor;
     return monitor;
-  }, [url, reconnectInterval, maxReconnectAttempts, onTransaction, onAlert, onConnectionChange, onError]);
+  }, [
+    url,
+    reconnectInterval,
+    maxReconnectAttempts,
+    onTransaction,
+    onAlert,
+    onConnectionChange,
+    onError,
+  ]);
 
   // Connect to monitoring system
   const connect = useCallback(async () => {
@@ -117,15 +141,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     try {
       const monitor = initializeMonitor();
       await monitor.start();
-      
+
       // Get initial metrics
       const dashboardData = await monitor.getDashboardData();
       setMetrics(dashboardData.overview.realTimeMetrics);
-      
     } catch (error) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        lastError: error instanceof Error ? error.message : t('errors.connectionError')
+        lastError:
+          error instanceof Error ? error.message : t("errors.connectionError"),
       }));
       throw error;
     }
@@ -143,23 +167,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       monitorRef.current = null;
     }
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isConnected: false,
       isReconnecting: false,
-      reconnectAttempts: 0
+      reconnectAttempts: 0,
     }));
   }, []);
 
   // Send data through WebSocket (for future WebSocket implementation)
-  const send = useCallback((data: any) => {
-    if (!state.isConnected || !monitorRef.current) {
-      throw new Error(t('websocket.disconnected'));
-    }
-    
-    // For now, this is a placeholder for future WebSocket implementation
-    console.log('Sending data:', data);
-  }, [state.isConnected, t]);
+  const send = useCallback(
+    (data: any) => {
+      if (!state.isConnected || !monitorRef.current) {
+        throw new Error(t("websocket.disconnected"));
+      }
+
+      // For now, this is a placeholder for future WebSocket implementation
+      console.log("Sending data:", data);
+    },
+    [state.isConnected, t],
+  );
 
   // Update metrics periodically
   useEffect(() => {
@@ -172,7 +199,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         const dashboardData = await monitorRef.current!.getDashboardData();
         setMetrics(dashboardData.overview.realTimeMetrics);
       } catch (error) {
-        console.error('Error updating metrics:', error);
+        console.error("Error updating metrics:", error);
       }
     }, 5000); // Update every 5 seconds
 
@@ -182,8 +209,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   // Auto-connect on mount
   useEffect(() => {
     if (autoConnect) {
-      connect().catch(error => {
-        console.error('Auto-connect failed:', error);
+      connect().catch((error) => {
+        console.error("Auto-connect failed:", error);
       });
     }
 
@@ -200,7 +227,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     monitor: monitorRef.current,
     recentTransactions,
     recentAlerts,
-    metrics
+    metrics,
   };
 
   return (
@@ -213,7 +240,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 export const useWebSocket = (): WebSocketContextType => {
   const context = useContext(WebSocketContext);
   if (!context) {
-    throw new Error('useWebSocket must be used within a WebSocketProvider');
+    throw new Error("useWebSocket must be used within a WebSocketProvider");
   }
   return context;
 };
@@ -221,7 +248,9 @@ export const useWebSocket = (): WebSocketContextType => {
 /**
  * Hook for managing connection status with exponential backoff
  */
-export const useWebSocketWithBackoff = (options: Partial<WebSocketProviderProps> = {}) => {
+export const useWebSocketWithBackoff = (
+  options: Partial<WebSocketProviderProps> = {},
+) => {
   const [backoffDelay, setBackoffDelay] = useState(1000);
   const ws = useWebSocket();
 
@@ -240,7 +269,7 @@ export const useWebSocketWithBackoff = (options: Partial<WebSocketProviderProps>
   return {
     ...ws,
     connectWithBackoff,
-    backoffDelay
+    backoffDelay,
   };
 };
 

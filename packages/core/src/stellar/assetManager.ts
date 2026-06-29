@@ -1,6 +1,10 @@
-
-import { Asset, Operation, TransactionBuilder, Keypair } from '@stellar/stellar-sdk';
-import { StellarConnector } from './connector';
+import {
+  Asset,
+  Operation,
+  TransactionBuilder,
+  Keypair,
+} from "@stellar/stellar-sdk";
+import { StellarConnector } from "./connector";
 
 /**
  * Creates a trustline for a given asset.
@@ -15,10 +19,12 @@ export async function createTrustline(
   stellarConnector: StellarConnector,
   sourceSecret: string,
   asset: Asset,
-  limit?: string
+  limit?: string,
 ): Promise<void> {
   const sourceKeypair = Keypair.fromSecret(sourceSecret);
-  const sourceAccount = await stellarConnector.getAccount(sourceKeypair.publicKey());
+  const sourceAccount = await stellarConnector.getAccount(
+    sourceKeypair.publicKey(),
+  );
 
   const transaction = new TransactionBuilder(sourceAccount, {
     fee: await stellarConnector.getFee(),
@@ -28,7 +34,7 @@ export async function createTrustline(
       Operation.changeTrust({
         asset,
         limit,
-      })
+      }),
     )
     .setTimeout(30)
     .build();
@@ -48,9 +54,9 @@ export async function createTrustline(
 export async function removeTrustline(
   stellarConnector: StellarConnector,
   sourceSecret: string,
-  asset: Asset
+  asset: Asset,
 ): Promise<void> {
-  await createTrustline(stellarConnector, sourceSecret, asset, '0');
+  await createTrustline(stellarConnector, sourceSecret, asset, "0");
 }
 
 /**
@@ -68,10 +74,12 @@ export async function issueAsset(
   issuerSecret: string,
   distributionPublicKey: string,
   asset: Asset,
-  amount: string
+  amount: string,
 ): Promise<void> {
   const issuerKeypair = Keypair.fromSecret(issuerSecret);
-  const issuerAccount = await stellarConnector.getAccount(issuerKeypair.publicKey());
+  const issuerAccount = await stellarConnector.getAccount(
+    issuerKeypair.publicKey(),
+  );
 
   const transaction = new TransactionBuilder(issuerAccount, {
     fee: await stellarConnector.getFee(),
@@ -82,7 +90,7 @@ export async function issueAsset(
         destination: distributionPublicKey,
         asset,
         amount,
-      })
+      }),
     )
     .setTimeout(30)
     .build();
@@ -106,10 +114,12 @@ export async function transferAsset(
   sourceSecret: string,
   destinationPublicKey: string,
   asset: Asset,
-  amount: string
+  amount: string,
 ): Promise<void> {
   const sourceKeypair = Keypair.fromSecret(sourceSecret);
-  const sourceAccount = await stellarConnector.getAccount(sourceKeypair.publicKey());
+  const sourceAccount = await stellarConnector.getAccount(
+    sourceKeypair.publicKey(),
+  );
 
   const transaction = new TransactionBuilder(sourceAccount, {
     fee: await stellarConnector.getFee(),
@@ -120,7 +130,7 @@ export async function transferAsset(
         destination: destinationPublicKey,
         asset,
         amount,
-      })
+      }),
     )
     .setTimeout(30)
     .build();

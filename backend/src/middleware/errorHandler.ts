@@ -2,18 +2,18 @@
  * Centralized Error Handling Middleware
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { ZodError } from 'zod';
-import { Prisma } from '@prisma/client';
-import { log } from '../utils/logger';
-import { captureError } from './errorTracking';
+import { Request, Response, NextFunction } from "express";
+import { ZodError } from "zod";
+import { Prisma } from "@prisma/client";
+import { log } from "../utils/logger";
+import { captureError } from "./errorTracking";
 import {
   AppError,
   ValidationError,
   DatabaseError,
   toAppError,
-  isAppError
-} from '../utils/errors';
+  isAppError,
+} from "../utils/errors";
 
 /**
  * Main error handler middleware
@@ -22,7 +22,7 @@ export function errorHandler(
   error: Error,
   req: Request,
   res: Response,
-  _next: NextFunction
+  _next: NextFunction,
 ): void {
   // Log the error
   log.error(error.message, {
@@ -53,7 +53,7 @@ export function errorHandler(
       code: appError.code,
       message: appError.message,
       ...(appError.context && { context: appError.context }),
-      ...(process.env.NODE_ENV === 'development' && {
+      ...(process.env.NODE_ENV === "development" && {
         stack: appError.stack,
         details: error instanceof ZodError ? formatZodError(error) : undefined,
       }),
@@ -70,7 +70,7 @@ export function errorHandler(
 function convertToAppError(error: Error): AppError {
   // Zod validation errors
   if (error instanceof ZodError) {
-    return new ValidationError('Validation failed', {
+    return new ValidationError("Validation failed", {
       details: formatZodError(error),
     });
   }
@@ -81,34 +81,40 @@ function convertToAppError(error: Error): AppError {
   }
 
   if (error instanceof Prisma.PrismaClientUnknownRequestError) {
-    return new DatabaseError('Unknown database error', {
+    return new DatabaseError("Unknown database error", {
       originalMessage: error.message,
     });
   }
 
   if (error instanceof Prisma.PrismaClientInitializationError) {
-    return new DatabaseError('Database connection failed', {
+    return new DatabaseError("Database connection failed", {
       originalMessage: error.message,
     });
   }
 
   if (error instanceof Prisma.PrismaClientRustPanicError) {
-    return new DatabaseError('Database internal error', {
+    return new DatabaseError("Database internal error", {
       originalMessage: error.message,
     });
   }
 
   // JWT errors
-  if (error.name === 'JsonWebTokenError') {
-    return new ValidationError('Invalid token', { originalMessage: error.message });
+  if (error.name === "JsonWebTokenError") {
+    return new ValidationError("Invalid token", {
+      originalMessage: error.message,
+    });
   }
 
-  if (error.name === 'TokenExpiredError') {
-    return new ValidationError('Token expired', { originalMessage: error.message });
+  if (error.name === "TokenExpiredError") {
+    return new ValidationError("Token expired", {
+      originalMessage: error.message,
+    });
   }
 
-  if (error.name === 'NotBeforeError') {
-    return new ValidationError('Token not yet valid', { originalMessage: error.message });
+  if (error.name === "NotBeforeError") {
+    return new ValidationError("Token not yet valid", {
+      originalMessage: error.message,
+    });
   }
 
   // Default to generic AppError
@@ -118,98 +124,128 @@ function convertToAppError(error: Error): AppError {
 /**
  * Handle Prisma-specific errors
  */
-function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): AppError {
+function handlePrismaError(
+  error: Prisma.PrismaClientKnownRequestError,
+): AppError {
   switch (error.code) {
-    case 'P2002': {
+    case "P2002": {
       // Unique constraint violation
-      const fields = error.meta?.target as string[] || [];
+      const fields = (error.meta?.target as string[]) || [];
       return new ValidationError(
-        `A record with this ${fields.join(', ')} already exists`,
-        { fields, code: error.code }
+        `A record with this ${fields.join(", ")} already exists`,
+        { fields, code: error.code },
       );
     }
 
-    case 'P2025':
+    case "P2025":
       // Record not found
-      return new ValidationError('Record not found', { code: error.code });
+      return new ValidationError("Record not found", { code: error.code });
 
-    case 'P2003':
+    case "P2003":
       // Foreign key constraint violation
-      return new ValidationError('Invalid reference to related record', {
+      return new ValidationError("Invalid reference to related record", {
         code: error.code,
         field: error.meta?.field_name,
       });
 
-    case 'P2014':
+    case "P2014":
       // Required relation violation
-      return new ValidationError('Required relation is missing', { code: error.code });
+      return new ValidationError("Required relation is missing", {
+        code: error.code,
+      });
 
-    case 'P2000':
+    case "P2000":
       // Value too long
-      return new ValidationError('Value too long for field', { code: error.code });
+      return new ValidationError("Value too long for field", {
+        code: error.code,
+      });
 
-    case 'P2001':
+    case "P2001":
       // Record does not exist
-      return new ValidationError('Record does not exist', { code: error.code });
+      return new ValidationError("Record does not exist", { code: error.code });
 
-    case 'P2006':
+    case "P2006":
       // Invalid value for field
-      return new ValidationError('Invalid value for field', { code: error.code });
+      return new ValidationError("Invalid value for field", {
+        code: error.code,
+      });
 
-    case 'P2011':
+    case "P2011":
       // Null constraint violation
-      return new ValidationError('Required field cannot be null', { code: error.code });
+      return new ValidationError("Required field cannot be null", {
+        code: error.code,
+      });
 
-    case 'P2012':
+    case "P2012":
       // Missing required value
-      return new ValidationError('Missing required value', { code: error.code });
+      return new ValidationError("Missing required value", {
+        code: error.code,
+      });
 
-    case 'P2013':
+    case "P2013":
       // Missing required argument
-      return new ValidationError('Missing required argument', { code: error.code });
+      return new ValidationError("Missing required argument", {
+        code: error.code,
+      });
 
-    case 'P2018':
+    case "P2018":
       // Required connected records not found
-      return new ValidationError('Required connected records not found', { code: error.code });
+      return new ValidationError("Required connected records not found", {
+        code: error.code,
+      });
 
-    case 'P2019':
+    case "P2019":
       // Input error
-      return new ValidationError('Input error', { code: error.code });
+      return new ValidationError("Input error", { code: error.code });
 
-    case 'P2020':
+    case "P2020":
       // Value out of range
-      return new ValidationError('Value out of range', { code: error.code });
+      return new ValidationError("Value out of range", { code: error.code });
 
-    case 'P2021':
+    case "P2021":
       // Table does not exist
-      return new DatabaseError('Table does not exist in database', { code: error.code });
+      return new DatabaseError("Table does not exist in database", {
+        code: error.code,
+      });
 
-    case 'P2022':
+    case "P2022":
       // Column does not exist
-      return new DatabaseError('Column does not exist in table', { code: error.code });
+      return new DatabaseError("Column does not exist in table", {
+        code: error.code,
+      });
 
-    case 'P2023':
+    case "P2023":
       // Inconsistent column data
-      return new DatabaseError('Inconsistent column data', { code: error.code });
+      return new DatabaseError("Inconsistent column data", {
+        code: error.code,
+      });
 
-    case 'P2024':
+    case "P2024":
       // Connection pool timeout
-      return new DatabaseError('Database connection pool timeout', { code: error.code });
+      return new DatabaseError("Database connection pool timeout", {
+        code: error.code,
+      });
 
-    case 'P2026':
+    case "P2026":
       // Current provider does not support feature
-      return new DatabaseError('Database feature not supported', { code: error.code });
+      return new DatabaseError("Database feature not supported", {
+        code: error.code,
+      });
 
-    case 'P2027':
+    case "P2027":
       // Multiple errors occurred
-      return new DatabaseError('Multiple database errors occurred', { code: error.code });
+      return new DatabaseError("Multiple database errors occurred", {
+        code: error.code,
+      });
 
-    case 'P2034':
+    case "P2034":
       // Transaction failed
-      return new DatabaseError('Transaction failed due to write conflict', { code: error.code });
+      return new DatabaseError("Transaction failed due to write conflict", {
+        code: error.code,
+      });
 
     default:
-      return new DatabaseError('Database error occurred', {
+      return new DatabaseError("Database error occurred", {
         code: error.code,
         originalMessage: error.message,
       });
@@ -223,7 +259,7 @@ function formatZodError(error: ZodError): Record<string, string[]> {
   const formatted: Record<string, string[]> = {};
 
   error.errors.forEach((err) => {
-    const path = err.path.join('.');
+    const path = err.path.join(".");
     if (!formatted[path]) {
       formatted[path] = [];
     }
@@ -237,7 +273,7 @@ function formatZodError(error: ZodError): Record<string, string[]> {
  * Async handler wrapper to catch errors in async route handlers
  */
 export function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>,
 ) {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
@@ -251,7 +287,7 @@ export function notFoundHandler(req: Request, res: Response): void {
   res.status(404).json({
     success: false,
     error: {
-      code: 'ENDPOINT_NOT_FOUND',
+      code: "ENDPOINT_NOT_FOUND",
       message: `Endpoint ${req.method} ${req.originalUrl} not found`,
       timestamp: new Date().toISOString(),
     },

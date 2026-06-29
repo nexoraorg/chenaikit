@@ -12,8 +12,8 @@ export interface CreditScoreHistory {
 export interface RiskFactor {
   id: string;
   description: string;
-  impact: 'positive' | 'negative';
-  severity: 'low' | 'medium' | 'high';
+  impact: "positive" | "negative";
+  severity: "low" | "medium" | "high";
 }
 
 export interface CreditScoreData {
@@ -48,7 +48,7 @@ export interface RiskFactorsListProps {
   maxItems?: number;
 }
 
-export type ScoreRating = 'poor' | 'fair' | 'good' | 'excellent';
+export type ScoreRating = "poor" | "fair" | "good" | "excellent";
 
 export interface ScoreThreshold {
   min: number;
@@ -59,14 +59,22 @@ export interface ScoreThreshold {
 }
 
 export const SCORE_THRESHOLDS: ScoreThreshold[] = [
-  { min: 0, max: 39, rating: 'poor', color: '#f44336', label: 'Poor' },
-  { min: 40, max: 69, rating: 'fair', color: '#ff9800', label: 'Fair' },
-  { min: 70, max: 84, rating: 'good', color: '#4caf50', label: 'Good' },
-  { min: 85, max: 100, rating: 'excellent', color: '#2196f3', label: 'Excellent' }
+  { min: 0, max: 39, rating: "poor", color: "#f44336", label: "Poor" },
+  { min: 40, max: 69, rating: "fair", color: "#ff9800", label: "Fair" },
+  { min: 70, max: 84, rating: "good", color: "#4caf50", label: "Good" },
+  {
+    min: 85,
+    max: 100,
+    rating: "excellent",
+    color: "#2196f3",
+    label: "Excellent",
+  },
 ];
 
 export function getScoreRating(score: number): ScoreThreshold {
-  return SCORE_THRESHOLDS.find(
-    threshold => score >= threshold.min && score <= threshold.max
-  ) || SCORE_THRESHOLDS[0];
+  return (
+    SCORE_THRESHOLDS.find(
+      (threshold) => score >= threshold.min && score <= threshold.max,
+    ) || SCORE_THRESHOLDS[0]
+  );
 }

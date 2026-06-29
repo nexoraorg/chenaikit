@@ -1,8 +1,8 @@
-import { PrismaClient } from '@prisma/client';
-import { ApiKey, ApiKeyCreateInput, ApiKeyUpdateInput } from '../models/ApiKey';
-import { createHash, randomBytes } from 'crypto';
-import { log } from '../utils/logger';
-import { DatabaseError, NotFoundError, ValidationError } from '../utils/errors';
+import { PrismaClient } from "@prisma/client";
+import { ApiKey, ApiKeyCreateInput, ApiKeyUpdateInput } from "../models/ApiKey";
+import { createHash, randomBytes } from "crypto";
+import { log } from "../utils/logger";
+import { DatabaseError, NotFoundError, ValidationError } from "../utils/errors";
 
 export class ApiKeyService {
   constructor(private prisma: PrismaClient) {}
@@ -11,22 +11,24 @@ export class ApiKeyService {
    * Generate a new API key and hash it for storage
    */
   private generateApiKey(): { key: string; hash: string } {
-    const key = `ck_${randomBytes(32).toString('hex')}`;
-    const hash = createHash('sha256').update(key).digest('hex');
+    const key = `ck_${randomBytes(32).toString("hex")}`;
+    const hash = createHash("sha256").update(key).digest("hex");
     return { key, hash };
   }
 
   /**
    * Create a new API key
    */
-  async createApiKey(input: ApiKeyCreateInput): Promise<{ apiKey: ApiKey; plainKey: string }> {
+  async createApiKey(
+    input: ApiKeyCreateInput,
+  ): Promise<{ apiKey: ApiKey; plainKey: string }> {
     const { key, hash } = this.generateApiKey();
-    
+
     const prismaApiKey = await this.prisma.apiKey.create({
       data: {
         keyHash: hash,
         name: input.name,
-        tier: input.tier || 'FREE',
+        tier: input.tier || "FREE",
         userId: input.userId || undefined,
         allowedIps: JSON.stringify(input.allowedIps || []),
         allowedPaths: JSON.stringify(input.allowedPaths || []),
@@ -36,8 +38,8 @@ export class ApiKeyService {
     });
 
     const apiKey = ApiKey.fromPrisma(prismaApiKey);
-    
-    log.info('API key created', {
+
+    log.info("API key created", {
       apiKeyId: apiKey.id,
       name: apiKey.name,
       tier: apiKey.tier,
@@ -51,8 +53,8 @@ export class ApiKeyService {
    * Validate an API key and return the associated key object
    */
   async validateApiKey(key: string): Promise<ApiKey | null> {
-    const hash = createHash('sha256').update(key).digest('hex');
-    
+    const hash = createHash("sha256").update(key).digest("hex");
+
     const prismaApiKey = await this.prisma.apiKey.findFirst({
       where: {
         keyHash: hash,
@@ -96,7 +98,7 @@ export class ApiKeyService {
   async getApiKeysByUserId(userId: string): Promise<ApiKey[]> {
     const prismaApiKeys = await this.prisma.apiKey.findMany({
       where: { userId, deletedAt: null },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     return prismaApiKeys.map(ApiKey.fromPrisma);
@@ -112,16 +114,20 @@ export class ApiKeyService {
         ...(input.name && { name: input.name }),
         ...(input.tier && { tier: input.tier }),
         ...(input.isActive !== undefined && { isActive: input.isActive }),
-        ...(input.allowedIps && { allowedIps: JSON.stringify(input.allowedIps) }),
-        ...(input.allowedPaths && { allowedPaths: JSON.stringify(input.allowedPaths) }),
+        ...(input.allowedIps && {
+          allowedIps: JSON.stringify(input.allowedIps),
+        }),
+        ...(input.allowedPaths && {
+          allowedPaths: JSON.stringify(input.allowedPaths),
+        }),
         ...(input.expiresAt && { expiresAt: input.expiresAt }),
         ...(input.usageQuota && { usageQuota: input.usageQuota }),
       },
     });
 
     const apiKey = ApiKey.fromPrisma(prismaApiKey);
-    
-    log.info('API key updated', {
+
+    log.info("API key updated", {
       apiKeyId: apiKey.id,
       name: apiKey.name,
     });
@@ -138,7 +144,7 @@ export class ApiKeyService {
       data: { isActive: false },
     });
 
-    log.info('API key deactivated', { apiKeyId: id });
+    log.info("API key deactivated", { apiKeyId: id });
   }
 
   /**
@@ -153,7 +159,7 @@ export class ApiKeyService {
       },
     });
 
-    log.info('API key soft-deleted', { apiKeyId: id });
+    log.info("API key soft-deleted", { apiKeyId: id });
   }
 
   /**
@@ -178,7 +184,7 @@ export class ApiKeyService {
       },
     });
 
-    log.info('API key usage reset', { apiKeyId: id });
+    log.info("API key usage reset", { apiKeyId: id });
   }
 
   /**
@@ -207,7 +213,11 @@ export class ApiKeyService {
   /**
    * Get usage statistics for an API key
    */
-  async getApiKeyUsage(id: string, startDate?: Date, endDate?: Date): Promise<{
+  async getApiKeyUsage(
+    id: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<{
     totalRequests: number;
     requestsThisMonth: number;
     averageResponseTime: number;
@@ -216,14 +226,20 @@ export class ApiKeyService {
     dailyUsage: Array<{ date: string; requests: number }>;
   }> {
     const whereClause: Record<string, any> = { apiKeyId: id };
-    
+
     if (startDate || endDate) {
       whereClause.timestamp = {};
       if (startDate) whereClause.timestamp.gte = startDate;
       if (endDate) whereClause.timestamp.lte = endDate;
     }
 
-    const [totalRequests, avgResponseTime, successCount, endpointCounts, dailyCounts] = await Promise.all([
+    const [
+      totalRequests,
+      avgResponseTime,
+      successCount,
+      endpointCounts,
+      dailyCounts,
+    ] = await Promise.all([
       this.prisma.apiUsage.count({ where: whereClause }),
       this.prisma.apiUsage.aggregate({
         where: whereClause,
@@ -233,10 +249,10 @@ export class ApiKeyService {
         where: { ...whereClause, statusCode: { lt: 400 } },
       }),
       this.prisma.apiUsage.groupBy({
-        by: ['endpoint'],
+        by: ["endpoint"],
         where: whereClause,
         _count: true,
-        orderBy: { _count: { endpoint: 'desc' } },
+        orderBy: { _count: { endpoint: "desc" } },
         take: 10,
       }),
       this.prisma.$queryRaw<Array<{ date: string; requests: bigint }>>`
@@ -297,7 +313,7 @@ export class ApiKeyService {
       },
     });
 
-    log.info('Cleaned up expired API keys', { count: result.count });
+    log.info("Cleaned up expired API keys", { count: result.count });
     return result.count;
   }
 }

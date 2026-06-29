@@ -6,13 +6,13 @@ on:
       - main
       - develop
     paths:
-      - 'contracts/**'
+      - "contracts/**"
   pull_request:
     branches:
       - main
       - develop
     paths:
-      - 'contracts/**'
+      - "contracts/**"
 
 jobs:
   build-and-test:
@@ -50,7 +50,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

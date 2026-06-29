@@ -1,22 +1,22 @@
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  roots: ['<rootDir>/src'],
+  preset: "ts-jest",
+  testEnvironment: "node",
+  roots: ["<rootDir>/src"],
   testMatch: [
-    '**/__tests__/**/*.integration.test.ts',
-    '**/?(*.)+(integration).test.ts'
+    "**/__tests__/**/*.integration.test.ts",
+    "**/?(*.)+(integration).test.ts",
   ],
-  setupFilesAfterEnv: ['<rootDir>/jest.integration.setup.js'],
+  setupFilesAfterEnv: ["<rootDir>/jest.integration.setup.js"],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    "^.+\\.ts$": "ts-jest",
   },
-  moduleFileExtensions: ['ts', 'js', 'json'],
+  moduleFileExtensions: ["ts", "js", "json"],
   collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/**/__tests__/**',
+    "src/**/*.ts",
+    "!src/**/*.d.ts",
+    "!src/**/__tests__/**",
   ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageDirectory: "coverage",
+  coverageReporters: ["text", "lcov", "html"],
   testTimeout: 30000,
 };

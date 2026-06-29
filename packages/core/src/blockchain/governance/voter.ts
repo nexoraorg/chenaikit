@@ -1,7 +1,7 @@
 /**
  * Governance Voting Helpers
  * @module governance/voter
- * 
+ *
  * Utilities for casting votes and querying vote status
  */
 
@@ -11,7 +11,7 @@ import {
   GovernanceError,
   GovernanceErrorType,
   GovernanceContracts,
-} from './types';
+} from "./types";
 
 /**
  * Vote Manager - handles vote casting and queries
@@ -35,13 +35,13 @@ export class VoteManager {
   async castVote(
     proposalId: bigint,
     voter: string,
-    support: VoteSupport
+    support: VoteSupport,
   ): Promise<string> {
     try {
       // Get proposal to find snapshot block
       const proposal = await this.networkClient.readContract({
         contractId: this.contracts.proposalManager,
-        method: 'get_proposal',
+        method: "get_proposal",
         args: [proposalId],
       });
 
@@ -50,21 +50,15 @@ export class VoteManager {
       // Cast vote with snapshot block
       const tx = await this.networkClient.invokeContract({
         contractId: this.contracts.votingSystem,
-        method: 'cast_vote',
-        args: [
-          this.contracts.token,
-          proposalId,
-          snapshotBlock,
-          voter,
-          support
-        ],
+        method: "cast_vote",
+        args: [this.contracts.token, proposalId, snapshotBlock, voter, support],
         auth: voter,
       });
 
       // Record vote in proposal manager
       await this.networkClient.invokeContract({
         contractId: this.contracts.proposalManager,
-        method: 'record_vote',
+        method: "record_vote",
         args: [proposalId, support, tx.votes || 0],
       });
 
@@ -73,7 +67,7 @@ export class VoteManager {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to cast vote: ${error}`,
-        { proposalId, voter, support, error }
+        { proposalId, voter, support, error },
       );
     }
   }
@@ -90,13 +84,13 @@ export class VoteManager {
     proposalId: bigint,
     voter: string,
     support: VoteSupport,
-    reason: string
+    reason: string,
   ): Promise<string> {
     try {
       // Get proposal to find snapshot block
       const proposal = await this.networkClient.readContract({
         contractId: this.contracts.proposalManager,
-        method: 'get_proposal',
+        method: "get_proposal",
         args: [proposalId],
       });
 
@@ -105,14 +99,14 @@ export class VoteManager {
       // Cast vote with reason
       const tx = await this.networkClient.invokeContract({
         contractId: this.contracts.votingSystem,
-        method: 'cast_vote_with_reason',
+        method: "cast_vote_with_reason",
         args: [
           this.contracts.token,
           proposalId,
           snapshotBlock,
           voter,
           support,
-          reason
+          reason,
         ],
         auth: voter,
       });
@@ -120,7 +114,7 @@ export class VoteManager {
       // Record vote in proposal manager
       await this.networkClient.invokeContract({
         contractId: this.contracts.proposalManager,
-        method: 'record_vote',
+        method: "record_vote",
         args: [proposalId, support, tx.votes || 0],
       });
 
@@ -129,7 +123,7 @@ export class VoteManager {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to cast vote with reason: ${error}`,
-        { proposalId, voter, support, reason, error }
+        { proposalId, voter, support, reason, error },
       );
     }
   }
@@ -144,7 +138,7 @@ export class VoteManager {
     try {
       const result = await this.networkClient.readContract({
         contractId: this.contracts.votingSystem,
-        method: 'has_voted',
+        method: "has_voted",
         args: [proposalId, voter],
       });
 
@@ -153,7 +147,7 @@ export class VoteManager {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to check vote status: ${error}`,
-        { proposalId, voter, error }
+        { proposalId, voter, error },
       );
     }
   }
@@ -166,12 +160,12 @@ export class VoteManager {
    */
   async getVoteReceipt(
     proposalId: bigint,
-    voter: string
+    voter: string,
   ): Promise<VoteRecord | null> {
     try {
       const result = await this.networkClient.readContract({
         contractId: this.contracts.votingSystem,
-        method: 'get_receipt',
+        method: "get_receipt",
         args: [proposalId, voter],
       });
 
@@ -186,9 +180,8 @@ export class VoteManager {
       throw new GovernanceError(
         GovernanceErrorType.ContractError,
         `Failed to get vote receipt: ${error}`,
-        { proposalId, voter, error }
+        { proposalId, voter, error },
       );
     }
   }
 }
-

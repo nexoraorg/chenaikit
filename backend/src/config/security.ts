@@ -72,14 +72,14 @@ export interface SecurityConfig {
   trustProxy: string | number | undefined;
 }
 
-const isProduction = () => process.env.NODE_ENV === 'production';
+const isProduction = () => process.env.NODE_ENV === "production";
 const isDevelopmentOrTest = () =>
-  process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+  process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test";
 
 const parseOrigins = (raw: string | undefined): string[] => {
   if (!raw) return [];
   return raw
-    .split(',')
+    .split(",")
     .map((o) => o.trim())
     .filter(Boolean);
 };
@@ -97,19 +97,24 @@ export const getSecurityConfig = (): SecurityConfig => {
   return {
     cors: {
       origins: parseOrigins(process.env.CORS_ORIGINS),
-      allowAll:
-        process.env.CORS_ALLOW_ALL === 'true' && isDevelopmentOrTest(),
-      credentials: process.env.CORS_CREDENTIALS === 'true',
+      allowAll: process.env.CORS_ALLOW_ALL === "true" && isDevelopmentOrTest(),
+      credentials: process.env.CORS_CREDENTIALS === "true",
       maxAge: Number(process.env.CORS_MAX_AGE) || 600,
-      methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: [
-        'Authorization',
-        'Content-Type',
-        'X-API-Key',
-        'X-Request-ID',
-        'X-API-Version',
+        "Authorization",
+        "Content-Type",
+        "X-API-Key",
+        "X-Request-ID",
+        "X-API-Version",
       ],
-      exposedHeaders: ['X-Request-ID', 'X-API-Version', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
+      exposedHeaders: [
+        "X-Request-ID",
+        "X-API-Version",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+      ],
     },
 
     headers: {
@@ -117,7 +122,7 @@ export const getSecurityConfig = (): SecurityConfig => {
         defaultSrc: ["'none'"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:'],
+        imgSrc: ["'self'", "data:"],
         connectSrc: ["'self'"],
         fontSrc: ["'self'"],
         objectSrc: ["'none'"],
@@ -135,10 +140,10 @@ export const getSecurityConfig = (): SecurityConfig => {
             preload: true,
           }
         : false,
-      referrerPolicy: process.env.REFERRER_POLICY || 'no-referrer',
-      xFrameOptions: 'DENY',
+      referrerPolicy: process.env.REFERRER_POLICY || "no-referrer",
+      xFrameOptions: "DENY",
       xContentTypeOptions: true,
-      xXssProtection: '1; mode=block',
+      xXssProtection: "1; mode=block",
       permissionsPolicy: {
         camera: [],
         microphone: [],
@@ -148,20 +153,20 @@ export const getSecurityConfig = (): SecurityConfig => {
         fullscreen: ["'self'"],
       },
       crossOriginEmbedderPolicy: false,
-      crossOriginOpenerPolicy: 'same-origin',
-      crossOriginResourcePolicy: 'same-origin',
+      crossOriginOpenerPolicy: "same-origin",
+      crossOriginResourcePolicy: "same-origin",
     },
 
     rateLimit: {
-      enabled: process.env.RATE_LIMIT_HEADERS !== 'false',
-      headerPrefix: 'X-RateLimit',
+      enabled: process.env.RATE_LIMIT_HEADERS !== "false",
+      headerPrefix: "X-RateLimit",
     },
 
     requestMeta: {
-      apiVersionHeader: 'X-API-Version',
-      apiVersion: process.env.API_VERSION || 'v1',
-      requestIdHeader: 'X-Request-ID',
-      enableRequestId: process.env.ENABLE_REQUEST_ID !== 'false',
+      apiVersionHeader: "X-API-Version",
+      apiVersion: process.env.API_VERSION || "v1",
+      requestIdHeader: "X-Request-ID",
+      enableRequestId: process.env.ENABLE_REQUEST_ID !== "false",
     },
 
     trustProxy: parseTrustProxy(),

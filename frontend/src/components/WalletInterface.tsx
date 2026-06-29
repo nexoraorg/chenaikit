@@ -1,7 +1,7 @@
 // ChenAIKit Wallet Interface Component
 // TODO: Implement wallet interface - See frontend-02-wallet-ui.md issue template
 
-import React from 'react';
+import React from "react";
 
 const WalletInterface: React.FC = () => {
   return (

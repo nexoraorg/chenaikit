@@ -1,8 +1,8 @@
 // Jest setup for integration tests
-process.env.NODE_ENV = 'test';
+process.env.NODE_ENV = "test";
 
 // Mock external services
-jest.mock('@stellar/stellar-sdk', () => ({
+jest.mock("@stellar/stellar-sdk", () => ({
   Server: jest.fn(),
   Horizon: jest.fn(),
   TransactionBuilder: jest.fn(),
@@ -11,7 +11,7 @@ jest.mock('@stellar/stellar-sdk', () => ({
   Operation: jest.fn(),
 }));
 
-jest.mock('axios', () => ({
+jest.mock("axios", () => ({
   create: jest.fn(() => ({
     get: jest.fn(),
     post: jest.fn(),
@@ -21,7 +21,7 @@ jest.mock('axios', () => ({
 }));
 
 // Mock database
-jest.mock('../generated/prisma', () => ({
+jest.mock("../generated/prisma", () => ({
   PrismaClient: jest.fn(() => ({
     apiKey: {
       create: jest.fn(),

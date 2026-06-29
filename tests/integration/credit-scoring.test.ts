@@ -3,21 +3,21 @@ import {
   sendPayment,
   getAccountBalance,
   waitFor,
-  TestAccount
-} from './helpers/setup';
+  TestAccount,
+} from "./helpers/setup";
 
 // Mock CreditScorer
 class CreditScorer {
   async calculateScore(accountData: any) {
     return {
       score: 750,
-      factors: ['payment_history', 'credit_utilization'],
-      confidence: 0.85
+      factors: ["payment_history", "credit_utilization"],
+      confidence: 0.85,
     };
   }
 }
 
-describe('Credit Scoring Integration', () => {
+describe("Credit Scoring Integration", () => {
   let testAccount: TestAccount;
   let creditScorer: CreditScorer;
 
@@ -26,13 +26,13 @@ describe('Credit Scoring Integration', () => {
     creditScorer = new CreditScorer();
   });
 
-  describe('Account Credit Score Calculation', () => {
-    it('should calculate credit score for new account', async () => {
+  describe("Account Credit Score Calculation", () => {
+    it("should calculate credit score for new account", async () => {
       const accountData = {
         publicKey: testAccount.publicKey,
         balance: await getAccountBalance(testAccount.publicKey),
         transactionCount: 0,
-        accountAge: 0
+        accountAge: 0,
       };
 
       const result = await creditScorer.calculateScore(accountData);
@@ -43,20 +43,20 @@ describe('Credit Scoring Integration', () => {
       expect(result.factors).toBeInstanceOf(Array);
     });
 
-    it('should update score after transactions', async () => {
+    it("should update score after transactions", async () => {
       const recipient = await createTestAccount();
-      
+
       // Initial score
       const initialScore = await creditScorer.calculateScore({
         publicKey: testAccount.publicKey,
         balance: await getAccountBalance(testAccount.publicKey),
         transactionCount: 0,
-        accountAge: 0
+        accountAge: 0,
       });
 
       // Make transaction
-      await sendPayment(testAccount, recipient.publicKey, '10');
-      
+      await sendPayment(testAccount, recipient.publicKey, "10");
+
       // Wait for transaction to settle
       await waitFor(async () => {
         const balance = await getAccountBalance(recipient.publicKey);
@@ -68,7 +68,7 @@ describe('Credit Scoring Integration', () => {
         publicKey: testAccount.publicKey,
         balance: await getAccountBalance(testAccount.publicKey),
         transactionCount: 1,
-        accountAge: 0
+        accountAge: 0,
       });
 
       expect(updatedScore.score).toBeDefined();
@@ -76,28 +76,28 @@ describe('Credit Scoring Integration', () => {
     });
   });
 
-  describe('Credit Score Factors', () => {
-    it('should identify positive factors', async () => {
+  describe("Credit Score Factors", () => {
+    it("should identify positive factors", async () => {
       const accountData = {
         publicKey: testAccount.publicKey,
-        balance: '10000',
+        balance: "10000",
         transactionCount: 50,
-        accountAge: 365
+        accountAge: 365,
       };
 
       const result = await creditScorer.calculateScore(accountData);
 
-      expect(result.factors).toContain('payment_history');
+      expect(result.factors).toContain("payment_history");
     });
 
-    it('should handle accounts with no history', async () => {
+    it("should handle accounts with no history", async () => {
       const newAccount = await createTestAccount();
-      
+
       const result = await creditScorer.calculateScore({
         publicKey: newAccount.publicKey,
         balance: await getAccountBalance(newAccount.publicKey),
         transactionCount: 0,
-        accountAge: 0
+        accountAge: 0,
       });
 
       expect(result.score).toBeGreaterThanOrEqual(300);
@@ -105,13 +105,13 @@ describe('Credit Scoring Integration', () => {
     }, 60000);
   });
 
-  describe('Score Persistence', () => {
-    it('should maintain consistent scores for same data', async () => {
+  describe("Score Persistence", () => {
+    it("should maintain consistent scores for same data", async () => {
       const accountData = {
         publicKey: testAccount.publicKey,
-        balance: '5000',
+        balance: "5000",
         transactionCount: 10,
-        accountAge: 30
+        accountAge: 30,
       };
 
       const score1 = await creditScorer.calculateScore(accountData);

@@ -1,4 +1,4 @@
-import { StellarConfig } from './types';
+import { StellarConfig } from "./types";
 
 export class StellarConnector {
   private config: StellarConfig;
@@ -9,21 +9,21 @@ export class StellarConnector {
 
   async getAccount(accountId: string): Promise<any> {
     // TODO: Implement Stellar account retrieval - Issue #24
-    throw new Error('Not implemented yet - see issue #24');
+    throw new Error("Not implemented yet - see issue #24");
   }
 
   async submitTransaction(transaction: any): Promise<any> {
     // TODO: Implement transaction submission - Issue #24
-    throw new Error('Not implemented yet - see issue #24');
+    throw new Error("Not implemented yet - see issue #24");
   }
 
   async getFee(): Promise<string> {
     // TODO: Implement Stellar fee retrieval
-    throw new Error('Not implemented yet - see issue #24');
+    throw new Error("Not implemented yet - see issue #24");
   }
 
   async getNetworkPassphrase(): Promise<string> {
     // TODO: Implement Stellar network passphrase retrieval
-    throw new Error('Not implemented yet - see issue #24');
+    throw new Error("Not implemented yet - see issue #24");
   }
 }

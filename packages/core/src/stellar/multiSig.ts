@@ -1,7 +1,11 @@
-
-import { Transaction, Keypair, Operation, TransactionBuilder } from '@stellar/stellar-sdk';
-import { StellarConnector } from './connector';
-import { MultiSigOptions, Signer } from './types';
+import {
+  Transaction,
+  Keypair,
+  Operation,
+  TransactionBuilder,
+} from "@stellar/stellar-sdk";
+import { StellarConnector } from "./connector";
+import { MultiSigOptions, Signer } from "./types";
 
 /**
  * Adds a new signer to a multi-signature account.
@@ -14,10 +18,12 @@ import { MultiSigOptions, Signer } from './types';
 export async function addSigner(
   stellarConnector: StellarConnector,
   sourceSecret: string,
-  signer: Signer
+  signer: Signer,
 ): Promise<void> {
   const sourceKeypair = Keypair.fromSecret(sourceSecret);
-  const sourceAccount = await stellarConnector.getAccount(sourceKeypair.publicKey());
+  const sourceAccount = await stellarConnector.getAccount(
+    sourceKeypair.publicKey(),
+  );
 
   const transaction = new TransactionBuilder(sourceAccount, {
     fee: await stellarConnector.getFee(),
@@ -29,7 +35,7 @@ export async function addSigner(
           ed25519PublicKey: signer.publicKey,
           weight: signer.weight,
         },
-      })
+      }),
     )
     .setTimeout(30)
     .build();
@@ -49,10 +55,12 @@ export async function addSigner(
 export async function removeSigner(
   stellarConnector: StellarConnector,
   sourceSecret: string,
-  signerPublicKey: string
+  signerPublicKey: string,
 ): Promise<void> {
   const sourceKeypair = Keypair.fromSecret(sourceSecret);
-  const sourceAccount = await stellarConnector.getAccount(sourceKeypair.publicKey());
+  const sourceAccount = await stellarConnector.getAccount(
+    sourceKeypair.publicKey(),
+  );
 
   const transaction = new TransactionBuilder(sourceAccount, {
     fee: await stellarConnector.getFee(),
@@ -64,7 +72,7 @@ export async function removeSigner(
           ed25519PublicKey: signerPublicKey,
           weight: 0,
         },
-      })
+      }),
     )
     .setTimeout(30)
     .build();
@@ -84,10 +92,12 @@ export async function removeSigner(
 export async function setThresholds(
   stellarConnector: StellarConnector,
   sourceSecret: string,
-  options: MultiSigOptions
+  options: MultiSigOptions,
 ): Promise<void> {
   const sourceKeypair = Keypair.fromSecret(sourceSecret);
-  const sourceAccount = await stellarConnector.getAccount(sourceKeypair.publicKey());
+  const sourceAccount = await stellarConnector.getAccount(
+    sourceKeypair.publicKey(),
+  );
 
   const transaction = new TransactionBuilder(sourceAccount, {
     fee: await stellarConnector.getFee(),
@@ -98,7 +108,7 @@ export async function setThresholds(
         lowThreshold: options.low,
         medThreshold: options.medium,
         highThreshold: options.high,
-      })
+      }),
     )
     .setTimeout(30)
     .build();
@@ -116,7 +126,7 @@ export async function setThresholds(
  */
 export function signTransaction(
   signerSecrets: string[],
-  transaction: Transaction
+  transaction: Transaction,
 ): Transaction {
   const keypairs = signerSecrets.map((secret) => Keypair.fromSecret(secret));
   transaction.sign(...keypairs);

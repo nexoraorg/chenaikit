@@ -28,6 +28,7 @@ env.deployer().update_current_contract_wasm(new_wasm_hash);
 ```
 
 **Key Concepts:**
+
 - Contracts are upgraded by updating the WASM bytecode hash
 - Storage persists across upgrades
 - Contract address remains the same
@@ -55,17 +56,17 @@ Regular upgrade with new features or bug fixes.
 // In your contract
 pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) {
     admin.require_auth();
-    
+
     // Verify admin
     let stored_admin: Address = env.storage()
         .instance()
         .get(&symbol_short!("admin"))
         .unwrap();
-    
+
     if admin != stored_admin {
         panic!("not authorized");
     }
-    
+
     // Perform upgrade
     env.deployer().update_current_contract_wasm(new_wasm_hash);
 }
@@ -83,15 +84,15 @@ pub fn upgrade_with_migration(
     migration_notes: String,
 ) {
     admin.require_auth();
-    
+
     let old_version = get_version(&env);
-    
+
     // Execute version-specific migrations
     execute_migrations(&env, old_version, old_version + 1);
-    
+
     // Perform upgrade
     env.deployer().update_current_contract_wasm(new_wasm_hash);
-    
+
     // Update version
     set_version(&env, old_version + 1);
 }
@@ -108,13 +109,13 @@ pub fn emergency_upgrade(
     new_wasm_hash: BytesN<32>,
 ) {
     admin.require_auth();
-    
+
     // Minimal checks for speed
     verify_admin(&env, &admin);
-    
+
     // Immediate upgrade
     env.deployer().update_current_contract_wasm(new_wasm_hash);
-    
+
     // Emit emergency event
     env.events().publish(
         (symbol_short!("emerg_upg"),),
@@ -221,16 +222,16 @@ fn migrate_v1_to_v2(env: &Env) {
         .persistent()
         .get(&symbol_short!("config"))
         .unwrap();
-    
+
     let new_config = NewConfig {
         old_field: old_config.old_field,
         new_field: default_value(), // Add new field
     };
-    
+
     env.storage()
         .persistent()
         .set(&symbol_short!("config"), &new_config);
-    
+
     // Extend TTL for migrated data
     env.storage()
         .persistent()
@@ -275,15 +276,15 @@ fn migrate_to_nested(env: &Env) {
     // Read old flat data
     let value1: u32 = env.storage().persistent().get(&symbol_short!("val1")).unwrap();
     let value2: u32 = env.storage().persistent().get(&symbol_short!("val2")).unwrap();
-    
+
     // Create new nested structure
     let nested = NestedData {
         values: vec![value1, value2],
     };
-    
+
     // Store in new format
     env.storage().persistent().set(&symbol_short!("nested"), &nested);
-    
+
     // Clean up old keys
     env.storage().persistent().remove(&symbol_short!("val1"));
     env.storage().persistent().remove(&symbol_short!("val2"));
@@ -295,14 +296,14 @@ fn migrate_to_nested(env: &Env) {
 ```rust
 fn extend_all_storage_ttl(env: &Env) {
     const YEAR_LEDGERS: u32 = 6_307_200;
-    
+
     // List all keys that need TTL extension
     let keys = vec![
         symbol_short!("config"),
         symbol_short!("admin"),
         symbol_short!("data"),
     ];
-    
+
     for key in keys {
         if env.storage().persistent().has(&key) {
             env.storage().persistent().extend_ttl(&key, YEAR_LEDGERS, YEAR_LEDGERS);
@@ -326,31 +327,31 @@ mod upgrade_tests {
     #[test]
     fn test_upgrade_flow() {
         let env = Env::default();
-        
+
         // Deploy v1
         let contract_v1 = env.register_contract(None, ContractV1);
         let client_v1 = ContractV1Client::new(&env, &contract_v1);
-        
+
         let admin = Address::generate(&env);
         env.mock_all_auths();
-        
+
         // Initialize v1
         client_v1.initialize(&admin);
-        
+
         // Use v1 functionality
         client_v1.some_function(&param);
-        
+
         // Build and get v2 WASM hash
         let wasm_v2 = include_bytes!("../target/wasm32-unknown-unknown/release/contract_v2.wasm");
         let wasm_hash_v2 = env.deployer().upload_contract_wasm(wasm_v2);
-        
+
         // Perform upgrade
         client_v1.upgrade(&admin, &wasm_hash_v2);
-        
+
         // Test v2 functionality
         let client_v2 = ContractV2Client::new(&env, &contract_v1); // Same address
         client_v2.new_v2_function(&param);
-        
+
         // Verify storage persisted
         assert_eq!(client_v2.get_data(), expected_data);
     }
@@ -365,31 +366,31 @@ Create `contracts/tests/upgrade.test.rs`:
 #[cfg(test)]
 mod integration_tests {
     use soroban_sdk::{Env, Address, BytesN};
-    
+
     #[test]
     fn test_full_upgrade_with_governance() {
         let env = Env::default();
-        
+
         // Deploy all contracts
         let credit_score = deploy_credit_score(&env);
         let upgrade_mgr = deploy_upgrade_manager(&env);
-        
+
         // Setup governance
         let admin = Address::generate(&env);
         let approver1 = Address::generate(&env);
         let approver2 = Address::generate(&env);
-        
+
         env.mock_all_auths();
-        
+
         // Initialize
         upgrade_mgr.initialize(&admin, &2, &604800);
         upgrade_mgr.add_authorized(&admin, &approver1);
         upgrade_mgr.add_authorized(&admin, &approver2);
-        
+
         // Build new version
         let new_wasm = build_contract_v2();
         let wasm_hash = env.deployer().upload_contract_wasm(&new_wasm);
-        
+
         // Propose upgrade
         let proposal_id = upgrade_mgr.propose_upgrade(
             &admin,
@@ -399,14 +400,14 @@ mod integration_tests {
             &Vec::new(&env),
             &String::from_str(&env, "Upgrade to v2"),
         );
-        
+
         // Approve
         upgrade_mgr.approve_upgrade(&proposal_id, &approver1);
         upgrade_mgr.approve_upgrade(&proposal_id, &approver2);
-        
+
         // Execute
         let result = upgrade_mgr.execute_upgrade(&proposal_id, &admin);
-        
+
         assert!(result.success);
         assert_eq!(result.new_version, 2);
     }
@@ -425,20 +426,20 @@ Contracts store the previous WASM hash for emergency rollback:
 pub fn rollback(env: Env, admin: Address) {
     admin.require_auth();
     verify_admin(&env, &admin);
-    
+
     // Get stored rollback hash
     let rollback_hash: BytesN<32> = env.storage()
         .persistent()
         .get(&symbol_short!("rollback"))
         .expect("No rollback available");
-    
+
     // Perform rollback
     env.deployer().update_current_contract_wasm(rollback_hash.clone());
-    
+
     // Decrement version
     let current_version = get_version(&env);
     set_version(&env, current_version - 1);
-    
+
     // Emit rollback event
     env.events().publish(
         (symbol_short!("rollback"),),
@@ -452,6 +453,7 @@ pub fn rollback(env: Env, admin: Address) {
 If automatic rollback isn't available:
 
 1. **Identify Previous Version**
+
    ```bash
    # Get upgrade history
    soroban contract invoke \
@@ -460,6 +462,7 @@ If automatic rollback isn't available:
    ```
 
 2. **Retrieve Previous WASM**
+
    ```bash
    # From your version control or build artifacts
    cd contracts/credit-score
@@ -468,6 +471,7 @@ If automatic rollback isn't available:
    ```
 
 3. **Upload Previous WASM**
+
    ```bash
    soroban contract install \
      --wasm target/wasm32-unknown-unknown/release/credit_score.wasm \
@@ -535,15 +539,15 @@ fn record_upgrade(env: &Env, record: UpgradeRecord) {
 fn validate_upgrade(env: &Env, new_wasm_hash: &BytesN<32>) -> Result<(), Error> {
     // Check version compatibility
     let current_version = get_version(env);
-    
+
     // Verify WASM hash format
     if new_wasm_hash.len() != 32 {
         return Err(Error::InvalidWasmHash);
     }
-    
+
     // Check storage compatibility
     verify_storage_compatibility(env)?;
-    
+
     Ok(())
 }
 ```
@@ -554,10 +558,10 @@ fn validate_upgrade(env: &Env, new_wasm_hash: &BytesN<32>) -> Result<(), Error> 
 fn verify_upgrade(env: &Env, expected_version: u32) {
     let actual_version = get_version(env);
     assert_eq!(actual_version, expected_version, "Version mismatch");
-    
+
     // Verify critical data integrity
     verify_data_integrity(env);
-    
+
     // Emit verification event
     env.events().publish(
         (symbol_short!("verified"),),
@@ -586,6 +590,7 @@ fn verify_upgrade(env: &Env, expected_version: u32) {
 ### Critical Bug Response
 
 1. **Immediate Actions**
+
    ```bash
    # Pause contract if pause functionality exists
    soroban contract invoke \
@@ -595,6 +600,7 @@ fn verify_upgrade(env: &Env, expected_version: u32) {
    ```
 
 2. **Emergency Upgrade**
+
    ```bash
    # Use emergency upgrade path (bypasses normal governance)
    soroban contract invoke \
@@ -606,6 +612,7 @@ fn verify_upgrade(env: &Env, expected_version: u32) {
    ```
 
 3. **Verify Fix**
+
    ```bash
    # Test the fix
    soroban contract invoke \
@@ -633,16 +640,20 @@ fn verify_upgrade(env: &Env, expected_version: u32) {
 **Expected Downtime:** [Duration]
 
 ### Changes
+
 - [List of changes]
 
 ### Impact
+
 - [User impact]
 - [API changes]
 
 ### Rollback Plan
+
 - [Rollback procedure if needed]
 
 ### Support
+
 - [Contact information]
 ```
 
@@ -697,6 +708,7 @@ fn verify_upgrade(env: &Env, expected_version: u32) {
 ## Support
 
 For upgrade assistance:
+
 - GitHub Issues: [Your Repo Issues]
 - Discord: [Your Discord]
 - Email: [Support Email]

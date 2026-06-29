@@ -1,13 +1,15 @@
-import { Request, Response, NextFunction } from 'express';
-import { featureFlagService } from '../services/featureFlagService';
-import { FlagContext } from '../models/FeatureFlag';
+import { Request, Response, NextFunction } from "express";
+import { featureFlagService } from "../services/featureFlagService";
+import { FlagContext } from "../models/FeatureFlag";
 
 export interface FeatureFlagMiddlewareOptions {
   flags?: string[];
   exposeHeaders?: boolean;
 }
 
-export function featureFlagMiddleware(options: FeatureFlagMiddlewareOptions = {}) {
+export function featureFlagMiddleware(
+  options: FeatureFlagMiddlewareOptions = {},
+) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
       const context = buildFlagContext(req);
@@ -22,7 +24,10 @@ export function featureFlagMiddleware(options: FeatureFlagMiddlewareOptions = {}
 
       if (options.exposeHeaders) {
         for (const evalResult of evaluations) {
-          _res.setHeader(`X-Feature-${evalResult.flagKey}`, String(evalResult.value));
+          _res.setHeader(
+            `X-Feature-${evalResult.flagKey}`,
+            String(evalResult.value),
+          );
         }
       }
 
@@ -40,7 +45,7 @@ export function requireFeatureFlag(flagKey: string) {
       res.status(403).json({
         success: false,
         error: {
-          code: 'FEATURE_NOT_AVAILABLE',
+          code: "FEATURE_NOT_AVAILABLE",
           message: `Feature '${flagKey}' is not available`,
           timestamp: new Date().toISOString(),
         },
@@ -56,7 +61,7 @@ export function buildFlagContext(req: Request): FlagContext {
     userId: (req as any).user?.id || (req as any).user?.sub,
     email: (req as any).user?.email,
     ip: req.ip || req.socket.remoteAddress,
-    userAgent: req.headers['user-agent'],
+    userAgent: req.headers["user-agent"],
     properties: {
       method: req.method,
       path: req.path,
@@ -64,8 +69,10 @@ export function buildFlagContext(req: Request): FlagContext {
     },
   };
 
-  if (req.headers['x-segments']) {
-    context.segments = (req.headers['x-segments'] as string).split(',').map((s) => s.trim());
+  if (req.headers["x-segments"]) {
+    context.segments = (req.headers["x-segments"] as string)
+      .split(",")
+      .map((s) => s.trim());
   }
 
   return context;

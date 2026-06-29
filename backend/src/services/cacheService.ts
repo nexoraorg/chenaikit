@@ -1,10 +1,10 @@
-import type { Redis as RedisClient } from 'ioredis';
-import { ensureRedisConnection } from '../config/redis';
-import type { CacheService, CacheValue } from '../types/cache';
+import type { Redis as RedisClient } from "ioredis";
+import { ensureRedisConnection } from "../config/redis";
+import type { CacheService, CacheValue } from "../types/cache";
 
 function toStringValue(value: CacheValue): string {
-  if (value === null || value === undefined) return 'null';
-  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return "null";
+  if (typeof value === "string") return value;
   return JSON.stringify(value);
 }
 
@@ -21,7 +21,9 @@ export class RedisCacheService implements CacheService {
   private clientPromise: Promise<RedisClient>;
 
   constructor(client?: RedisClient) {
-    this.clientPromise = client ? Promise.resolve(client) : ensureRedisConnection();
+    this.clientPromise = client
+      ? Promise.resolve(client)
+      : ensureRedisConnection();
   }
 
   async get<T = CacheValue>(key: string): Promise<T | null> {
@@ -30,11 +32,15 @@ export class RedisCacheService implements CacheService {
     return parseValue<T>(raw);
   }
 
-  async set<T = CacheValue>(key: string, value: T, options?: { ttlSeconds?: number }): Promise<void> {
+  async set<T = CacheValue>(
+    key: string,
+    value: T,
+    options?: { ttlSeconds?: number },
+  ): Promise<void> {
     const client = await this.clientPromise;
     const payload = toStringValue(value as unknown as CacheValue);
     if (options?.ttlSeconds && options.ttlSeconds > 0) {
-      await client.set(key, payload, 'EX', options.ttlSeconds);
+      await client.set(key, payload, "EX", options.ttlSeconds);
     } else {
       await client.set(key, payload);
     }
@@ -64,5 +70,3 @@ export class RedisCacheService implements CacheService {
 }
 
 export const cache = new RedisCacheService();
-
-

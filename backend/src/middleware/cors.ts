@@ -1,12 +1,12 @@
-import cors from 'cors';
-import type { RequestHandler } from 'express';
-import type { CorsConfig } from '../config/security';
+import cors from "cors";
+import type { RequestHandler } from "express";
+import type { CorsConfig } from "../config/security";
 
 export const createCorsMiddleware = (config: CorsConfig): RequestHandler => {
   return cors({
     origin: (
       origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void
+      callback: (err: Error | null, allow?: boolean) => void,
     ) => {
       // Allow requests with no origin (e.g. server-to-server, curl)
       if (!origin) return callback(null, true);

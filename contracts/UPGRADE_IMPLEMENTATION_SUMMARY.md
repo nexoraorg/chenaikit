@@ -9,6 +9,7 @@ Comprehensive upgrade mechanisms have been implemented for all Soroban smart con
 ### ✅ 1. Enhanced Upgrade Modules
 
 #### Credit Score Contract (`contracts/credit-score/src/upgrade.rs`)
+
 - Version tracking with semantic versioning
 - Upgrade history recording
 - Storage migration helpers (v0→v1, v1→v2, v2→v3)
@@ -17,6 +18,7 @@ Comprehensive upgrade mechanisms have been implemented for all Soroban smart con
 - Custom migration notes support
 
 #### Fraud Detection Contract (`contracts/fraud-detect/src/upgrade.rs`)
+
 - Similar upgrade capabilities as credit-score
 - Version-specific migration logic
 - Rollback functionality
@@ -26,6 +28,7 @@ Comprehensive upgrade mechanisms have been implemented for all Soroban smart con
 ### ✅ 2. Governance Upgrade Manager
 
 #### New Contract (`contracts/governance/src/upgrade_proposal.rs`)
+
 - Multi-signature approval system
 - Three upgrade types:
   - Standard Contract Upgrade
@@ -38,6 +41,7 @@ Comprehensive upgrade mechanisms have been implemented for all Soroban smart con
 - Complete audit trail
 
 **Key Features:**
+
 - Configurable approval requirements (e.g., 3 of 5)
 - Time-based proposal expiration
 - Cancellation support
@@ -47,6 +51,7 @@ Comprehensive upgrade mechanisms have been implemented for all Soroban smart con
 ### ✅ 3. Comprehensive Documentation
 
 #### Upgrade Guide (`docs/contracts/upgrade-guide.md`)
+
 - Complete upgrade architecture overview
 - Three upgrade type implementations
 - Governance-based upgrade workflows
@@ -58,6 +63,7 @@ Comprehensive upgrade mechanisms have been implemented for all Soroban smart con
 - Communication templates
 
 #### Upgrade Proposal Template (`contracts/docs/upgrade-proposal-template.md`)
+
 - Structured proposal format
 - Risk assessment framework
 - Testing checklist
@@ -69,7 +75,9 @@ Comprehensive upgrade mechanisms have been implemented for all Soroban smart con
 ### ✅ 4. Automated Scripts
 
 #### Upgrade Script (`contracts/scripts/upgrade-contract.sh`)
+
 Features:
+
 - Automated WASM building and optimization
 - Network upload with hash verification
 - Current version checking
@@ -80,7 +88,9 @@ Features:
 - Interactive confirmation prompts
 
 #### Rollback Script (`contracts/scripts/rollback-contract.sh`)
+
 Features:
+
 - Automatic rollback attempt
 - Manual rollback instructions
 - Backup discovery and restoration
@@ -91,7 +101,9 @@ Features:
 ### ✅ 5. Comprehensive Test Suite
 
 #### Upgrade Tests (`contracts/tests/upgrade.test.rs`)
+
 Test Coverage:
+
 - Basic upgrade flow
 - Upgrade with migration
 - Upgrade history tracking
@@ -107,18 +119,21 @@ Test Coverage:
 ### ✅ 6. Integration with Existing Contracts
 
 #### Credit Score Contract
+
 - Added `upgrade_with_migration()` function
 - Added `rollback()` function
 - Added `get_version()` function
 - Added `get_upgrade_history()` function
 
 #### Fraud Detection Contract
+
 - Added `upgrade_with_migration()` function
 - Added `rollback()` function
 - Added `get_version()` function
 - Added `get_upgrade_history()` function
 
 #### Governance Contract
+
 - Added `UpgradeManager` module
 - Integrated with existing proposal system
 
@@ -242,30 +257,35 @@ soroban contract invoke \
 ## Key Features
 
 ### 1. Multi-Signature Governance
+
 - Configurable approval requirements
 - Time-based expiration
 - Authorization management
 - Proposal cancellation
 
 ### 2. Storage Migration
+
 - Version-specific migrations
 - Automatic TTL extension
 - Data structure transformation
 - Backward compatibility
 
 ### 3. Rollback Support
+
 - Automatic rollback function
 - Previous WASM hash storage
 - Version decrement
 - Emergency recovery
 
 ### 4. Audit Trail
+
 - Complete upgrade history
 - Execution records
 - Version tracking
 - Event emissions
 
 ### 5. Testing Framework
+
 - Unit tests for all upgrade paths
 - Integration tests with governance
 - Migration testing
@@ -309,6 +329,7 @@ soroban contract invoke \
 ## Files Created/Modified
 
 ### New Files
+
 1. `contracts/governance/src/upgrade_proposal.rs` - Upgrade manager contract
 2. `docs/contracts/upgrade-guide.md` - Comprehensive upgrade guide
 3. `contracts/docs/upgrade-proposal-template.md` - Proposal template
@@ -320,6 +341,7 @@ soroban contract invoke \
 9. `contracts/UPGRADE_IMPLEMENTATION_SUMMARY.md` - This file
 
 ### Modified Files
+
 1. `contracts/governance/src/lib.rs` - Added upgrade_proposal module
 2. `contracts/credit-score/src/upgrade.rs` - Enhanced with new features
 3. `contracts/fraud-detect/src/lib.rs` - Added upgrade functions
@@ -327,18 +349,21 @@ soroban contract invoke \
 ## Next Steps
 
 ### For Development
+
 1. Test upgrade flows on testnet
 2. Perform security audit of upgrade mechanisms
 3. Create upgrade proposals for each contract
 4. Set up monitoring for upgrade events
 
 ### For Deployment
+
 1. Deploy UpgradeManager contract
 2. Initialize with multi-sig approvers
 3. Test governance flow on testnet
 4. Document mainnet upgrade procedures
 
 ### For Operations
+
 1. Set up monitoring alerts for upgrades
 2. Create runbooks for emergency procedures
 3. Train team on upgrade processes
@@ -347,6 +372,7 @@ soroban contract invoke \
 ## Metrics and Monitoring
 
 ### Key Metrics to Track
+
 - Upgrade success rate
 - Time to upgrade
 - Rollback frequency
@@ -354,6 +380,7 @@ soroban contract invoke \
 - Migration duration
 
 ### Monitoring Points
+
 - Upgrade events
 - Version changes
 - Error rates post-upgrade
@@ -363,20 +390,24 @@ soroban contract invoke \
 ## Support and Resources
 
 ### Documentation
+
 - [Upgrade Guide](docs/contracts/upgrade-guide.md)
 - [Proposal Template](contracts/docs/upgrade-proposal-template.md)
 - [Quick Start](contracts/UPGRADE_README.md)
 
 ### Scripts
+
 - `contracts/scripts/upgrade-contract.sh`
 - `contracts/scripts/rollback-contract.sh`
 
 ### Tests
+
 - `contracts/tests/upgrade.test.rs`
 
 ## Conclusion
 
 A comprehensive upgrade system has been implemented with:
+
 - ✅ Multi-signature governance
 - ✅ Storage migration support
 - ✅ Rollback capabilities

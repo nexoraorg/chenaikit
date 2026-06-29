@@ -1,33 +1,37 @@
 // Initialize Sentry first before creating Express app
-import { initSentry, sentryErrorHandler, errorTrackingMiddleware } from './middleware/errorTracking';
+import {
+  initSentry,
+  sentryErrorHandler,
+  errorTrackingMiddleware,
+} from "./middleware/errorTracking";
 if (process.env.SENTRY_DSN) {
-  initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || 'development');
+  initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || "development");
 }
 
-import express, { Application } from 'express';
-import healthRouter, { registerHealthCheck } from './routes/health';
+import express, { Application } from "express";
+import healthRouter, { registerHealthCheck } from "./routes/health";
 
 const app: Application = express();
 
 app.use(express.json());
 
 // Health checks
-app.use('/api', healthRouter);
+app.use("/api", healthRouter);
 
 // Register service health checks
-registerHealthCheck('database', async () => {
+registerHealthCheck("database", async () => {
   // Add your DB check
-  return { status: 'up' };
+  return { status: "up" };
 });
 
-registerHealthCheck('stellar', async () => {
+registerHealthCheck("stellar", async () => {
   // Add your Stellar check
-  return { status: 'up' };
+  return { status: "up" };
 });
 
-registerHealthCheck('ai', async () => {
+registerHealthCheck("ai", async () => {
   // Add your AI service check
-  return { status: 'up' };
+  return { status: "up" };
 });
 
 // Your API routes here

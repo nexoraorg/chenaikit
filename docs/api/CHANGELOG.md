@@ -32,7 +32,7 @@ Initial public API. Flat response shapes for `GET /credit-score` and
 
 ### Migration timeline
 
-| Date       | Event                                                      |
+| Date       | Event                                                     |
 | ---------- | --------------------------------------------------------- |
 | 2025-01-01 | v1 released.                                              |
 | 2026-01-01 | v2 released; v1 deprecated (deprecation headers emitted). |

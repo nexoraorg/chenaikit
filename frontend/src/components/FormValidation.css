@@ -26,7 +26,9 @@
   border: 2px solid #e1e5e9;
   border-radius: 6px;
   font-size: 16px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   background-color: #fff;
 }
 
@@ -74,8 +76,12 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .form-field--error .form-field__label {
@@ -196,11 +202,11 @@
   .form-field__input {
     font-size: 16px; /* Prevents zoom on iOS */
   }
-  
+
   .form__actions {
     flex-direction: column;
   }
-  
+
   .form__submit-button,
   .form__reset-button {
     width: 100%;
@@ -222,7 +228,7 @@
   .form-field__input {
     border-width: 3px;
   }
-  
+
   .form-error {
     border-width: 2px;
   }
@@ -236,11 +242,11 @@
   .form__reset-button {
     transition: none;
   }
-  
+
   .form-error {
     animation: none;
   }
-  
+
   .form-field__loading-spinner {
     animation: none;
   }

@@ -1,4 +1,9 @@
-import { TrendAnalysisResult, TrendComponents, ForecasterOptions, FinancialHealth } from './types';
+import {
+  TrendAnalysisResult,
+  TrendComponents,
+  ForecasterOptions,
+  FinancialHealth,
+} from "./types";
 
 function mean(values: number[]): number {
   if (!values.length) return 0;
@@ -25,9 +30,13 @@ function std(values: number[]): number {
 }
 
 export class TrendAnalyzer {
-  analyze(values: number[], options: ForecasterOptions = {}): TrendAnalysisResult {
+  analyze(
+    values: number[],
+    options: ForecasterOptions = {},
+  ): TrendAnalysisResult {
     const period = options.seasonalityPeriod ?? 0;
-    const window = options.windowSize ?? Math.max(3, Math.floor(values.length / 10));
+    const window =
+      options.windowSize ?? Math.max(3, Math.floor(values.length / 10));
 
     const trend = movingAverage(values, window);
     const seasonal: number[] = new Array(values.length).fill(0);
@@ -48,9 +57,12 @@ export class TrendAnalyzer {
     }
 
     const residual = values.map((v, i) => v - trend[i] - seasonal[i]);
-    const seasonalityStrength = period > 1 ? Math.min(1, std(seasonal) / (std(values) || 1)) : 0;
-    const slope = trend[trend.length - 1] - trend[Math.max(0, trend.length - 2)];
-    const trendDirection = slope > 0.01 ? 'up' : slope < -0.01 ? 'down' : 'flat';
+    const seasonalityStrength =
+      period > 1 ? Math.min(1, std(seasonal) / (std(values) || 1)) : 0;
+    const slope =
+      trend[trend.length - 1] - trend[Math.max(0, trend.length - 2)];
+    const trendDirection =
+      slope > 0.01 ? "up" : slope < -0.01 ? "down" : "flat";
 
     const components: TrendComponents = {
       trend,
@@ -62,31 +74,67 @@ export class TrendAnalyzer {
     };
 
     const insights: string[] = [];
-    if (seasonalityStrength > 0.3) insights.push('Strong seasonality detected; consider budget adjustments around cycles.');
-    if (trendDirection === 'up') insights.push('Upward trend; monitor increasing spend or leverage growth opportunities.');
-    if (trendDirection === 'down') insights.push('Downward trend; potential savings or reduced activity.');
-    if (std(residual) > std(values) * 0.5) insights.push('High volatility; diversify or add buffers to handle fluctuations.');
+    if (seasonalityStrength > 0.3)
+      insights.push(
+        "Strong seasonality detected; consider budget adjustments around cycles.",
+      );
+    if (trendDirection === "up")
+      insights.push(
+        "Upward trend; monitor increasing spend or leverage growth opportunities.",
+      );
+    if (trendDirection === "down")
+      insights.push("Downward trend; potential savings or reduced activity.");
+    if (std(residual) > std(values) * 0.5)
+      insights.push(
+        "High volatility; diversify or add buffers to handle fluctuations.",
+      );
 
     return { components, insights };
   }
 
-  assessFinancialHealth(spendDaily: number[], balanceDaily: number[], incomeDaily?: number[]): FinancialHealth {
+  assessFinancialHealth(
+    spendDaily: number[],
+    balanceDaily: number[],
+    incomeDaily?: number[],
+  ): FinancialHealth {
     const avgSpend = mean(spendDaily);
-    const avgIncome = incomeDaily && incomeDaily.length ? mean(incomeDaily) : undefined;
-    const lastBalance = balanceDaily.length ? balanceDaily[balanceDaily.length - 1] : 0;
-    const savingsRate = avgIncome ? Math.max(0, (avgIncome - avgSpend) / (avgIncome || 1)) : Math.max(0, (lastBalance - (balanceDaily[0] ?? lastBalance)) / ((avgSpend || 1) * spendDaily.length));
+    const avgIncome =
+      incomeDaily && incomeDaily.length ? mean(incomeDaily) : undefined;
+    const lastBalance = balanceDaily.length
+      ? balanceDaily[balanceDaily.length - 1]
+      : 0;
+    const savingsRate = avgIncome
+      ? Math.max(0, (avgIncome - avgSpend) / (avgIncome || 1))
+      : Math.max(
+          0,
+          (lastBalance - (balanceDaily[0] ?? lastBalance)) /
+            ((avgSpend || 1) * spendDaily.length),
+        );
     const expenseVolatility = std(spendDaily);
-    const liquidityDays = avgSpend > 0 ? Math.round(lastBalance / avgSpend) : Infinity;
+    const liquidityDays =
+      avgSpend > 0 ? Math.round(lastBalance / avgSpend) : Infinity;
 
-    let riskLevel: 'low' | 'medium' | 'high' = 'low';
-    if (liquidityDays < 15 || expenseVolatility > avgSpend * 0.5) riskLevel = 'high';
-    else if (liquidityDays < 30 || expenseVolatility > avgSpend * 0.3) riskLevel = 'medium';
+    let riskLevel: "low" | "medium" | "high" = "low";
+    if (liquidityDays < 15 || expenseVolatility > avgSpend * 0.5)
+      riskLevel = "high";
+    else if (liquidityDays < 30 || expenseVolatility > avgSpend * 0.3)
+      riskLevel = "medium";
 
     const suggestions: string[] = [];
-    if (riskLevel !== 'low') suggestions.push('Increase cash buffer to cover 1–2 months of expenses.');
-    if (savingsRate < 0.2) suggestions.push('Aim for 20% savings rate by reducing discretionary spend.');
-    if (expenseVolatility > avgSpend * 0.3) suggestions.push('Smooth expenses by negotiating bills or batching purchases.');
-    if (avgIncome && avgIncome < avgSpend) suggestions.push('Spending exceeds income; review subscriptions and variable expenses.');
+    if (riskLevel !== "low")
+      suggestions.push("Increase cash buffer to cover 1–2 months of expenses.");
+    if (savingsRate < 0.2)
+      suggestions.push(
+        "Aim for 20% savings rate by reducing discretionary spend.",
+      );
+    if (expenseVolatility > avgSpend * 0.3)
+      suggestions.push(
+        "Smooth expenses by negotiating bills or batching purchases.",
+      );
+    if (avgIncome && avgIncome < avgSpend)
+      suggestions.push(
+        "Spending exceeds income; review subscriptions and variable expenses.",
+      );
 
     return {
       savingsRate,

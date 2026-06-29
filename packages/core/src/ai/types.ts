@@ -52,7 +52,7 @@ export interface ExtendedModelConfig {
   /** Model-specific configuration */
   modelOptions?: Record<string, any>;
   /** Provider-specific settings */
-  provider?: 'openai' | 'huggingface' | 'custom';
+  provider?: "openai" | "huggingface" | "custom";
   /** Model version or identifier */
   modelVersion?: string;
   /** Enable/disable streaming responses */
@@ -86,7 +86,7 @@ export interface ModelInput {
   systemMessage?: string;
   /** Conversation history for chat models */
   messages?: Array<{
-    role: 'system' | 'user' | 'assistant';
+    role: "system" | "user" | "assistant";
     content: string;
   }>;
 }
@@ -122,10 +122,10 @@ export class AIModelError extends Error {
     message: string,
     public code: string,
     public statusCode?: number,
-    public retryable: boolean = false
+    public retryable: boolean = false,
   ) {
     super(message);
-    this.name = 'AIModelError';
+    this.name = "AIModelError";
   }
 }
 
@@ -144,19 +144,19 @@ export interface RateLimitConfig {
  * Provider-specific configuration interfaces
  */
 export interface OpenAIConfig extends ExtendedModelConfig {
-  provider: 'openai';
+  provider: "openai";
   modelVersion: string;
   organization?: string;
 }
 
 export interface HuggingFaceConfig extends ExtendedModelConfig {
-  provider: 'huggingface';
+  provider: "huggingface";
   modelVersion: string;
   useAuth?: boolean;
 }
 
 export interface CustomModelConfig extends ExtendedModelConfig {
-  provider: 'custom';
+  provider: "custom";
   modelVersion: string;
   customEndpoint: string;
 }

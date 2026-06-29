@@ -1,12 +1,20 @@
-import { AnomalyDetector } from './anomalyDetector';
-import { FeatureExtractor } from './featureExtractor';
-import { PatternRecognizer } from './patternRecognizer';
-import { AnomalyScore, FeedbackEvent, FeatureVector, MonitorStats, RiskCategory, RiskResult, Transaction } from './types';
+import { AnomalyDetector } from "./anomalyDetector";
+import { FeatureExtractor } from "./featureExtractor";
+import { PatternRecognizer } from "./patternRecognizer";
+import {
+  AnomalyScore,
+  FeedbackEvent,
+  FeatureVector,
+  MonitorStats,
+  RiskCategory,
+  RiskResult,
+  Transaction,
+} from "./types";
 
 function categorize(score: number): RiskCategory {
-  if (score < 30) return 'low';
-  if (score < 70) return 'medium';
-  return 'high';
+  if (score < 30) return "low";
+  if (score < 70) return "medium";
+  return "high";
 }
 
 export class RealTimeFraudScorer {
@@ -33,7 +41,11 @@ export class RealTimeFraudScorer {
     const t0 = Date.now();
     const fv = this.extractor.extract(tx);
     const anomalyScores = this.detector.score(fv);
-    const patternFindings = this.patterns.recognize(fv.featureNames, fv.features, tx);
+    const patternFindings = this.patterns.recognize(
+      fv.featureNames,
+      fv.features,
+      tx,
+    );
 
     const riskScore = this.aggregate(anomalyScores, patternFindings);
     const category = categorize(riskScore);
@@ -72,25 +84,35 @@ export class RealTimeFraudScorer {
     return { ...this.stats };
   }
 
-  private aggregate(anoms: AnomalyScore[], patterns: ReturnType<PatternRecognizer['recognize']>): number {
+  private aggregate(
+    anoms: AnomalyScore[],
+    patterns: ReturnType<PatternRecognizer["recognize"]>,
+  ): number {
     // Weighted aggregation prioritizing precision
     const anomalyWeight = 0.6;
     const patternWeight = 0.4;
-    const anomalyAvg = anoms.reduce((a, s) => a + s.score, 0) / Math.max(1, anoms.length);
-    const patternAvg = patterns.reduce((a, p) => a + p.score, 0) / Math.max(1, patterns.length);
+    const anomalyAvg =
+      anoms.reduce((a, s) => a + s.score, 0) / Math.max(1, anoms.length);
+    const patternAvg =
+      patterns.reduce((a, p) => a + p.score, 0) / Math.max(1, patterns.length);
     const score01 = anomalyWeight * anomalyAvg + patternWeight * patternAvg;
     return Math.round(score01 * 100);
   }
 
-  private reasons(anoms: AnomalyScore[], patterns: ReturnType<PatternRecognizer['recognize']>): string[] {
+  private reasons(
+    anoms: AnomalyScore[],
+    patterns: ReturnType<PatternRecognizer["recognize"]>,
+  ): string[] {
     const reasons: string[] = [];
     for (const a of anoms) {
-      if (a.score > 0.6) reasons.push(`Anomaly (${a.model}) score=${a.score.toFixed(2)}`);
+      if (a.score > 0.6)
+        reasons.push(`Anomaly (${a.model}) score=${a.score.toFixed(2)}`);
     }
     for (const p of patterns) {
       if (p.score > 0.5) reasons.push(`${p.name}: ${p.reason}`);
     }
-    if (reasons.length === 0) reasons.push('Normal pattern within expected ranges');
+    if (reasons.length === 0)
+      reasons.push("Normal pattern within expected ranges");
     return reasons;
   }
 
@@ -98,7 +120,8 @@ export class RealTimeFraudScorer {
     this.latencies.push(latency);
     if (this.latencies.length > 5000) this.latencies.shift();
     const total = this.stats.totalScored + 1;
-    const avg = ((this.stats.avgLatencyMs * this.stats.totalScored) + latency) / total;
+    const avg =
+      (this.stats.avgLatencyMs * this.stats.totalScored + latency) / total;
     const p99 = percentile(this.latencies, 0.99);
     this.stats = {
       ...this.stats,
