@@ -13,6 +13,9 @@ module.exports = {
     '<rootDir>/src/middleware/__tests__/securityHeaders.test.ts',
     '<rootDir>/src/services/__tests__/usageTrackingService.test.ts',
     '<rootDir>/src/services/__tests__/apiKeyService.test.ts',
+    '<rootDir>/src/__tests__/v2.creditScore.test.ts',
+    '<rootDir>/src/__tests__/v2.fraudDetection.test.ts',
+    '<rootDir>/src/__tests__/v2.integration.test.ts',
   ],
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -22,7 +25,7 @@ module.exports = {
     '!src/database/migrations/**',
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!(uuid)/)'
+    'node_modules/(?!(uuid|@prisma/client)/)'
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
