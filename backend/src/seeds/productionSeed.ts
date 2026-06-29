@@ -34,9 +34,10 @@ export async function seedProduction(prisma: PrismaClient, options: {
 
   // Create admin API key
   if (apiKeyName) {
-    const { randomBytes, createHash } = await import('crypto');
+    const bcrypt = await import('bcrypt');
+    const { randomBytes } = await import('crypto');
     const plainApiKey = randomBytes(32).toString('hex');
-    const keyHash = createHash('sha256').update(plainApiKey).digest('hex');
+    const keyHash = await bcrypt.hash(plainApiKey, 10);
     
     console.log(`[seed:prod] Creating API key: ${apiKeyName}`);
     
@@ -59,7 +60,7 @@ export async function seedProduction(prisma: PrismaClient, options: {
     }
 
     if (process.env.SEED_LOG_SECRETS_LOCAL === 'true') {
-      console.warn(`[seed:prod] Admin API Key (store securely): ${plainApiKey}`);
+      console.warn('[seed:prod] Admin API key is logged only when SEED_LOG_SECRETS_LOCAL=true');
     }
   }
 

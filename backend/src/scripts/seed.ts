@@ -28,7 +28,7 @@ async function main() {
         const options = getSeedOptions();
         validateSeedOptions(options);
         
-        console.log(`Users: ${options.count.users}, API Keys: ${options.count.apiKeys}, Usage: ${options.count.apiUsage}`);
+        console.log(`Seeding development with ${options.count.users} users, ${options.count.apiUsage} usage records`);
         
         await seedDevelopment(prisma, {
           reset: options.reset,
@@ -42,7 +42,7 @@ async function main() {
       case 'seed:test': {
         const options = getSeedOptions();
         
-        console.log(`Users: ${options.count.users}, API Keys: ${options.count.apiKeys}, Usage: ${options.count.apiUsage}`);
+        console.log(`Seeding test with ${options.count.users} users, ${options.count.apiUsage} usage records`);
         
         await seedTest(prisma, {
           reset: true,
@@ -90,12 +90,12 @@ async function main() {
         const apiKeyCount = await prisma.apiKey.count();
         const usageCount = await prisma.apiUsage.count();
         
-        console.log(`Users: ${userCount}, API Keys: ${apiKeyCount}, Usage: ${usageCount}`);
+        console.log(`Users: ${userCount}, Usage records: ${usageCount}`);
         
-        const apiKeysWithUsers = await prisma.apiKey.count({
+        const keysWithUsers = await prisma.apiKey.count({
           where: { userId: { not: null } }
         });
-        console.log(`API Keys with users: ${apiKeysWithUsers}`);
+        console.log(`Keys linked to users: ${keysWithUsers}`);
         
         const orphanedUsage = await prisma.apiUsage.count({
           where: { apiKeyId: null } as any
