@@ -14,7 +14,6 @@ import {
   CardContent,
   Typography,
   Box,
-  CircularProgress,
   Alert,
   useTheme,
   useMediaQuery,
@@ -24,6 +23,7 @@ import {
   getScoreRating,
   SCORE_THRESHOLDS,
 } from "../types/credit-score";
+import { SkeletonChart } from "./SkeletonChart";
 
 export const ScoreHistoryChart: React.FC<ScoreHistoryChartProps> = ({
   data,
@@ -133,25 +133,7 @@ export const ScoreHistoryChart: React.FC<ScoreHistoryChartProps> = ({
   };
 
   if (loading) {
-    return (
-      <Card sx={{ height }}>
-        <Box
-          sx={{
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Box sx={{ textAlign: "center" }}>
-            <CircularProgress size={60} />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              Loading score history...
-            </Typography>
-          </Box>
-        </Box>
-      </Card>
-    );
+    return <SkeletonChart height={height} />;
   }
 
   if (error) {

@@ -1,36 +1,43 @@
-import { Router, Request, Response } from "express";
-import { featureFlagService } from "../services/featureFlagService";
-import { featureFlagMiddleware } from "../middleware/featureFlags";
+import { Router, Request, Response } from 'express';
+import { featureFlagService } from '../services/featureFlagService';
+import { featureFlagMiddleware } from '../middleware/featureFlags';
+import { FeatureFlagCreateInput, FeatureFlagUpdateInput, FlagContext } from '../models/FeatureFlag';
+import { log } from '../utils/logger';
+import { validate } from '../middleware/validation';
 import {
-  FeatureFlagCreateInput,
-  FeatureFlagUpdateInput,
-  FlagContext,
-} from "../models/FeatureFlag";
-import { log } from "../utils/logger";
+  createFeatureFlagBodySchema,
+  updateFeatureFlagBodySchema,
+  evaluateFlagsBodySchema,
+  setOverrideBodySchema,
+  flagKeyParamsSchema,
+} from '../schemas';
 
 export function createFeatureFlagRouter(): Router {
   const router = Router();
 
   router.use(featureFlagMiddleware());
 
-  router.get("/evaluate", (_req: Request, res: Response) => {
+  router.get('/evaluate', (_req: Request, res: Response) => {
     try {
       const results = featureFlagService.evaluateFlags();
       res.json({ success: true, data: results });
     } catch (error) {
-      log.error("Failed to evaluate flags", error as Error);
+      log.error('Failed to evaluate flags', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "FLAG_EVALUATION_FAILED",
-          message: "Failed to evaluate flags",
+          code: 'FLAG_EVALUATION_FAILED',
+          message: 'Failed to evaluate flags',
           timestamp: new Date().toISOString(),
         },
       });
     }
   });
 
-  router.post("/evaluate", (req: Request, res: Response) => {
+  router.post(
+    '/evaluate',
+    validate({ body: evaluateFlagsBodySchema }),
+    (req: Request, res: Response) => {
     try {
       const context: FlagContext = req.body.context || {};
       const keys: string[] = req.body.keys;
@@ -41,37 +48,37 @@ export function createFeatureFlagRouter(): Router {
 
       res.json({ success: true, data: results });
     } catch (error) {
-      log.error("Failed to evaluate flags with context", error as Error);
+      log.error('Failed to evaluate flags with context', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "FLAG_EVALUATION_FAILED",
-          message: "Failed to evaluate flags",
+          code: 'FLAG_EVALUATION_FAILED',
+          message: 'Failed to evaluate flags',
           timestamp: new Date().toISOString(),
         },
       });
     }
   });
 
-  router.get("/audit-log", (req: Request, res: Response) => {
+  router.get('/audit-log', (req: Request, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 100;
       const entries = featureFlagService.getAuditLog(limit);
       res.json({ success: true, data: entries });
     } catch (error) {
-      log.error("Failed to fetch audit log", error as Error);
+      log.error('Failed to fetch audit log', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "AUDIT_LOG_FETCH_FAILED",
-          message: "Failed to fetch audit log",
+          code: 'AUDIT_LOG_FETCH_FAILED',
+          message: 'Failed to fetch audit log',
           timestamp: new Date().toISOString(),
         },
       });
     }
   });
 
-  router.get("/analytics", (_req: Request, res: Response) => {
+  router.get('/analytics', (_req: Request, res: Response) => {
     try {
       const analytics = featureFlagService.getAllAnalytics();
       const metrics = featureFlagService.getSystemMetrics();
@@ -83,26 +90,29 @@ export function createFeatureFlagRouter(): Router {
         },
       });
     } catch (error) {
-      log.error("Failed to fetch analytics", error as Error);
+      log.error('Failed to fetch analytics', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "ANALYTICS_FETCH_FAILED",
-          message: "Failed to fetch analytics",
+          code: 'ANALYTICS_FETCH_FAILED',
+          message: 'Failed to fetch analytics',
           timestamp: new Date().toISOString(),
         },
       });
     }
   });
 
-  router.get("/:key", (req: Request, res: Response) => {
+  router.get(
+    '/:key',
+    validate({ params: flagKeyParamsSchema }),
+    (req: Request, res: Response) => {
     try {
       const flag = featureFlagService.getFlag(req.params.key);
       if (!flag) {
         return res.status(404).json({
           success: false,
           error: {
-            code: "FLAG_NOT_FOUND",
+            code: 'FLAG_NOT_FOUND',
             message: `Flag '${req.params.key}' not found`,
             timestamp: new Date().toISOString(),
           },
@@ -111,48 +121,54 @@ export function createFeatureFlagRouter(): Router {
       const analytics = featureFlagService.getAnalytics(req.params.key);
       res.json({ success: true, data: { flag, analytics } });
     } catch (error) {
-      log.error("Failed to get flag", error as Error);
+      log.error('Failed to get flag', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "FLAG_FETCH_FAILED",
-          message: "Failed to get flag",
+          code: 'FLAG_FETCH_FAILED',
+          message: 'Failed to get flag',
           timestamp: new Date().toISOString(),
         },
       });
     }
   });
 
-  router.put("/:key", (req: Request, res: Response) => {
+  router.put(
+    '/:key',
+    validate({ params: flagKeyParamsSchema, body: updateFeatureFlagBodySchema }),
+    (req: Request, res: Response) => {
     try {
       const input: FeatureFlagUpdateInput = req.body;
       const flag = featureFlagService.updateFlag(req.params.key, input);
       res.json({ success: true, data: flag });
     } catch (error) {
       const message = (error as Error).message;
-      if (message.includes("not found")) {
+      if (message.includes('not found')) {
         return res.status(404).json({
           success: false,
           error: {
-            code: "FLAG_NOT_FOUND",
+            code: 'FLAG_NOT_FOUND',
             message,
             timestamp: new Date().toISOString(),
           },
         });
       }
-      log.error("Failed to update flag", error as Error);
+      log.error('Failed to update flag', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "FLAG_UPDATE_FAILED",
-          message: "Failed to update flag",
+          code: 'FLAG_UPDATE_FAILED',
+          message: 'Failed to update flag',
           timestamp: new Date().toISOString(),
         },
       });
     }
   });
 
-  router.delete("/:key", (req: Request, res: Response) => {
+  router.delete(
+    '/:key',
+    validate({ params: flagKeyParamsSchema }),
+    (req: Request, res: Response) => {
     try {
       featureFlagService.deleteFlag(req.params.key);
       res.json({
@@ -161,57 +177,63 @@ export function createFeatureFlagRouter(): Router {
       });
     } catch (error) {
       const message = (error as Error).message;
-      if (message.includes("not found")) {
+      if (message.includes('not found')) {
         return res.status(404).json({
           success: false,
           error: {
-            code: "FLAG_NOT_FOUND",
+            code: 'FLAG_NOT_FOUND',
             message,
             timestamp: new Date().toISOString(),
           },
         });
       }
-      log.error("Failed to delete flag", error as Error);
+      log.error('Failed to delete flag', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "FLAG_DELETE_FAILED",
-          message: "Failed to delete flag",
+          code: 'FLAG_DELETE_FAILED',
+          message: 'Failed to delete flag',
           timestamp: new Date().toISOString(),
         },
       });
     }
   });
 
-  router.post("/:key/toggle", (req: Request, res: Response) => {
+  router.post(
+    '/:key/toggle',
+    validate({ params: flagKeyParamsSchema }),
+    (req: Request, res: Response) => {
     try {
       const flag = featureFlagService.toggleFlag(req.params.key);
       res.json({ success: true, data: flag });
     } catch (error) {
       const message = (error as Error).message;
-      if (message.includes("not found")) {
+      if (message.includes('not found')) {
         return res.status(404).json({
           success: false,
           error: {
-            code: "FLAG_NOT_FOUND",
+            code: 'FLAG_NOT_FOUND',
             message,
             timestamp: new Date().toISOString(),
           },
         });
       }
-      log.error("Failed to toggle flag", error as Error);
+      log.error('Failed to toggle flag', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "FLAG_TOGGLE_FAILED",
-          message: "Failed to toggle flag",
+          code: 'FLAG_TOGGLE_FAILED',
+          message: 'Failed to toggle flag',
           timestamp: new Date().toISOString(),
         },
       });
     }
   });
 
-  router.post("/:key/override", (req: Request, res: Response) => {
+  router.post(
+    '/:key/override',
+    validate({ params: flagKeyParamsSchema, body: setOverrideBodySchema }),
+    (req: Request, res: Response) => {
     try {
       const { value } = req.body;
       featureFlagService.setOverride(req.params.key, value);
@@ -221,29 +243,32 @@ export function createFeatureFlagRouter(): Router {
       });
     } catch (error) {
       const message = (error as Error).message;
-      if (message.includes("not found")) {
+      if (message.includes('not found')) {
         return res.status(404).json({
           success: false,
           error: {
-            code: "FLAG_NOT_FOUND",
+            code: 'FLAG_NOT_FOUND',
             message,
             timestamp: new Date().toISOString(),
           },
         });
       }
-      log.error("Failed to set override", error as Error);
+      log.error('Failed to set override', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "OVERRIDE_FAILED",
-          message: "Failed to set override",
+          code: 'OVERRIDE_FAILED',
+          message: 'Failed to set override',
           timestamp: new Date().toISOString(),
         },
       });
     }
   });
 
-  router.delete("/:key/override", (req: Request, res: Response) => {
+  router.delete(
+    '/:key/override',
+    validate({ params: flagKeyParamsSchema }),
+    (req: Request, res: Response) => {
     try {
       featureFlagService.clearOverride(req.params.key);
       res.json({
@@ -251,58 +276,61 @@ export function createFeatureFlagRouter(): Router {
         data: { message: `Override cleared for '${req.params.key}'` },
       });
     } catch (error) {
-      log.error("Failed to clear override", error as Error);
+      log.error('Failed to clear override', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "OVERRIDE_CLEAR_FAILED",
-          message: "Failed to clear override",
+          code: 'OVERRIDE_CLEAR_FAILED',
+          message: 'Failed to clear override',
           timestamp: new Date().toISOString(),
         },
       });
     }
   });
 
-  router.get("/", (_req: Request, res: Response) => {
+  router.get('/', (_req: Request, res: Response) => {
     try {
       const flags = featureFlagService.getAllFlags();
       res.json({ success: true, data: flags });
     } catch (error) {
-      log.error("Failed to list flags", error as Error);
+      log.error('Failed to list flags', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "FLAGS_FETCH_FAILED",
-          message: "Failed to list flags",
+          code: 'FLAGS_FETCH_FAILED',
+          message: 'Failed to list flags',
           timestamp: new Date().toISOString(),
         },
       });
     }
   });
 
-  router.post("/", (req: Request, res: Response) => {
+  router.post(
+    '/',
+    validate({ body: createFeatureFlagBodySchema }),
+    (req: Request, res: Response) => {
     try {
       const input: FeatureFlagCreateInput = req.body;
       const flag = featureFlagService.createFlag(input);
       res.status(201).json({ success: true, data: flag });
     } catch (error) {
       const message = (error as Error).message;
-      if (message.includes("already exists")) {
+      if (message.includes('already exists')) {
         return res.status(409).json({
           success: false,
           error: {
-            code: "FLAG_ALREADY_EXISTS",
+            code: 'FLAG_ALREADY_EXISTS',
             message,
             timestamp: new Date().toISOString(),
           },
         });
       }
-      log.error("Failed to create flag", error as Error);
+      log.error('Failed to create flag', error as Error);
       res.status(500).json({
         success: false,
         error: {
-          code: "FLAG_CREATE_FAILED",
-          message: "Failed to create flag",
+          code: 'FLAG_CREATE_FAILED',
+          message: 'Failed to create flag',
           timestamp: new Date().toISOString(),
         },
       });

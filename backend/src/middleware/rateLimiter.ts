@@ -1,4 +1,10 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
+import { getRateLimitConfig, RATE_LIMIT_WINDOWS } from '../config/rateLimit';
+import {
+  RateLimitInfo,
+  sendRateLimitExceeded,
+  setRateLimitHeaders,
+} from '../utils/rateLimitUtils';
 
 interface RateLimitOptions {
   windowMs: number;
@@ -18,17 +24,18 @@ interface RateLimitStore {
 export class RateLimiter {
   private store: RateLimitStore = {};
   private options: RateLimitOptions;
+  private cleanupTimer: ReturnType<typeof setInterval>;
 
   constructor(options: RateLimitOptions) {
     this.options = {
-      message: "Too many requests from this IP, please try again later.",
+      message: 'Too many requests from this IP, please try again later.',
       standardHeaders: true,
-      legacyHeaders: false,
+      legacyHeaders: true,
       ...options,
     };
 
-    // Clean up expired entries every minute
-    setInterval(() => this.cleanup(), 60000);
+    this.cleanupTimer = setInterval(() => this.cleanup(), 60000);
+    this.cleanupTimer.unref?.();
   }
 
   private cleanup() {
@@ -41,7 +48,23 @@ export class RateLimiter {
   }
 
   private getKey(req: Request): string {
-    return req.ip || req.connection.remoteAddress || "unknown";
+    return req.ip || req.socket.remoteAddress || 'unknown';
+  }
+
+  private buildInfo(currentCount: number, resetTime: number): RateLimitInfo {
+    const remaining = Math.max(0, this.options.max - currentCount);
+    const retryAfter =
+      currentCount > this.options.max
+        ? Math.max(1, Math.ceil((resetTime - Date.now()) / 1000))
+        : undefined;
+
+    return {
+      limit: this.options.max,
+      remaining,
+      resetTime: new Date(resetTime),
+      retryAfter,
+      scope: 'ip',
+    };
   }
 
   middleware() {
@@ -60,33 +83,14 @@ export class RateLimiter {
       }
 
       const current = this.store[key];
-      const remaining = Math.max(0, this.options.max - current.count);
+      const info = this.buildInfo(current.count, current.resetTime);
 
-      if (this.options.standardHeaders) {
-        res.set({
-          "RateLimit-Limit": this.options.max.toString(),
-          "RateLimit-Remaining": remaining.toString(),
-          "RateLimit-Reset": new Date(current.resetTime).toISOString(),
-        });
-      }
-
-      if (this.options.legacyHeaders) {
-        res.set({
-          "X-RateLimit-Limit": this.options.max.toString(),
-          "X-RateLimit-Remaining": remaining.toString(),
-          "X-RateLimit-Reset": Math.ceil(current.resetTime / 1000).toString(),
-        });
+      if (this.options.standardHeaders || this.options.legacyHeaders) {
+        setRateLimitHeaders(res, info);
       }
 
       if (current.count > this.options.max) {
-        return res.status(429).json({
-          success: false,
-          error: {
-            code: "RATE_LIMIT_EXCEEDED",
-            message: this.options.message,
-            timestamp: new Date().toISOString(),
-          },
-        });
+        return sendRateLimitExceeded(res, info, this.options.message);
       }
 
       next();
@@ -94,16 +98,18 @@ export class RateLimiter {
   }
 }
 
-// Pre-configured rate limiters
+const config = getRateLimitConfig();
+
 export const generalRateLimit = new RateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: "Too many requests from this IP, please try again later.",
+  windowMs: config.defaultIpLimit.windowMs,
+  max: config.defaultIpLimit.max,
+  message: 'Too many requests from this IP, please try again later.',
 });
 
 export const createAccountRateLimit = new RateLimiter({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5, // limit each IP to 5 account creations per hour
-  message:
-    "Too many account creation attempts from this IP, please try again later.",
+  windowMs: RATE_LIMIT_WINDOWS.hour,
+  max: 5,
+  message: 'Too many account creation attempts from this IP, please try again later.',
 });
+
+export { getDistributedRateLimiter, createDistributedRateLimiter } from './distributedRateLimiter';

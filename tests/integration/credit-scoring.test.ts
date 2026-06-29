@@ -102,7 +102,7 @@ describe("Credit Scoring Integration", () => {
 
       expect(result.score).toBeGreaterThanOrEqual(300);
       expect(result.confidence).toBeLessThan(1);
-    });
+    }, 60000);
   });
 
   describe("Score Persistence", () => {

@@ -1,5 +1,5 @@
-import { PrismaClient } from "@prisma/client";
-import { Request } from "express";
+import { PrismaClient } from '@prisma/client';
+import { Request } from 'express';
 
 export class UsageTrackingService {
   constructor(private prisma: PrismaClient) {}
@@ -26,7 +26,7 @@ export class UsageTrackingService {
         responseSize: data.responseSize,
         ip: data.ip,
         userAgent: data.userAgent,
-      },
+      }
     });
   }
 
@@ -40,7 +40,7 @@ export class UsageTrackingService {
     apiKeyId: string,
     responseTime: number,
     statusCode: number,
-    responseSize: number,
+    responseSize: number
   ) {
     return {
       apiKeyId,
@@ -48,10 +48,10 @@ export class UsageTrackingService {
       method: req.method,
       statusCode,
       responseTime,
-      requestSize: parseInt(req.headers["content-length"] || "0"),
+      requestSize: parseInt(req.headers['content-length'] || '0'),
       responseSize,
-      ip: req.ip || req.socket.remoteAddress || "unknown",
-      userAgent: req.headers["user-agent"],
+      ip: req.ip || req.socket.remoteAddress || 'unknown',
+      userAgent: req.headers['user-agent'],
     };
   }
 
@@ -75,13 +75,10 @@ export class UsageTrackingService {
         statusDistribution,
       ] = await Promise.all([
         this.prisma.apiUsage.count({ where: whereClause }),
-        this.prisma.apiUsage
-          .findMany({
-            where: whereClause,
-            select: { apiKeyId: true },
-            distinct: ["apiKeyId"],
-          })
-          .then((results) => results.length),
+        this.prisma.apiUsage.groupBy({
+          by: ['apiKeyId'],
+          where: whereClause,
+        }).then(results => results.length),
         this.prisma.apiUsage.aggregate({
           where: whereClause,
           _avg: { responseTime: true },
@@ -90,11 +87,11 @@ export class UsageTrackingService {
           where: { ...whereClause, statusCode: { lt: 400 } },
         }),
         this.prisma.apiUsage.groupBy({
-          by: ["endpoint"],
+          by: ['endpoint'],
           where: whereClause,
           _count: true,
           _avg: { responseTime: true },
-          orderBy: { _count: { endpoint: "desc" } },
+          orderBy: { _count: { endpoint: 'desc' } },
           take: 10,
         }),
         this.prisma.$queryRaw`
@@ -110,14 +107,13 @@ export class UsageTrackingService {
           LIMIT 24
         `,
         this.prisma.apiUsage.groupBy({
-          by: ["statusCode"],
+          by: ['statusCode'],
           where: whereClause,
           _count: true,
         }),
       ]);
 
-      const successRate =
-        totalRequests > 0 ? (successCount / totalRequests) * 100 : 0;
+      const successRate = totalRequests > 0 ? (successCount / totalRequests) * 100 : 0;
       const errorRate = 100 - successRate;
 
       // Get tier distribution
@@ -138,27 +134,22 @@ export class UsageTrackingService {
           hour: item.hour,
           requests: Number(item.requests),
         })),
-        statusDistribution: statusDistribution.reduce(
-          (acc: any, item: any) => {
-            acc[item.statusCode.toString()] = item._count;
-            return acc;
-          },
-          {} as Record<string, number>,
-        ),
+        statusDistribution: statusDistribution.reduce((acc: any, item: any) => {
+          acc[item.statusCode.toString()] = item._count;
+          return acc;
+        }, {} as Record<string, number>),
         tierDistribution,
       };
     } catch (error: any) {
-      console.error("Failed to get analytics", error);
-      throw new Error("Failed to get analytics");
+      console.error('Failed to get analytics', error);
+      throw new Error('Failed to get analytics');
     }
   }
 
   /**
    * Get tier distribution for usage
    */
-  private async getTierDistribution(
-    whereClause: any,
-  ): Promise<Record<string, number>> {
+  private async getTierDistribution(whereClause: any): Promise<Record<string, number>> {
     try {
       const result = await this.prisma.$queryRaw`
         SELECT 
@@ -173,15 +164,12 @@ export class UsageTrackingService {
         GROUP BY ak.tier
       `;
 
-      return (result as any[]).reduce(
-        (acc, item) => {
-          acc[item.tier] = Number(item.count);
-          return acc;
-        },
-        {} as Record<string, number>,
-      );
+      return (result as any[]).reduce((acc, item) => {
+        acc[item.tier] = Number(item.count);
+        return acc;
+      }, {} as Record<string, number>);
     } catch (error: any) {
-      console.error("Failed to get tier distribution", error);
+      console.error('Failed to get tier distribution', error);
       return {};
     }
   }
@@ -189,11 +177,7 @@ export class UsageTrackingService {
   /**
    * Get usage for a specific API key
    */
-  async getApiKeyUsage(
-    apiKeyId: string,
-    startDate?: Date,
-    endDate?: Date,
-  ): Promise<{
+  async getApiKeyUsage(apiKeyId: string, startDate?: Date, endDate?: Date): Promise<{
     totalRequests: number;
     averageResponseTime: number;
     successRate: number;
@@ -209,20 +193,14 @@ export class UsageTrackingService {
   }> {
     try {
       const whereClause: any = { apiKeyId, deletedAt: null };
-
+      
       if (startDate || endDate) {
         whereClause.timestamp = {};
         if (startDate) whereClause.timestamp.gte = startDate;
         if (endDate) whereClause.timestamp.lte = endDate;
       }
 
-      const [
-        totalRequests,
-        avgResponseTime,
-        successCount,
-        endpointBreakdown,
-        dailyUsage,
-      ] = await Promise.all([
+      const [totalRequests, avgResponseTime, successCount, endpointBreakdown, dailyUsage] = await Promise.all([
         this.prisma.apiUsage.count({ where: whereClause }),
         this.prisma.apiUsage.aggregate({
           where: whereClause,
@@ -232,11 +210,11 @@ export class UsageTrackingService {
           where: { ...whereClause, statusCode: { lt: 400 } },
         }),
         this.prisma.apiUsage.groupBy({
-          by: ["endpoint"],
+          by: ['endpoint'],
           where: whereClause,
           _count: true,
           _avg: { responseTime: true },
-          orderBy: { _count: { endpoint: "desc" } },
+          orderBy: { _count: { endpoint: 'desc' } },
         }),
         this.prisma.$queryRaw`
           SELECT 
@@ -251,8 +229,7 @@ export class UsageTrackingService {
         `,
       ]);
 
-      const successRate =
-        totalRequests > 0 ? (successCount / totalRequests) * 100 : 0;
+      const successRate = totalRequests > 0 ? (successCount / totalRequests) * 100 : 0;
 
       return {
         totalRequests,
@@ -269,8 +246,8 @@ export class UsageTrackingService {
         })),
       };
     } catch (error: any) {
-      console.error("Failed to get API key usage", error);
-      throw new Error("Failed to get API key usage");
+      console.error('Failed to get API key usage', error);
+      throw new Error('Failed to get API key usage');
     }
   }
 
@@ -294,6 +271,7 @@ export class UsageTrackingService {
         requestsLastHour,
         activeApiKeys,
         recentMetrics,
+        errorCount,
       ] = await Promise.all([
         this.prisma.apiUsage.count({
           where: {
@@ -307,16 +285,13 @@ export class UsageTrackingService {
             deletedAt: null,
           },
         }),
-        this.prisma.apiUsage
-          .findMany({
-            where: {
-              timestamp: { gte: oneMinuteAgo },
-              deletedAt: null,
-            },
-            select: { apiKeyId: true },
-            distinct: ["apiKeyId"],
-          })
-          .then((results) => results.length),
+        this.prisma.apiUsage.groupBy({
+          by: ['apiKeyId'],
+          where: {
+            timestamp: { gte: oneMinuteAgo },
+            deletedAt: null,
+          },
+        }).then(results => results.length),
         this.prisma.apiUsage.aggregate({
           where: {
             timestamp: { gte: oneMinuteAgo },
@@ -325,20 +300,16 @@ export class UsageTrackingService {
           _avg: { responseTime: true },
           _count: true,
         }),
+        this.prisma.apiUsage.count({
+          where: {
+            timestamp: { gte: oneMinuteAgo },
+            statusCode: { gte: 400 },
+            deletedAt: null,
+          },
+        }),
       ]);
 
-      const errorCount = await this.prisma.apiUsage.count({
-        where: {
-          timestamp: { gte: oneMinuteAgo },
-          statusCode: { gte: 400 },
-          deletedAt: null,
-        },
-      });
-
-      const errorRate =
-        recentMetrics._count > 0
-          ? (errorCount / recentMetrics._count) * 100
-          : 0;
+      const errorRate = recentMetrics._count > 0 ? (errorCount / recentMetrics._count) * 100 : 0;
 
       return {
         requestsLastMinute,
@@ -348,8 +319,8 @@ export class UsageTrackingService {
         errorRate,
       };
     } catch (error: any) {
-      console.error("Failed to get real-time metrics", error);
-      throw new Error("Failed to get real-time metrics");
+      console.error('Failed to get real-time metrics', error);
+      throw new Error('Failed to get real-time metrics');
     }
   }
 
@@ -369,35 +340,30 @@ export class UsageTrackingService {
         },
       });
 
-      console.info("Cleaned up old usage records", {
+      console.info('Cleaned up old usage records', {
         count: result.count,
         cutoffDate,
       });
 
       return result.count;
     } catch (error: any) {
-      console.error("Failed to cleanup old usage records", error);
-      throw new Error("Failed to cleanup old usage records");
+      console.error('Failed to cleanup old usage records', error);
+      throw new Error('Failed to cleanup old usage records');
     }
   }
 
   /**
    * Export usage data for billing purposes
    */
-  async exportUsageData(
-    startDate: Date,
-    endDate: Date,
-  ): Promise<
-    Array<{
-      apiKeyId: string;
-      apiKeyName: string;
-      tier: string;
-      totalRequests: number;
-      billableRequests: number;
-      periodStart: Date;
-      periodEnd: Date;
-    }>
-  > {
+  async exportUsageData(startDate: Date, endDate: Date): Promise<Array<{
+    apiKeyId: string;
+    apiKeyName: string;
+    tier: string;
+    totalRequests: number;
+    billableRequests: number;
+    periodStart: Date;
+    periodEnd: Date;
+  }>> {
     try {
       const usageData = await this.prisma.$queryRaw`
         SELECT 
@@ -419,7 +385,7 @@ export class UsageTrackingService {
         ORDER BY totalRequests DESC
       `;
 
-      return (usageData as any[]).map((item) => ({
+      return (usageData as any[]).map(item => ({
         apiKeyId: item.apiKeyId,
         apiKeyName: item.apiKeyName,
         tier: item.tier,
@@ -429,8 +395,8 @@ export class UsageTrackingService {
         periodEnd: new Date(item.periodEnd),
       }));
     } catch (error: any) {
-      console.error("Failed to export usage data", error);
-      throw new Error("Failed to export usage data");
+      console.error('Failed to export usage data', error);
+      throw new Error('Failed to export usage data');
     }
   }
 }

@@ -8,6 +8,7 @@ import {
   Legend
 } from 'recharts';
 import { Paper, Typography, Box, useTheme } from '@mui/material';
+import ChartAccessibleSummary from '../a11y/ChartAccessibleSummary';
 
 interface DistributionChartProps {
   data: Record<string, number>;
@@ -21,10 +22,22 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({ data, titl
   const chartData = Object.entries(data).map(([name, value]) => ({ name, value }));
 
   return (
-    <Paper sx={{ p: 3, borderRadius: 2, height: 400 }}>
-      <Typography variant="h6" gutterBottom color="primary" sx={{ fontWeight: 600 }}>
+    <Paper
+      component="section"
+      role="region"
+      aria-label={title}
+      sx={{ p: 3, borderRadius: 2, height: 400 }}
+    >
+      <Typography variant="h6" component="h3" gutterBottom color="primary" sx={{ fontWeight: 600 }}>
         {title}
       </Typography>
+      <ChartAccessibleSummary
+        title={title}
+        rows={chartData.map((entry) => ({
+          label: entry.name,
+          value: entry.value,
+        }))}
+      />
       <Box sx={{ width: '100%', height: 320 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

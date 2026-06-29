@@ -338,7 +338,6 @@ export class AdvancedRateLimiter {
         }
 
         next();
-        next();
       } catch (error) {
         log.error("Rate limiter middleware error", error as Error);
         next();
