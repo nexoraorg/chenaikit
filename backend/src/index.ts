@@ -25,6 +25,9 @@ import v1Router from './routes/v1';
 import v2Router from './routes/v2';
 import { API_VERSIONS, LATEST_VERSION, DEFAULT_VERSION } from './utils/versionUtils';
 
+import accountRoutes from './routes/accounts';
+import fileRoutes from './routes/files';
+
 import { PrismaClient } from '@prisma/client';
 import { FileStorageService } from './services/fileStorageService';
 import { ApiKeyService } from './services/apiKeyService';
@@ -47,6 +50,21 @@ app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
 // Health checks remain unversioned and must be matched before the version dispatcher.
 app.use('/api', healthRouter);
+// Versioning middleware and routers (from main)
+app.use(detectVersion);
+app.use(versionHeaders);
+app.use('/api', createVersionRouter({
+  [API_VERSIONS.v1]: v1Router,
+  [API_VERSIONS.v2]: v2Router,
+}, DEFAULT_VERSION, LATEST_VERSION));
+
+// Domain-specific routes (from mj1)
+app.use('/api/auth', authRoutes);
+app.use('/api/accounts', accountRoutes);
+app.use('/api/files', fileRoutes);
+
+// Optional analytics route (commented out for now)
+// app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/files', fileRoutes);
