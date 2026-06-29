@@ -37,7 +37,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     const context: ErrorContextPayload = {
       type: 'rendering',
       boundary: this.props.name ?? 'ErrorBoundary',
-      componentStack: errorInfo.componentStack,
+      componentStack: errorInfo.componentStack ?? undefined,
     };
 
     void logError(error, context).then((report) => {
