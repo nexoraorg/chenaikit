@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, Suspense, lazy, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link as RouterLink } from 'react-router-dom';
 import { Box, Button, Typography, Tabs, Tab } from '@mui/material';
 import { Logout as LogoutIcon, AccountCircle } from '@mui/icons-material';
@@ -9,10 +9,12 @@ import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { LoadingProvider } from './contexts/LoadingContext';
+import { LoadingProvider, useLoading } from './contexts/LoadingContext';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import ToastContainer from './components/ToastContainer';
 import ThemeToggle from './components/ThemeToggle';
+import useToast from './hooks/useToast';
+import { requestSettingsApi } from './utils/settingsApi';
 import './components/FormValidation.css';
 import './styles/accessibility.css';
 
@@ -246,140 +248,240 @@ const DashboardShell: React.FC = () => {
   );
 };
 
+const AppRoutes: React.FC = () => {
+  const { user: authUser } = useAuth();
+  const { startLoading, stopLoading } = useLoading();
+  const toast = useToast();
+
+  const runSettingsRequest = useCallback(
+    async <T,>(request: () => Promise<T>, successMessage?: string): Promise<T> => {
+      startLoading();
+      try {
+        const result = await request();
+        if (successMessage) {
+          toast.success(successMessage);
+        }
+        return result;
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Request failed.';
+        toast.error(message);
+        throw error;
+      } finally {
+        stopLoading();
+      }
+    },
+    [startLoading, stopLoading, toast]
+  );
+
+  const settingsUser = authUser
+    ? {
+        id: authUser.id,
+        email: authUser.email,
+        name: authUser.email.split('@')[0],
+        role: authUser.role,
+        language: 'en',
+        theme: 'light' as const,
+      }
+    : {
+        id: 1,
+        email: 'user@example.com',
+        name: 'Demo User',
+        role: 'user',
+        language: 'en',
+        theme: 'light' as const,
+      };
+
+  const extractApiKey = (payload: unknown): string | undefined => {
+    if (!payload || typeof payload !== 'object') {
+      return undefined;
+    }
+
+    const record = payload as Record<string, unknown>;
+    if (typeof record.key === 'string') return record.key;
+    if (typeof record.plainKey === 'string') return record.plainKey;
+    if (record.data && typeof record.data === 'object') {
+      const data = record.data as Record<string, unknown>;
+      if (typeof data.key === 'string') return data.key;
+      if (typeof data.plainKey === 'string') return data.plainKey;
+    }
+
+    return undefined;
+  };
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <DashboardShell />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile
+                user={{
+                  id: 1,
+                  email: 'user@example.com',
+                  name: 'Demo User',
+                  role: 'user'
+                }}
+                stats={{
+                  transactions: 156,
+                  score: 720,
+                  activeDays: 45
+                }}
+                activity={[]}
+                onUpdateProfile={async () => {
+                  // TODO: Integrate with backend API
+                }}
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings
+                user={settingsUser}
+                notificationPreferences={{
+                  emailNotifications: true,
+                  pushNotifications: true,
+                  transactionAlerts: true,
+                  scoreChanges: true,
+                  marketingEmails: false,
+                  securityAlerts: true,
+                  weeklyReport: false,
+                  priceAlerts: true
+                }}
+                securitySettings={{
+                  twoFactorEnabled: false,
+                  sessions: [
+                    {
+                      id: '1',
+                      device: 'Chrome on macOS',
+                      location: 'San Francisco, CA',
+                      lastActive: 'Just now',
+                      current: true
+                    }
+                  ],
+                  loginHistory: [
+                    {
+                      id: '1',
+                      date: '2024-01-15 10:30 AM',
+                      device: 'Chrome on macOS',
+                      location: 'San Francisco, CA',
+                      status: 'success'
+                    }
+                  ]
+                }}
+                apiKeys={[]}
+                onUpdateAccount={async (data) => {
+                  await runSettingsRequest(
+                    () => requestSettingsApi({ method: 'put', url: '/api/v2/account/profile', data }),
+                    'Profile updated successfully.'
+                  );
+                }}
+                onDeleteAccount={async () => {
+                  await runSettingsRequest(
+                    () => requestSettingsApi({ method: 'delete', url: '/api/v2/account/profile' }),
+                    'Account deleted successfully.'
+                  );
+                }}
+                onUpdateNotificationPreferences={async (data) => {
+                  await runSettingsRequest(
+                    () => requestSettingsApi({ method: 'put', url: '/api/v2/account/notifications', data }),
+                    'Notification preferences updated.'
+                  );
+                }}
+                onChangePassword={async (currentPassword, newPassword) => {
+                  await runSettingsRequest(
+                    () => requestSettingsApi({ method: 'put', url: '/api/v2/account/password', data: { currentPassword, newPassword } }),
+                    'Password changed successfully.'
+                  );
+                }}
+                onEnableTwoFactor={async () => {
+                  await runSettingsRequest(
+                    () => requestSettingsApi({ method: 'post', url: '/api/v2/account/two-factor/enable' }),
+                    'Two-factor authentication enabled.'
+                  );
+                }}
+                onDisableTwoFactor={async () => {
+                  await runSettingsRequest(
+                    () => requestSettingsApi({ method: 'post', url: '/api/v2/account/two-factor/disable' }),
+                    'Two-factor authentication disabled.'
+                  );
+                }}
+                onRevokeSession={async (sessionId) => {
+                  await runSettingsRequest(
+                    () => requestSettingsApi({ method: 'delete', url: `/api/v2/account/sessions/${sessionId}` }),
+                    'Session revoked.'
+                  );
+                }}
+                onRevokeAllSessions={async () => {
+                  await runSettingsRequest(
+                    () => requestSettingsApi({ method: 'delete', url: '/api/v2/account/sessions' }),
+                    'All sessions revoked.'
+                  );
+                }}
+                onCreateApiKey={async (name, permissions) => {
+                  const response = await runSettingsRequest(
+                    () => requestSettingsApi({ method: 'post', url: '/api/v2/account/api-keys', data: { name, permissions } }),
+                    'API key created.'
+                  );
+                  const key = extractApiKey(response);
+                  if (!key) {
+                    throw new Error('The server did not return a new API key.');
+                  }
+                  return { key };
+                }}
+                onDeleteApiKey={async (id) => {
+                  await runSettingsRequest(
+                    () => requestSettingsApi({ method: 'delete', url: `/api/v2/account/api-keys/${id}` }),
+                    'API key deleted.'
+                  );
+                }}
+                onRegenerateApiKey={async (id) => {
+                  const response = await runSettingsRequest(
+                    () => requestSettingsApi({ method: 'put', url: `/api/v2/account/api-keys/${id}/regenerate` }),
+                    'API key regenerated.'
+                  );
+                  const key = extractApiKey(response);
+                  if (!key) {
+                    throw new Error('The server did not return a regenerated API key.');
+                  }
+                  return { key };
+                }}
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
 const App: React.FC = () => {
   return (
     <ThemeProvider>
       <LoadingProvider>
-      <ToastProvider>
-        <AuthProvider>
-
-        <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route 
-            path="/" 
-            element={
-              <ProtectedRoute>
-                <DashboardShell />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/profile" 
-            element={
-              <ProtectedRoute>
-                <Profile 
-                  user={{
-                    id: 1,
-                    email: 'user@example.com',
-                    name: 'Demo User',
-                    role: 'user'
-                  }}
-                  stats={{
-                    transactions: 156,
-                    score: 720,
-                    activeDays: 45
-                  }}
-                  activity={[]}
-                  onUpdateProfile={async () => {
-                    // TODO: Integrate with backend API
-                  }}
-                />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/settings" 
-            element={
-              <ProtectedRoute>
-                <Settings 
-                  user={{
-                    id: 1,
-                    email: 'user@example.com',
-                    name: 'Demo User',
-                    role: 'user',
-                    language: 'en',
-                    theme: 'light'
-                  }}
-                  notificationPreferences={{
-                    emailNotifications: true,
-                    pushNotifications: true,
-                    transactionAlerts: true,
-                    scoreChanges: true,
-                    marketingEmails: false,
-                    securityAlerts: true,
-                    weeklyReport: false,
-                    priceAlerts: true
-                  }}
-                  securitySettings={{
-                    twoFactorEnabled: false,
-                    sessions: [
-                      {
-                        id: '1',
-                        device: 'Chrome on macOS',
-                        location: 'San Francisco, CA',
-                        lastActive: 'Just now',
-                        current: true
-                      }
-                    ],
-                    loginHistory: [
-                      {
-                        id: '1',
-                        date: '2024-01-15 10:30 AM',
-                        device: 'Chrome on macOS',
-                        location: 'San Francisco, CA',
-                        status: 'success'
-                      }
-                    ]
-                  }}
-                  apiKeys={[]}
-                  onUpdateAccount={async () => {
-                    // TODO: Integrate with backend API
-                  }}
-                  onDeleteAccount={async () => {
-                    // TODO: Integrate with backend API
-                  }}
-                  onUpdateNotificationPreferences={async () => {
-                    // TODO: Integrate with backend API
-                  }}
-                  onChangePassword={async () => {
-                    // TODO: Integrate with backend API
-                  }}
-                  onEnableTwoFactor={async () => {
-                    // TODO: Integrate with backend API
-                  }}
-                  onDisableTwoFactor={async () => {
-                    // TODO: Integrate with backend API
-                  }}
-                  onRevokeSession={async () => {
-                    // TODO: Integrate with backend API
-                  }}
-                  onRevokeAllSessions={async () => {
-                    // TODO: Integrate with backend API
-                  }}
-                  onCreateApiKey={async () => {
-                    return { key: 'ck_' + Math.random().toString(36).substring(2) };
-                  }}
-                  onDeleteApiKey={async () => {
-                    // TODO: Integrate with backend API
-                  }}
-                  onRegenerateApiKey={async () => {
-                    return { key: 'ck_' + Math.random().toString(36).substring(2) };
-                  }}
-                />
-              </ProtectedRoute>
-            } 
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-        </BrowserRouter>
-        <ToastContainer />
-      </AuthProvider>
-      </ToastProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <AppRoutes />
+            <ToastContainer />
+          </AuthProvider>
+        </ToastProvider>
       </LoadingProvider>
     </ThemeProvider>
   );
