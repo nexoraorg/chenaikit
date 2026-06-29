@@ -152,7 +152,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
         <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
           {status === 'idle' && onUpload && (
             <Tooltip title="Upload file">
-              <IconButton size="small" onClick={() => onUpload(id)} color="primary">
+              <IconButton size="small" onClick={() => onUpload(id)} color="primary" aria-label={`Upload ${name}`}>
                 <UploadIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -160,7 +160,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
           {status === 'uploading' && onCancel && (
             <Tooltip title="Cancel upload">
-              <IconButton size="small" onClick={() => onCancel(id)} color="warning">
+              <IconButton size="small" onClick={() => onCancel(id)} color="warning" aria-label={`Cancel upload of ${name}`}>
                 <CancelIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -177,7 +177,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
           )}
 
           <Tooltip title="Remove item">
-            <IconButton size="small" onClick={() => onRemove(id)} color="default">
+            <IconButton size="small" onClick={() => onRemove(id)} color="default" aria-label={`Remove ${name}`}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </Tooltip>

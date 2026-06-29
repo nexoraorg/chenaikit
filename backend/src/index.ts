@@ -29,6 +29,9 @@ import { createTieredRateLimiter } from './middleware/advancedRateLimiter';
 import Redis from 'ioredis';
 import { applySecurityMiddleware } from './middleware/security';
 import { loadVaultSecrets } from './config/secrets';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { getDistributedRateLimiter } from './middleware/distributedRateLimiter';
+import { getHealthService } from './services/healthService';
 import { createQueryLogger, queryLoggerMiddleware } from './middleware/queryLogger';
 import { createQueryOptimizer } from './services/queryOptimizer';
 import { startCacheCleanup } from './utils/queryUtils';
@@ -39,6 +42,7 @@ applySecurityMiddleware(app);
 app.use(express.json({ limit: '10mb' }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
+app.use('/api', getDistributedRateLimiter().middleware());
 // Health checks remain unversioned and must be matched before the version dispatcher.
 app.use('/api', healthRouter);
 
@@ -114,6 +118,8 @@ export const startServer = async (): Promise<void> => {
   startCacheCleanup(60000); // Clean up expired cache entries every minute
 
   // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
+  const healthService = getHealthService(prisma);
+  healthService.startMonitoring();
 
   const PORT = process.env.PORT || 5000;
 
@@ -131,6 +137,7 @@ export const startServer = async (): Promise<void> => {
 
   const shutdown = async () => {
     try {
+      healthService.stopMonitoring();
       await shutdownMonitoring();
       await redis.quit();
       await prisma.$disconnect();

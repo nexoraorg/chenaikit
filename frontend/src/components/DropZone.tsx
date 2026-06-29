@@ -112,9 +112,21 @@ export const DropZone: React.FC<DropZoneProps> = ({
     disabled,
   });
 
+  const statusMessage = isDragReject
+    ? 'Unsupported file type or file is too large'
+    : isDragActive
+    ? 'Drop files here'
+    : 'Drag and drop files here, or click to browse';
+
+  const showInstructions = !isDragReject && !isDragActive;
+
   return (
     <Box
-      {...getRootProps()}
+      {...getRootProps({
+        'aria-label': 'File upload drop zone',
+        'aria-disabled': disabled,
+        ...(showInstructions ? { 'aria-describedby': 'dropzone-instructions' } : {}),
+      })}
       sx={{
         border: '2px dashed',
         borderColor: isDragReject
@@ -145,8 +157,9 @@ export const DropZone: React.FC<DropZoneProps> = ({
         minHeight: 180,
       }}
     >
-      <input {...getInputProps()} />
+      <input {...getInputProps()} aria-label="Choose files to upload" />
       <CloudUploadIcon
+        aria-hidden="true"
         sx={{
           fontSize: 48,
           color: isDragReject
@@ -158,17 +171,17 @@ export const DropZone: React.FC<DropZoneProps> = ({
         }}
       />
       {isDragReject ? (
-        <Typography variant="body1" color="error.main" fontWeight={600}>
-          Unsupported file type or file is too large
+        <Typography variant="body1" color="error.main" fontWeight={600} role="alert">
+          {statusMessage}
         </Typography>
       ) : isDragActive ? (
-        <Typography variant="body1" color="primary.main" fontWeight={600}>
-          Drop files here...
+        <Typography variant="body1" color="primary.main" fontWeight={600} aria-live="polite">
+          {statusMessage}
         </Typography>
       ) : (
         <>
-          <Typography variant="body1" color="text.primary" fontWeight={500} mb={0.5}>
-            Drag & drop files here, or click to browse
+          <Typography id="dropzone-instructions" variant="body1" color="text.primary" fontWeight={500} mb={0.5}>
+            {statusMessage}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {maxSizeInBytes

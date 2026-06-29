@@ -21,6 +21,7 @@ model User {
   @@index([email])
   @@index([role])
   @@index([createdAt])
+  @@index([email, role])
   @@index([deletedAt])
   @@index([role, deletedAt])
 }
@@ -59,10 +60,10 @@ model ApiKey {
   currentUsage  Int      @default(0)
   usageResetAt  DateTime @default(now())
   deletedAt     DateTime?
-  
+
   // Relations
   usageLogs     ApiUsage[]
-  
+
   @@map("api_keys")
   @@index([userId])
   @@index([tier])
@@ -70,9 +71,12 @@ model ApiKey {
   @@index([userId, isActive])
   @@index([expiresAt])
   @@index([lastUsedAt])
-  @@index([deletedAt])
-  @@index([tier, isActive])
+  @@index([tier])
+  @@index([keyHash])
   @@index([createdAt])
+  @@index([deletedAt])
+  @@index([userId, tier])
+  @@index([tier, isActive])
 }
 
 model ApiUsage {
@@ -90,7 +94,7 @@ model ApiUsage {
   timestamp    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
-  
+
   @@map("api_usage")
   @@index([apiKeyId])
   @@index([timestamp])
