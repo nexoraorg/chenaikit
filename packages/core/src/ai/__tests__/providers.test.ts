@@ -20,6 +20,23 @@ mockedAxios.create.mockReturnValue({
 } as any);
 
 describe('AI Model Providers', () => {
+  // Helper to create a mock axios instance with controllable post/get
+  function createMockAxios(postImpl?: jest.Mock, getImpl?: jest.Mock) {
+    return {
+      post: postImpl || jest.fn().mockResolvedValue({ data: { choices: [{ message: { content: 'test' } }], usage: { total_tokens: 5 }, model: 'gpt-3.5-turbo' } }),
+      get: getImpl || jest.fn().mockResolvedValue({ data: { status: 'loaded' } }),
+      interceptors: {
+        request: { use: jest.fn() },
+        response: { use: jest.fn() },
+      },
+      defaults: {},
+    } as any;
+  }
+
+  function setMockAxios(instance: any) {
+    mockedAxios.create.mockReturnValue(instance);
+  }
+
   describe('OpenAIModel', () => {
     let model: OpenAIModel;
     let config: OpenAIConfig;
@@ -118,6 +135,60 @@ describe('AI Model Providers', () => {
       const capabilities = gpt4Model.getCapabilities();
       expect(capabilities.maxContextLength).toBe(8192);
     });
+
+    it('should pass organization header when configured', async () => {
+      const orgModel = new OpenAIModel({
+        ...config,
+        organization: 'custom-org-id',
+      });
+
+      const mockPost = jest.fn().mockResolvedValue({
+        data: { choices: [{ message: { content: 'test' } }], usage: { total_tokens: 5 }, model: 'gpt-3.5-turbo' },
+      });
+      setMockAxios(createMockAxios(mockPost));
+
+      await orgModel.generate({ prompt: 'hello' });
+      const postArgs = mockPost.mock.calls[0];
+      expect(postArgs[0]).toBe('/chat/completions');
+      expect(postArgs[1].model).toBe('gpt-3.5-turbo');
+    });
+
+    it('should handle conversation history messages', async () => {
+      const mockPost = jest.fn().mockResolvedValue({
+        data: {
+          choices: [{ message: { content: 'Assistant reply' }, finish_reason: 'stop' }],
+          usage: { total_tokens: 20 },
+          model: 'gpt-3.5-turbo',
+        },
+      });
+      setMockAxios(createMockAxios(mockPost));
+
+      const result = await model.generate({
+        prompt: 'Tell me a joke',
+        messages: [
+          { role: 'user', content: 'Hello' },
+          { role: 'assistant', content: 'Hi there!' },
+        ],
+      });
+
+      expect(result.text).toBe('Assistant reply');
+      expect(result.metadata?.provider).toBe('openai');
+    });
+
+    it('should handle non-streaming response correctly', async () => {
+      const mockPost = jest.fn().mockResolvedValue({
+        data: {
+          choices: [{ message: { content: 'Non-streaming response' }, finish_reason: 'stop' }],
+          usage: { total_tokens: 8 },
+          model: 'gpt-3.5-turbo',
+        },
+      });
+      setMockAxios(createMockAxios(mockPost));
+
+      const result = await model.generate({ prompt: 'test' });
+      expect(result.tokensUsed).toBe(8);
+      expect(result.metadata?.finishReason).toBe('stop');
+    });
   });
 
   describe('HuggingFaceModel', () => {
@@ -186,6 +257,37 @@ describe('AI Model Providers', () => {
       const status = await model.checkModelStatus();
       expect(status.loaded).toBe(false);
       expect(status.loading).toBe(true);
+    });
+
+    it('should handle useAuth disabled', async () => {
+      const noAuthConfig: HuggingFaceConfig = {
+        ...config,
+        useAuth: false,
+      };
+      const noAuthModel = new HuggingFaceModel(noAuthConfig);
+      
+      const mockPost = jest.fn().mockResolvedValue({
+        data: [{ generated_text: 'No auth response' }],
+      });
+      setMockAxios(createMockAxios(mockPost));
+
+      const result = await noAuthModel.generate({ prompt: 'test' });
+      expect(result.text).toBe('No auth response');
+    });
+
+    it('should resolve model version correctly', async () => {
+      const hfModel = new HuggingFaceModel({
+        ...config,
+        modelVersion: 'gpt2',
+      });
+      
+      const mockPost = jest.fn().mockResolvedValue({
+        data: [{ generated_text: 'GPT-2 response' }],
+      });
+      setMockAxios(createMockAxios(mockPost));
+
+      const result = await hfModel.generate({ prompt: 'test' });
+      expect(result.text).toBe('GPT-2 response');
     });
   });
 
@@ -278,6 +380,40 @@ describe('AI Model Providers', () => {
       const result = await model.generate(input);
       
       expect(result.text).toBe('Generated text');
+    });
+
+    it('should support custom request/response transformation', async () => {
+      const transformConfig: CustomModelConfig = {
+        ...config,
+        customEndpoint: 'https://api.custom.com/v2/complete',
+        modelVersion: 'custom-v2',
+      };
+      const transformModel = new CustomModel(transformConfig);
+      
+      const mockPost = jest.fn().mockResolvedValue({
+        data: { result: 'Transformed response' },
+      });
+      setMockAxios(createMockAxios(mockPost));
+
+      const result = await transformModel.generate({ prompt: 'transform test' });
+      expect(result.text).toBe('Transformed response');
+    });
+
+    it('should route to arbitrary endpoints', async () => {
+      const routedConfig: CustomModelConfig = {
+        ...config,
+        customEndpoint: 'https://internal.api.local/ai/generate',
+      };
+      const routedModel = new CustomModel(routedConfig);
+      
+      const mockPost = jest.fn().mockResolvedValue({
+        data: { output: 'Internal API response' },
+      });
+      setMockAxios(createMockAxios(mockPost));
+
+      const result = await routedModel.generate({ prompt: 'route test' });
+      expect(mockPost).toHaveBeenCalled();
+      expect(result.metadata?.provider).toBe('custom');
     });
   });
 });

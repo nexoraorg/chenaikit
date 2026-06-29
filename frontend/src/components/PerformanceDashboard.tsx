@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -19,7 +19,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-} from '@mui/material';
+  Fade,
+} from "@mui/material";
 import {
   Refresh as RefreshIcon,
   TrendingUp as TrendingUpIcon,
@@ -28,7 +29,10 @@ import {
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Info as InfoIcon,
-} from '@mui/icons-material';
+  FiberManualRecord as LiveIcon,
+} from "@mui/icons-material";
+import { useWebSocket } from "./WebSocketProvider";
+import { ConnectionStatus } from "./ConnectionStatus";
 
 // Performance data types
 interface PerformanceMetrics {
@@ -63,7 +67,7 @@ interface PerformanceIssue {
   type: string;
   actual: number;
   threshold: number;
-  severity: 'high' | 'medium' | 'low';
+  severity: "high" | "medium" | "low";
   description: string;
 }
 
@@ -95,6 +99,9 @@ const PerformanceDashboard: React.FC = () => {
   const [issues, setIssues] = useState<PerformanceIssue[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [hasUpdate, setHasUpdate] = useState(false);
+
+  const { subscribe, isConnected, isPaused } = useWebSocket();
 
   // Performance thresholds
   const thresholds = {
@@ -130,14 +137,14 @@ const PerformanceDashboard: React.FC = () => {
     setLoading(true);
     try {
       // Mock API call - replace with actual endpoint
-      const response = await fetch('/api/performance/metrics');
+      const response = await fetch("/api/performance/metrics");
       const data = await response.json();
-      
+
       setMetrics(data.metrics);
       setIssues(data.issues || []);
       setLastUpdated(new Date());
     } catch (error) {
-      console.error('Error fetching performance data:', error);
+      console.error("Error fetching performance data:", error);
       // Set mock data for demonstration
       const mockMetrics: PerformanceMetrics = {
         api: {
@@ -166,7 +173,7 @@ const PerformanceDashboard: React.FC = () => {
           avgExecutionTime: 800,
         },
       };
-      
+
       setMetrics(mockMetrics);
       setIssues([]);
     } finally {
@@ -181,25 +188,63 @@ const PerformanceDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Subscribe to real-time performance metrics updates
+  useEffect(() => {
+    const unsubscribe = subscribe("performanceMetrics", (data) => {
+      if (isPaused) return;
+
+      setMetrics((prev) => {
+        if (!prev) return data.metrics || prev;
+
+        return {
+          api: { ...prev.api, ...(data.metrics?.api || {}) },
+          frontend: { ...prev.frontend, ...(data.metrics?.frontend || {}) },
+          database: { ...prev.database, ...(data.metrics?.database || {}) },
+          contracts: { ...prev.contracts, ...(data.metrics?.contracts || {}) },
+        };
+      });
+
+      if (data.issues) {
+        setIssues(data.issues);
+      }
+
+      setLastUpdated(new Date());
+      setHasUpdate(true);
+      setTimeout(() => setHasUpdate(false), 1500);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [subscribe, isPaused]);
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
-  const getStatusColor = (value: number, threshold: number, inverse = false) => {
+  const getStatusColor = (
+    value: number,
+    threshold: number,
+    inverse = false,
+  ) => {
     const ratio = value / threshold;
     if (inverse) {
-      return ratio >= 1 ? 'success' : ratio >= 0.8 ? 'warning' : 'error';
+      return ratio >= 1 ? "success" : ratio >= 0.8 ? "warning" : "error";
     } else {
-      return ratio <= 1 ? 'success' : ratio <= 1.2 ? 'warning' : 'error';
+      return ratio <= 1 ? "success" : ratio <= 1.2 ? "warning" : "error";
     }
   };
 
-  const getProgressColor = (value: number, threshold: number, inverse = false) => {
+  const getProgressColor = (
+    value: number,
+    threshold: number,
+    inverse = false,
+  ) => {
     const ratio = value / threshold;
     if (inverse) {
-      return ratio >= 1 ? '#4caf50' : ratio >= 0.8 ? '#ff9800' : '#f44336';
+      return ratio >= 1 ? "#4caf50" : ratio >= 0.8 ? "#ff9800" : "#f44336";
     } else {
-      return ratio <= 1 ? '#4caf50' : ratio <= 1.2 ? '#ff9800' : '#f44336';
+      return ratio <= 1 ? "#4caf50" : ratio <= 1.2 ? "#ff9800" : "#f44336";
     }
   };
 
@@ -217,23 +262,34 @@ const PerformanceDashboard: React.FC = () => {
   };
 
   const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const renderMetricCard = (title: string, value: number, threshold: number, unit: string, inverse = false) => {
+  const renderMetricCard = (
+    title: string,
+    value: number,
+    threshold: number,
+    unit: string,
+    inverse = false,
+  ) => {
     const color = getStatusColor(value, threshold, inverse);
     const progressColor = getProgressColor(value, threshold, inverse);
     const icon = getStatusIcon(value, threshold, inverse);
     const progressValue = Math.min((value / threshold) * 100, 200);
 
     return (
-      <Card sx={{ height: '100%' }}>
+      <Card sx={{ height: "100%" }}>
         <CardContent>
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+            mb={2}
+          >
             <Typography variant="h6" color="textSecondary">
               {title}
             </Typography>
@@ -251,8 +307,8 @@ const PerformanceDashboard: React.FC = () => {
             sx={{
               height: 8,
               borderRadius: 4,
-              backgroundColor: 'grey.300',
-              '& .MuiLinearProgress-bar': {
+              backgroundColor: "grey.300",
+              "& .MuiLinearProgress-bar": {
                 backgroundColor: progressColor,
               },
             }}
@@ -266,35 +322,35 @@ const PerformanceDashboard: React.FC = () => {
     <Grid container spacing={3}>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'Avg Response Time',
+          "Avg Response Time",
           metrics?.api.avgResponseTime || 0,
           thresholds.api.avgResponseTime,
-          'ms'
+          "ms",
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          '95th Percentile',
+          "95th Percentile",
           metrics?.api.p95ResponseTime || 0,
           thresholds.api.p95ResponseTime,
-          'ms'
+          "ms",
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'Error Rate',
+          "Error Rate",
           metrics?.api.errorRate || 0,
           thresholds.api.errorRate,
-          '%'
+          "%",
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'Throughput',
+          "Throughput",
           metrics?.api.throughput || 0,
           thresholds.api.throughput,
-          'RPS',
-          true
+          "RPS",
+          true,
         )}
       </Grid>
     </Grid>
@@ -304,51 +360,51 @@ const PerformanceDashboard: React.FC = () => {
     <Grid container spacing={3}>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'Lighthouse Score',
+          "Lighthouse Score",
           metrics?.frontend.lighthouseScore || 0,
           thresholds.frontend.lighthouseScore,
-          '',
-          true
+          "",
+          true,
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'Bundle Size',
+          "Bundle Size",
           metrics?.frontend.bundleSize || 0,
           thresholds.frontend.bundleSize,
-          'B'
+          "B",
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'First Contentful Paint',
+          "First Contentful Paint",
           metrics?.frontend.fcp || 0,
           thresholds.frontend.fcp,
-          'ms'
+          "ms",
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'Largest Contentful Paint',
+          "Largest Contentful Paint",
           metrics?.frontend.lcp || 0,
           thresholds.frontend.lcp,
-          'ms'
+          "ms",
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'Cumulative Layout Shift',
+          "Cumulative Layout Shift",
           metrics?.frontend.cls || 0,
           thresholds.frontend.cls,
-          ''
+          "",
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'First Input Delay',
+          "First Input Delay",
           metrics?.frontend.fid || 0,
           thresholds.frontend.fid,
-          'ms'
+          "ms",
         )}
       </Grid>
     </Grid>
@@ -358,36 +414,36 @@ const PerformanceDashboard: React.FC = () => {
     <Grid container spacing={3}>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'Avg Query Time',
+          "Avg Query Time",
           metrics?.database.avgQueryTime || 0,
           thresholds.database.avgQueryTime,
-          'ms'
+          "ms",
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          '95th Percentile',
+          "95th Percentile",
           metrics?.database.p95QueryTime || 0,
           thresholds.database.p95QueryTime,
-          'ms'
+          "ms",
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'Index Usage',
+          "Index Usage",
           metrics?.database.indexUsage || 0,
           thresholds.database.indexUsage,
-          '%',
-          true
+          "%",
+          true,
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         {renderMetricCard(
-          'Cache Hit Rate',
+          "Cache Hit Rate",
           metrics?.database.cacheHitRate || 0,
           thresholds.database.cacheHitRate,
-          '%',
-          true
+          "%",
+          true,
         )}
       </Grid>
     </Grid>
@@ -397,26 +453,26 @@ const PerformanceDashboard: React.FC = () => {
     <Grid container spacing={3}>
       <Grid item xs={12} sm={6} md={4}>
         {renderMetricCard(
-          'Avg Gas Usage',
+          "Avg Gas Usage",
           metrics?.contracts.avgGasUsage || 0,
           thresholds.contracts.avgGasUsage,
-          'gas'
+          "gas",
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={4}>
         {renderMetricCard(
-          'Max Gas Usage',
+          "Max Gas Usage",
           metrics?.contracts.maxGasUsage || 0,
           thresholds.contracts.maxGasUsage,
-          'gas'
+          "gas",
         )}
       </Grid>
       <Grid item xs={12} sm={6} md={4}>
         {renderMetricCard(
-          'Avg Execution Time',
+          "Avg Execution Time",
           metrics?.contracts.avgExecutionTime || 0,
           thresholds.contracts.avgExecutionTime,
-          'ms'
+          "ms",
         )}
       </Grid>
     </Grid>
@@ -440,7 +496,10 @@ const PerformanceDashboard: React.FC = () => {
             <TableRow>
               <TableCell colSpan={6} align="center">
                 <Box py={4}>
-                  <CheckCircleIcon color="success" sx={{ fontSize: 48, mb: 2 }} />
+                  <CheckCircleIcon
+                    color="success"
+                    sx={{ fontSize: 48, mb: 2 }}
+                  />
                   <Typography variant="h6" color="textSecondary">
                     No performance issues detected
                   </Typography>
@@ -453,7 +512,13 @@ const PerformanceDashboard: React.FC = () => {
                 <TableCell>
                   <Chip
                     label={issue.severity}
-                    color={issue.severity === 'high' ? 'error' : issue.severity === 'medium' ? 'warning' : 'info'}
+                    color={
+                      issue.severity === "high"
+                        ? "error"
+                        : issue.severity === "medium"
+                          ? "warning"
+                          : "info"
+                    }
                     size="small"
                   />
                 </TableCell>
@@ -462,7 +527,9 @@ const PerformanceDashboard: React.FC = () => {
                 <TableCell>{issue.actual.toLocaleString()}</TableCell>
                 <TableCell>{issue.threshold.toLocaleString()}</TableCell>
                 <TableCell>
-                  <Tooltip title={`Ratio: ${(issue.actual / issue.threshold).toFixed(2)}`}>
+                  <Tooltip
+                    title={`Ratio: ${(issue.actual / issue.threshold).toFixed(2)}`}
+                  >
                     {issue.actual > issue.threshold ? (
                       <TrendingUpIcon color="error" />
                     ) : (
@@ -480,45 +547,75 @@ const PerformanceDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="400px"
+      >
         <Typography variant="h6">Loading performance metrics...</Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
+    <Box sx={{ width: "100%" }}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
           Performance Dashboard
+          <Fade in={hasUpdate}>
+            <LiveIcon
+              sx={{
+                fontSize: 16,
+                color: "success.main",
+                animation: "pulse 1s ease-in-out",
+              }}
+            />
+          </Fade>
         </Typography>
         <Box display="flex" alignItems="center" gap={2}>
+          <ConnectionStatus showControls={true} size="small" />
           <Typography variant="body2" color="textSecondary">
             Last updated: {lastUpdated.toLocaleString()}
           </Typography>
           <Tooltip title="Refresh metrics">
-            <IconButton onClick={fetchPerformanceData}>
+            <IconButton onClick={fetchPerformanceData} disabled={loading}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
         </Box>
       </Box>
 
-      {issues.filter(i => i.severity === 'high').length > 0 && (
+      {issues.filter((i) => i.severity === "high").length > 0 && (
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="subtitle2" gutterBottom>
             Critical Performance Issues Detected
           </Typography>
-          {issues.filter(i => i.severity === 'high').map((issue, index) => (
-            <Typography key={index} variant="body2">
-              • {issue.type}: {issue.description}
-            </Typography>
-          ))}
+          {issues
+            .filter((i) => i.severity === "high")
+            .map((issue, index) => (
+              <Typography key={index} variant="body2">
+                • {issue.type}: {issue.description}
+              </Typography>
+            ))}
         </Alert>
       )}
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="Performance tabs">
+      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          aria-label="Performance tabs"
+        >
           <Tab label="API Performance" />
           <Tab label="Frontend Performance" />
           <Tab label="Database Performance" />

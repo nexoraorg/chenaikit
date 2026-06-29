@@ -21,18 +21,7 @@ import {
   Warning as WarningIcon
 } from '@mui/icons-material';
 import ProfileHeader from '../components/profile/ProfileHeader';
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
-  <div hidden={value !== index} style={{ paddingTop: 24 }}>
-    {value === index && children}
-  </div>
-);
+import AccessibleTabPanel from '../components/a11y/AccessibleTabPanel';
 
 interface ActivityItem {
   id: string;
@@ -84,7 +73,7 @@ export const Profile: React.FC<ProfilePageProps> = ({
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#f8fafc', p: { xs: 2, md: 4 } }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: { xs: 2, md: 4 } }}>
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
         <ProfileHeader user={user} stats={stats} onUpdateProfile={onUpdateProfile} />
 
@@ -93,67 +82,70 @@ export const Profile: React.FC<ProfilePageProps> = ({
             value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
             variant="fullWidth"
+            aria-label="Profile sections"
             sx={{
-              borderBottom: '1px solid #e5e7eb',
+              borderBottom: 1,
+              borderColor: 'divider',
               '& .MuiTab-root': {
                 fontWeight: 600,
                 textTransform: 'none'
               }
             }}
           >
-            <Tab label="Activity" />
-            <Tab label="Account" />
-            <Tab label="Statistics" />
+            <Tab label="Activity" id="profile-tab-0" aria-controls="profile-panel-0" />
+            <Tab label="Account" id="profile-tab-1" aria-controls="profile-panel-1" />
+            <Tab label="Statistics" id="profile-tab-2" aria-controls="profile-panel-2" />
           </Tabs>
 
           <Box sx={{ p: 3 }}>
-            <TabPanel value={activeTab} index={0}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: '#0f172a' }}>
+            <AccessibleTabPanel value={activeTab} index={0} idPrefix="profile">
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
                 Recent Activity
               </Typography>
               {activity.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 6 }}>
-                  <HistoryIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 2 }} />
-                  <Typography variant="body1" sx={{ color: '#64748b' }}>
+                  <HistoryIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
+                  <Typography variant="body1" sx={{ color: 'text.secondary' }}>
                     No recent activity
                   </Typography>
                 </Box>
               ) : (
                 <List>
                   {activity.map((item) => (
-                    <ListItem
-                      key={item.id}
-                      sx={{
-                        borderBottom: '1px solid #f1f5f9',
-                        py: 2,
-                        '&:last-child': { borderBottom: 'none' }
-                      }}
-                    >
-                      <ListItemIcon>{getActivityIcon(item.type)}</ListItemIcon>
-                      <ListItemText
-                        primary={item.title}
-                        secondary={
-                          <Box component="span">
-                            <Typography variant="body2" component="span" sx={{ color: '#475569' }}>
-                              {item.description}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              component="span"
-                              sx={{ display: 'block', color: '#94a3b8', mt: 0.5 }}
-                            >
-                              {new Date(item.timestamp).toLocaleString()}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
+                      <ListItem
+                        key={item.id}
+                        sx={{
+                          borderBottom: 1,
+                          borderColor: 'divider',
+                          py: 2,
+                          '&:last-child': { borderBottom: 'none' }
+                        }}
+                      >
+                        <ListItemIcon>{getActivityIcon(item.type)}</ListItemIcon>
+                        <ListItemText
+                          primary={item.title}
+                          secondary={
+                            <Box component="span">
+                              <Typography variant="body2" component="span" sx={{ color: 'text.secondary' }}>
+                                {item.description}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                component="span"
+                                sx={{ display: 'block', color: 'text.disabled', mt: 0.5 }}
+                              >
+                                {new Date(item.timestamp).toLocaleString()}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </ListItem>
                   ))}
                 </List>
               )}
-            </TabPanel>
+            </AccessibleTabPanel>
 
-            <TabPanel value={activeTab} index={1}>
+            <AccessibleTabPanel value={activeTab} index={1} idPrefix="profile">
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                   <Card variant="outlined" sx={{ borderRadius: 2 }}>
@@ -163,7 +155,7 @@ export const Profile: React.FC<ProfilePageProps> = ({
                       </Typography>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <Box>
-                          <Typography variant="caption" sx={{ color: '#64748b' }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                             Email
                           </Typography>
                           <Typography variant="body1" sx={{ fontWeight: 500 }}>
@@ -171,7 +163,7 @@ export const Profile: React.FC<ProfilePageProps> = ({
                           </Typography>
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: '#64748b' }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                             Role
                           </Typography>
                           <Typography variant="body1" sx={{ fontWeight: 500, textTransform: 'capitalize' }}>
@@ -179,10 +171,10 @@ export const Profile: React.FC<ProfilePageProps> = ({
                           </Typography>
                         </Box>
                         {user.createdAt && (
-                          <Box>
-                            <Typography variant="caption" sx={{ color: '#64748b' }}>
-                              Member Since
-                            </Typography>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            Member Since
+                          </Typography>
                             <Typography variant="body1" sx={{ fontWeight: 500 }}>
                               {new Date(user.createdAt).toLocaleDateString()}
                             </Typography>
@@ -217,18 +209,18 @@ export const Profile: React.FC<ProfilePageProps> = ({
                   </Card>
                 </Grid>
               </Grid>
-            </TabPanel>
+            </AccessibleTabPanel>
 
-            <TabPanel value={activeTab} index={2}>
+            <AccessibleTabPanel value={activeTab} index={2} idPrefix="profile">
               <Grid container spacing={3}>
                 {stats.transactions !== undefined && (
                   <Grid item xs={12} sm={4}>
                     <Card variant="outlined" sx={{ borderRadius: 2, textAlign: 'center', p: 3 }}>
                       <CreditCardIcon sx={{ fontSize: 40, color: '#38bdf8', mb: 1 }} />
-                      <Typography variant="h3" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                      <Typography variant="h3" sx={{ fontWeight: 700, color: 'text.primary' }}>
                         {stats.transactions.toLocaleString()}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#64748b' }}>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                         Total Transactions
                       </Typography>
                     </Card>
@@ -238,10 +230,10 @@ export const Profile: React.FC<ProfilePageProps> = ({
                   <Grid item xs={12} sm={4}>
                     <Card variant="outlined" sx={{ borderRadius: 2, textAlign: 'center', p: 3 }}>
                       <TrendingUpIcon sx={{ fontSize: 40, color: '#22c55e', mb: 1 }} />
-                      <Typography variant="h3" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                      <Typography variant="h3" sx={{ fontWeight: 700, color: 'text.primary' }}>
                         {stats.score}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#64748b' }}>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                         Credit Score
                       </Typography>
                     </Card>
@@ -251,17 +243,17 @@ export const Profile: React.FC<ProfilePageProps> = ({
                   <Grid item xs={12} sm={4}>
                     <Card variant="outlined" sx={{ borderRadius: 2, textAlign: 'center', p: 3 }}>
                       <HistoryIcon sx={{ fontSize: 40, color: '#a855f7', mb: 1 }} />
-                      <Typography variant="h3" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                      <Typography variant="h3" sx={{ fontWeight: 700, color: 'text.primary' }}>
                         {stats.activeDays}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#64748b' }}>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                         Active Days
                       </Typography>
                     </Card>
                   </Grid>
                 )}
               </Grid>
-            </TabPanel>
+            </AccessibleTabPanel>
           </Box>
         </Paper>
       </Box>

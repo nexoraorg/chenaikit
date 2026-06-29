@@ -1,10 +1,21 @@
-import React from 'react';
-import { Box, Grid, Container, Typography, Button, useTheme, useMediaQuery } from '@mui/material';
-import { Refresh } from '@mui/icons-material';
-import CreditScoreCard from './CreditScoreCard';
-import ScoreHistoryChart from './ScoreHistoryChart';
-import RiskFactorsList from './RiskFactorsList';
-import { useCreditScore } from '../hooks/useCreditScore';
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Grid,
+  Container,
+  Typography,
+  Button,
+  useTheme,
+  useMediaQuery,
+  Fade,
+} from "@mui/material";
+import { Refresh, FiberManualRecord as LiveIcon } from "@mui/icons-material";
+import CreditScoreCard from "./CreditScoreCard";
+import ScoreHistoryChart from "./ScoreHistoryChart";
+import RiskFactorsList from "./RiskFactorsList";
+import { useCreditScore } from "../hooks/useCreditScore";
+import { useWebSocket } from "./WebSocketProvider";
+import { ConnectionStatus } from "./ConnectionStatus";
 
 export interface CreditScoreDashboardProps {
   accountId?: string;
@@ -15,41 +26,89 @@ export interface CreditScoreDashboardProps {
 export const CreditScoreDashboard: React.FC<CreditScoreDashboardProps> = ({
   accountId,
   userId,
-  mockData = true
+  mockData = true,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { data, loading, error, refetch } = useCreditScore({ accountId, userId, mockData });
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { data, loading, error, refetch } = useCreditScore({
+    accountId,
+    userId,
+    mockData,
+  });
+  const { subscribe, isConnected, isPaused } = useWebSocket();
+  const [hasUpdate, setHasUpdate] = useState(false);
+
+  // Subscribe to real-time credit score updates
+  useEffect(() => {
+    const unsubscribe = subscribe("creditScoreUpdate", (updateData) => {
+      if (isPaused) return;
+
+      // Trigger refetch when credit score updates
+      refetch();
+
+      // Show live indicator
+      setHasUpdate(true);
+      setTimeout(() => setHasUpdate(false), 2000);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [subscribe, refetch, isPaused]);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header */}
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+      <Box
+        sx={{
+          mb: 4,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
         <Box>
           <Typography
             variant="h4"
             component="h1"
             sx={{
               fontWeight: 700,
-              fontSize: isMobile ? '1.5rem' : '2rem',
-              mb: 0.5
+              fontSize: isMobile ? "1.5rem" : "2rem",
+              mb: 0.5,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
             }}
           >
             Credit Score Dashboard
+            <Fade in={hasUpdate}>
+              <LiveIcon
+                sx={{
+                  fontSize: 16,
+                  color: "success.main",
+                  animation: "pulse 1s ease-in-out",
+                }}
+              />
+            </Fade>
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Monitor your credit health and track score improvements over time
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<Refresh />}
-          onClick={refetch}
-          disabled={loading}
-          sx={{ textTransform: 'none' }}
-        >
-          Refresh Data
-        </Button>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <ConnectionStatus showControls={true} size="small" />
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={refetch}
+            disabled={loading}
+            sx={{ textTransform: "none" }}
+          >
+            Refresh Data
+          </Button>
+        </Box>
       </Box>
 
       {/* Dashboard Grid */}
@@ -91,48 +150,75 @@ export const CreditScoreDashboard: React.FC<CreditScoreDashboardProps> = ({
         sx={{
           mt: 4,
           p: 3,
-          bgcolor: theme.palette.mode === 'light' ? theme.palette.grey[50] : theme.palette.grey[900],
+          bgcolor:
+            theme.palette.mode === "light"
+              ? theme.palette.grey[50]
+              : theme.palette.grey[900],
           borderRadius: 2,
-          border: `1px solid ${theme.palette.divider}`
+          border: `1px solid ${theme.palette.divider}`,
         }}
       >
         <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
           About Credit Scores
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Your credit score is calculated based on your account activity, transaction patterns, payment history,
-          and other factors. Scores range from 0-100, with higher scores indicating better creditworthiness.
+          Your credit score is calculated based on your account activity,
+          transaction patterns, payment history, and other factors. Scores range
+          from 0-100, with higher scores indicating better creditworthiness.
+          {isConnected && !isPaused && (
+            <>
+              {" "}
+              Real-time updates are enabled and your score will update
+              automatically.
+            </>
+          )}
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 0.5 }}
+            >
               Poor (0-39)
             </Typography>
-            <Typography variant="body2" sx={{ color: '#f44336' }}>
+            <Typography variant="body2" sx={{ color: "#f44336" }}>
               Significant improvement needed
             </Typography>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 0.5 }}
+            >
               Fair (40-69)
             </Typography>
-            <Typography variant="body2" sx={{ color: '#ff9800' }}>
+            <Typography variant="body2" sx={{ color: "#ff9800" }}>
               Below average, work on improvements
             </Typography>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 0.5 }}
+            >
               Good (70-84)
             </Typography>
-            <Typography variant="body2" sx={{ color: '#4caf50' }}>
+            <Typography variant="body2" sx={{ color: "#4caf50" }}>
               Above average, keep it up
             </Typography>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 0.5 }}
+            >
               Excellent (85-100)
             </Typography>
-            <Typography variant="body2" sx={{ color: '#2196f3' }}>
+            <Typography variant="body2" sx={{ color: "#2196f3" }}>
               Outstanding credit profile
             </Typography>
           </Grid>

@@ -18,7 +18,12 @@ model User {
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
 
+  @@index([email])
+  @@index([role])
   @@index([createdAt])
+  @@index([email, role])
+  @@index([deletedAt])
+  @@index([role, deletedAt])
 }
 
 
@@ -31,7 +36,10 @@ model RefreshToken {
   updatedAt  DateTime @updatedAt
   expiresAt  DateTime
 
+  @@index([userId])
+  @@index([expiresAt])
   @@index([userId, expiresAt])
+  @@index([createdAt])
 }
 
 model ApiKey {
@@ -52,14 +60,23 @@ model ApiKey {
   currentUsage  Int      @default(0)
   usageResetAt  DateTime @default(now())
   deletedAt     DateTime?
-  
+
   // Relations
   usageLogs     ApiUsage[]
-  
+
   @@map("api_keys")
+  @@index([userId])
+  @@index([tier])
+  @@index([isActive])
   @@index([userId, isActive])
   @@index([expiresAt])
   @@index([lastUsedAt])
+  @@index([tier])
+  @@index([keyHash])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([userId, tier])
+  @@index([tier, isActive])
 }
 
 model ApiUsage {
@@ -77,12 +94,20 @@ model ApiUsage {
   timestamp    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
-  
+
   @@map("api_usage")
+  @@index([apiKeyId])
+  @@index([timestamp])
+  @@index([endpoint])
+  @@index([statusCode])
+  @@index([ip])
   @@index([apiKeyId, timestamp])
   @@index([endpoint, timestamp])
   @@index([statusCode, timestamp])
   @@index([ip, timestamp])
-  @@index([timestamp])
+  @@index([method, timestamp])
+  @@index([deletedAt])
+  @@index([apiKeyId, statusCode])
+  @@index([timestamp, statusCode])
 }
 
