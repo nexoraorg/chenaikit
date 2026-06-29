@@ -52,7 +52,7 @@ export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = (
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   const [chartType, setChartType] = useState<PerformanceMetricsChartProps['chartType']>(chartTypeProp);
-  const [zoom, setZoom] = useState<ZoomState>({ scale: 1, translateX: 0, translateY: 0 });
+  const [, setZoomRaw] = useState<ZoomState>({ scale: 1, translateX: 0, translateY: 0 });
 
   useEffect(() => {
     setChartType(chartTypeProp);
@@ -121,7 +121,7 @@ export const PerformanceMetricsChart: React.FC<PerformanceMetricsChartProps> = (
   const handleWheel = useCallback((event: React.WheelEvent) => {
     if (!chartGlobalConfig.zoomEnabled) return;
     const factor = event.deltaY < 0 ? 1.1 : 0.9;
-    setZoom((prev) => clampZoom({ scale: prev.scale * factor, translateX: prev.translateX, translateY: prev.translateY }, { minScale: 0.1, maxScale: 10 }));
+    setZoomRaw((prev) => clampZoom({ scale: prev.scale * factor, translateX: prev.translateX, translateY: prev.translateY }, { minScale: 0.1, maxScale: 10 }));
   }, [chartGlobalConfig.zoomEnabled]);
 
   const CustomTooltip = ({ active, payload }: any) => {

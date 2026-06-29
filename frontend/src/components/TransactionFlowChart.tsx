@@ -11,8 +11,6 @@ import {
   debounce,
   getAriaLabel
 } from '@chenaikit/core';
-import { useChart } from '../contexts/ChartContext';
-
 interface TransactionFlowChartProps extends ChartProps {
   data: TransactionData[];
   showLabels?: boolean;
@@ -38,7 +36,6 @@ export const TransactionFlowChart: React.FC<TransactionFlowChartProps> = ({
   'aria-label': ariaLabel,
   'aria-describedby': ariaDescribedby
 }) => {
-  const { config: globalChartConfig } = useChart();
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });

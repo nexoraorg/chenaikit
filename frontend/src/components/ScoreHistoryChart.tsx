@@ -24,7 +24,6 @@ import {
   SCORE_THRESHOLDS,
 } from "../types/credit-score";
 import { SkeletonChart } from "./SkeletonChart";
-import { useChart } from "../contexts/ChartContext";
 
 export const ScoreHistoryChart: React.FC<ScoreHistoryChartProps> = ({
   data,
@@ -32,7 +31,6 @@ export const ScoreHistoryChart: React.FC<ScoreHistoryChartProps> = ({
   error,
   height = 400,
 }) => {
-  const { config: chartConfig } = useChart();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
