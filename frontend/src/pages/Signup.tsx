@@ -20,7 +20,7 @@ export const Signup: React.FC = () => {
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   return (
-    <Grid container sx={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+    <Grid container sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Left panel - Branding & Features (hidden on mobile) */}
       {isMdUp && (
         <Grid 

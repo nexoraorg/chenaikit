@@ -17,6 +17,9 @@ import { metricsService, metricsMiddleware } from './services/metricsService';
 import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
 import { UserPayload } from './types/auth';
 import { ensureRedisConnection } from './config/redis';
+import accountRoutes from './routes/accounts';
+import fileRoutes from './routes/files';
+
 import { detectVersion, versionHeaders, createVersionRouter } from './middleware/versioning';
 import v1Router from './routes/v1';
 import v2Router from './routes/v2';
@@ -62,6 +65,11 @@ app.use('/api/files', fileRoutes);
 
 // Optional analytics route (commented out for now)
 // app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
+app.use('/api/auth', authRoutes);
+app.use('/api/accounts', accountRoutes);
+app.use('/api/files', fileRoutes);
+// app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
+>>>>>> main
 
 // Version discovery endpoint: lists supported versions and their lifecycle.
 app.get('/api/versions', (_req: Request, res: Response) => {
