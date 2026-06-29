@@ -11,7 +11,6 @@ import {
   debounce,
   getAriaLabel
 } from '@chenaikit/core';
-
 interface TransactionFlowChartProps extends ChartProps {
   data: TransactionData[];
   showLabels?: boolean;
