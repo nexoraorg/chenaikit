@@ -1,388 +1,286 @@
 /**
- * Query utility functions for database optimization
+ * Query Utilities for Database Optimization
+ * 
+ * This module provides helper functions for optimizing database queries,
+ * including batch operations, query deduplication, and performance monitoring.
  */
 
-/**
- * Paginate a Prisma query
- */
-export function paginate(
-  query: any,
-  page: number = 1,
-  pageSize: number = 10
-): any {
-  const skip = (page - 1) * pageSize;
-  return {
-    ...query,
-    skip,
-    take: pageSize,
-  } as any;
+import { PrismaClient } from '@prisma/client';
+
+export interface QueryMetrics {
+  query: string;
+  duration: number;
+  timestamp: Date;
+  rowCount?: number;
+}
+
+export interface QueryOptions {
+  cacheKey?: string;
+  cacheTTL?: number;
+  batchSize?: number;
+  skipCache?: boolean;
 }
 
 /**
- * Add sorting to a Prisma query
+ * Query cache for storing frequently accessed data
  */
-export function addSorting(
-  query: any,
-  sortBy: string,
-  sortOrder: 'asc' | 'desc' = 'desc'
-): any {
-  return {
-    ...query,
-    orderBy: {
-      [sortBy]: sortOrder,
-    },
-  } as any;
+class QueryCache {
+  private cache = new Map<string, { data: any; expiresAt: number }>();
+  
+  set(key: string, data: any, ttl: number = 60000): void {
+    this.cache.set(key, {
+      data,
+      expiresAt: Date.now() + ttl
+    });
+  }
+  
+  get(key: string): any | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return entry.data;
+  }
+  
+  clear(): void {
+    this.cache.clear();
+  }
+  
+  delete(key: string): void {
+    this.cache.delete(key);
+  }
+  
+  clearExpired(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now > entry.expiresAt) {
+        this.cache.delete(key);
+      }
+    }
+  }
+}
+
+export const queryCache = new QueryCache();
+
+/**
+ * Batch operation helper for processing multiple items efficiently
+ */
+export async function batchOperation<T, R>(
+  items: T[],
+  batchSize: number,
+  operation: (batch: T[]) => Promise<R[]>
+): Promise<R[]> {
+  const results: R[] = [];
+  
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchResults = await operation(batch);
+    results.push(...batchResults);
+  }
+  
+  return results;
 }
 
 /**
- * Add date range filter to a Prisma query
+ * Query deduplication to prevent duplicate queries in the same request
  */
-export function addDateRange(
-  query: any,
-  field: string,
+class QueryDeduplicator {
+  private pendingQueries = new Map<string, Promise<any>>();
+  
+  async execute<T>(
+    key: string,
+    queryFn: () => Promise<T>
+  ): Promise<T> {
+    if (this.pendingQueries.has(key)) {
+      return this.pendingQueries.get(key)!;
+    }
+    
+    const promise = queryFn();
+    this.pendingQueries.set(key, promise);
+    
+    try {
+      const result = await promise;
+      return result;
+    } finally {
+      this.pendingQueries.delete(key);
+    }
+  }
+  
+  clear(): void {
+    this.pendingQueries.clear();
+  }
+}
+
+export const queryDeduplicator = new QueryDeduplicator();
+
+/**
+ * Performance monitoring for queries
+ */
+export class QueryMonitor {
+  private metrics: QueryMetrics[] = [];
+  private maxMetrics = 1000;
+  private slowQueryThreshold = 1000; // 1 second
+  
+  record(query: string, duration: number, rowCount?: number): void {
+    const metric: QueryMetrics = {
+      query,
+      duration,
+      timestamp: new Date(),
+      rowCount
+    };
+    
+    this.metrics.push(metric);
+    
+    // Keep only the most recent metrics
+    if (this.metrics.length > this.maxMetrics) {
+      this.metrics.shift();
+    }
+    
+    // Log slow queries
+    if (duration > this.slowQueryThreshold) {
+      console.warn(`Slow query detected (${duration}ms): ${query}`);
+    }
+  }
+  
+  getMetrics(): QueryMetrics[] {
+    return [...this.metrics];
+  }
+  
+  getSlowQueries(threshold?: number): QueryMetrics[] {
+    const limit = threshold || this.slowQueryThreshold;
+    return this.metrics.filter(m => m.duration > limit);
+  }
+  
+  getAverageQueryTime(): number {
+    if (this.metrics.length === 0) return 0;
+    const total = this.metrics.reduce((sum, m) => sum + m.duration, 0);
+    return total / this.metrics.length;
+  }
+  
+  clear(): void {
+    this.metrics = [];
+  }
+  
+  setSlowQueryThreshold(ms: number): void {
+    this.slowQueryThreshold = ms;
+  }
+}
+
+export const queryMonitor = new QueryMonitor();
+
+/**
+ * Wrapper function for executing queries with monitoring and caching
+ */
+export async function executeQuery<T>(
+  prisma: PrismaClient,
+  queryFn: () => Promise<T>,
+  options: QueryOptions = {}
+): Promise<T> {
+  const { cacheKey, cacheTTL = 60000, skipCache = false } = options;
+  
+  // Check cache if key is provided and not skipping cache
+  if (cacheKey && !skipCache) {
+    const cached = queryCache.get(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+  }
+  
+  const startTime = Date.now();
+  let result: T;
+  
+  try {
+    result = await queryFn();
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    queryMonitor.record('Query Error', duration);
+    throw error;
+  }
+  
+  const duration = Date.now() - startTime;
+  queryMonitor.record('Query Execution', duration);
+  
+  // Cache result if key is provided
+  if (cacheKey && result !== null) {
+    queryCache.set(cacheKey, result, cacheTTL);
+  }
+  
+  return result;
+}
+
+/**
+ * Helper for creating efficient date range queries
+ */
+export function createDateRangeFilter(
   startDate?: Date,
   endDate?: Date
-): any {
-  const where = query.where || {};
-  const dateFilter: any = {};
-
-  if (startDate || endDate) {
-    if (startDate && endDate) {
-      dateFilter[field] = {
-        gte: startDate,
-        lte: endDate,
-      };
-    } else if (startDate) {
-      dateFilter[field] = {
-        gte: startDate,
-      };
-    } else if (endDate) {
-      dateFilter[field] = {
-        lte: endDate,
-      };
-    }
-  }
-
-  return {
-    ...query,
-    where: {
-      ...where,
-      ...dateFilter,
-    },
-  } as any;
-}
-
-/**
- * Add soft delete filter to a Prisma query
- */
-export function addSoftDeleteFilter(
-  query: any,
-  includeDeleted: boolean = false
-): any {
-  const where = query.where || {};
-
-  if (!includeDeleted) {
-    return {
-      ...query,
-      where: {
-        ...where,
-        deletedAt: null,
-      },
-    } as any;
-  }
-
-  return query;
-}
-
-/**
- * Build a Prisma where clause from search criteria
- */
-export function buildWhereClause(criteria: Record<string, any>): any {
-  const where: any = {};
-
-  for (const [key, value] of Object.entries(criteria)) {
-    if (value === undefined || value === null || value === '') {
-      continue;
-    }
-
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      // Handle nested objects and operators
-      where[key] = value;
-    } else if (Array.isArray(value)) {
-      // Handle array values (IN clause)
-      where[key] = { in: value };
-    } else {
-      // Handle simple equality
-      where[key] = value;
-    }
-  }
-
-  return where;
-}
-
-/**
- * Select specific fields from a Prisma query
- */
-export function selectFields(
-  query: any,
-  fields: string[]
-): any {
-  const select: Record<string, boolean> = {};
-  fields.forEach(field => {
-    select[field] = true;
-  });
-
-  return {
-    ...query,
-    select,
-  } as any;
-}
-
-/**
- * Include related entities in a Prisma query
- */
-export function includeRelations(
-  query: any,
-  relations: Record<string, boolean | any>
-): any {
-  return {
-    ...query,
-    include: relations,
-  } as any;
-}
-
-/**
- * Count total records for pagination
- */
-export async function getCount<T>(
-  model: any,
-  where?: any
-): Promise<number> {
-  return await model.count({ where });
-}
-
-/**
- * Execute a query with retry logic
- */
-export async function queryWithRetry<T>(
-  queryFn: () => Promise<T>,
-  maxRetries: number = 3,
-  delayMs: number = 1000
-): Promise<T> {
-  let lastError: Error;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await queryFn();
-    } catch (error) {
-      lastError = error as Error;
-      
-      if (attempt === maxRetries) {
-        throw lastError;
-      }
-
-      // Exponential backoff
-      const backoffDelay = delayMs * Math.pow(2, attempt - 1);
-      await new Promise(resolve => setTimeout(resolve, backoffDelay));
-    }
-  }
-
-  throw lastError!;
-}
-
-/**
- * Batch query results to avoid memory issues
- */
-export async function* batchQuery<T>(
-  queryFn: (skip: number, take: number) => Promise<T[]>,
-  batchSize: number = 100
-): AsyncGenerator<T[]> {
-  let skip = 0;
-  let hasMore = true;
-
-  while (hasMore) {
-    const results = await queryFn(skip, batchSize);
-    
-    if (results.length === 0) {
-      hasMore = false;
-    } else {
-      yield results;
-      skip += batchSize;
-      
-      if (results.length < batchSize) {
-        hasMore = false;
-      }
-    }
-  }
-}
-
-/**
- * Cache key generator for query results
- */
-export function generateCacheKey(
-  modelName: string,
-  operation: string,
-  params: Record<string, any>
-): string {
-  const paramString = JSON.stringify(params, Object.keys(params).sort());
-  return `${modelName}:${operation}:${Buffer.from(paramString).toString('base64')}`;
-}
-
-/**
- * Parse and validate query parameters
- */
-export function parseQueryParams(params: {
-  page?: string;
-  pageSize?: string;
-  sortBy?: string;
-  sortOrder?: string;
-  [key: string]: any;
-}): {
-  page: number;
-  pageSize: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  filters: Record<string, any>;
-} {
-  const page = parseInt(params.page || '1', 10);
-  const pageSize = Math.min(parseInt(params.pageSize || '10', 10), 100); // Max 100 per page
-  const sortBy = params.sortBy;
-  const sortOrder = (params.sortOrder === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc';
-
-  // Extract filters (non-pagination params)
-  const filters: Record<string, any> = {};
-  const excludeKeys = ['page', 'pageSize', 'sortBy', 'sortOrder'];
+): { gte?: Date; lte?: Date } {
+  const filter: { gte?: Date; lte?: Date } = {};
   
-  for (const [key, value] of Object.entries(params)) {
-    if (!excludeKeys.includes(key)) {
-      filters[key] = value;
-    }
+  if (startDate) {
+    filter.gte = startDate;
   }
+  
+  if (endDate) {
+    filter.lte = endDate;
+  }
+  
+  return filter;
+}
 
+/**
+ * Helper for pagination
+ */
+export function createPaginationParams(
+  page: number = 1,
+  pageSize: number = 10
+) {
+  const skip = (page - 1) * pageSize;
   return {
-    page: Math.max(1, page),
-    pageSize: Math.max(1, pageSize),
-    sortBy,
-    sortOrder,
-    filters,
+    skip,
+    take: pageSize
   };
 }
 
 /**
- * Transform query results to a standardized format
+ * Helper for creating efficient select statements
  */
-export function transformResults<T, R>(
-  results: T[],
-  transformer: (item: T) => R
-): R[] {
-  return results.map(transformer);
+export function createSelect<T extends Record<string, boolean>>(
+  fields: T
+): T {
+  return fields;
 }
 
 /**
- * Calculate query performance metrics
+ * Helper for creating efficient include statements with nested relations
  */
-export interface QueryMetrics {
-  executionTime: number;
-  recordCount: number;
-  timestamp: Date;
+export function createInclude<T extends Record<string, any>>(
+  relations: T
+): T {
+  return relations;
 }
 
-export async function measureQuery<T>(
-  queryFn: () => Promise<T>
-): Promise<{ result: T; metrics: QueryMetrics }> {
-  const startTime = Date.now();
-  const result = await queryFn();
-  const executionTime = Date.now() - startTime;
+/**
+ * Clear expired cache entries periodically
+ */
+export function startCacheCleanup(interval: number = 60000): ReturnType<typeof setInterval> {
+  return setInterval(() => {
+    queryCache.clearExpired();
+  }, interval);
+}
 
-  let recordCount = 0;
-  if (Array.isArray(result)) {
-    recordCount = result.length;
-  } else if (result && typeof result === 'object') {
-    // Check if it's a paginated result with count
-    if ('count' in result) {
-      recordCount = (result as any).count;
-    } else {
-      recordCount = 1;
-    }
-  }
-
+/**
+ * Get query statistics
+ */
+export function getQueryStatistics() {
   return {
-    result,
-    metrics: {
-      executionTime,
-      recordCount,
-      timestamp: new Date(),
-    },
+    totalQueries: queryMonitor.getMetrics().length,
+    slowQueries: queryMonitor.getSlowQueries().length,
+    averageQueryTime: queryMonitor.getAverageQueryTime(),
+    cacheSize: queryCache['cache'].size
   };
-}
-
-/**
- * Validate query complexity before execution
- */
-export function validateQueryComplexity(
-  query: any,
-  maxJoins: number = 5,
-  maxFilters: number = 10
-): { valid: boolean; reason?: string } {
-  const includeCount = query.include ? Object.keys(query.include).length : 0;
-  const whereCount = query.where ? Object.keys(query.where).length : 0;
-
-  if (includeCount > maxJoins) {
-    return {
-      valid: false,
-      reason: `Query includes too many relations (${includeCount} > ${maxJoins})`,
-    };
-  }
-
-  if (whereCount > maxFilters) {
-    return {
-      valid: false,
-      reason: `Query has too many filters (${whereCount} > ${maxFilters})`,
-    };
-  }
-
-  return { valid: true };
-}
-
-/**
- * Build a search query for text search
- */
-export function buildSearchQuery(
-  searchFields: string[],
-  searchTerm: string
-): any {
-  if (!searchTerm || searchFields.length === 0) {
-    return {};
-  }
-
-  const searchConditions = searchFields.map(field => ({
-    [field]: {
-      contains: searchTerm,
-      mode: 'insensitive' as const,
-    },
-  }));
-
-  return {
-    OR: searchConditions,
-  };
-}
-
-/**
- * Add cursor-based pagination to a query
- */
-export function addCursorPagination(
-  query: any,
-  cursor?: string,
-  cursorField: string = 'id'
-): any {
-  if (!cursor) {
-    return query;
-  }
-
-  return {
-    ...query,
-    cursor: {
-      [cursorField]: cursor,
-    },
-  } as any;
 }

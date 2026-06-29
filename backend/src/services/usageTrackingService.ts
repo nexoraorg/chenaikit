@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Request } from 'express';
+import { executeQuery, createDateRangeFilter, createPaginationParams } from '../utils/queryUtils';
 
 export class UsageTrackingService {
   constructor(private prisma: PrismaClient) {}
@@ -56,90 +57,99 @@ export class UsageTrackingService {
   }
 
   async getAnalytics(startDate: Date, endDate: Date) {
+    const timestampFilter = createDateRangeFilter(startDate, endDate);
     const whereClause = {
-      timestamp: {
-        gte: startDate,
-        lte: endDate,
-      },
+      ...timestampFilter,
       deletedAt: null,
     };
 
+    const cacheKey = `analytics:${startDate.toISOString()}:${endDate.toISOString()}`;
+
     try {
-      const [
-        totalRequests,
-        uniqueApiKeys,
-        avgResponseTime,
-        successCount,
-        endpointStats,
-        hourlyStats,
-        statusDistribution,
-      ] = await Promise.all([
-        this.prisma.apiUsage.count({ where: whereClause }),
-        this.prisma.apiUsage.groupBy({
-          by: ['apiKeyId'],
-          where: whereClause,
-        }).then(results => results.length),
-        this.prisma.apiUsage.aggregate({
-          where: whereClause,
-          _avg: { responseTime: true },
-        }),
-        this.prisma.apiUsage.count({
-          where: { ...whereClause, statusCode: { lt: 400 } },
-        }),
-        this.prisma.apiUsage.groupBy({
-          by: ['endpoint'],
-          where: whereClause,
-          _count: true,
-          _avg: { responseTime: true },
-          orderBy: { _count: { endpoint: 'desc' } },
-          take: 10,
-        }),
-        this.prisma.$queryRaw`
-          SELECT 
-            strftime('%Y-%m-%d %H:00:00', timestamp) as hour,
-            COUNT(*) as requests
-          FROM api_usage 
-          WHERE timestamp >= ${startDate}
-            AND timestamp <= ${endDate}
-            AND deletedAt IS NULL
-          GROUP BY strftime('%Y-%m-%d %H:00:00', timestamp)
-          ORDER BY hour DESC
-          LIMIT 24
-        `,
-        this.prisma.apiUsage.groupBy({
-          by: ['statusCode'],
-          where: whereClause,
-          _count: true,
-        }),
-      ]);
+      const result = await executeQuery(
+        this.prisma,
+        async () => {
+          const [
+            totalRequests,
+            uniqueApiKeys,
+            avgResponseTime,
+            successCount,
+            endpointStats,
+            hourlyStats,
+            statusDistribution,
+          ] = await Promise.all([
+            this.prisma.apiUsage.count({ where: whereClause }),
+            this.prisma.apiUsage.findMany({
+              where: whereClause,
+              select: { apiKeyId: true },
+              distinct: ['apiKeyId'],
+            }).then(results => results.length),
+            this.prisma.apiUsage.aggregate({
+              where: whereClause,
+              _avg: { responseTime: true },
+            }),
+            this.prisma.apiUsage.count({
+              where: { ...whereClause, statusCode: { lt: 400 } },
+            }),
+            this.prisma.apiUsage.groupBy({
+              by: ['endpoint'],
+              where: whereClause,
+              _count: true,
+              _avg: { responseTime: true },
+              orderBy: { _count: { endpoint: 'desc' } },
+              take: 10,
+            }),
+            this.prisma.$queryRaw`
+              SELECT 
+                strftime('%Y-%m-%d %H:00:00', timestamp) as hour,
+                COUNT(*) as requests
+              FROM api_usage 
+              WHERE timestamp >= ${startDate}
+                AND timestamp <= ${endDate}
+                AND deletedAt IS NULL
+              GROUP BY strftime('%Y-%m-%d %H:00:00', timestamp)
+              ORDER BY hour DESC
+              LIMIT 24
+            `,
+            this.prisma.apiUsage.groupBy({
+              by: ['statusCode'],
+              where: whereClause,
+              _count: true,
+            }),
+          ]);
 
-      const successRate = totalRequests > 0 ? (successCount / totalRequests) * 100 : 0;
-      const errorRate = 100 - successRate;
+          const successRate = totalRequests > 0 ? (successCount / totalRequests) * 100 : 0;
+          const errorRate = 100 - successRate;
 
-      // Get tier distribution
-      const tierDistribution = await this.getTierDistribution(whereClause);
+          // Get tier distribution
+          const tierDistribution = await this.getTierDistribution(whereClause);
 
-      return {
-        totalRequests,
-        uniqueApiKeys,
-        averageResponseTime: avgResponseTime._avg.responseTime || 0,
-        successRate,
-        errorRate,
-        topEndpoints: endpointStats.map((item: any) => ({
-          endpoint: item.endpoint,
-          count: item._count,
-          avgResponseTime: item._avg.responseTime || 0,
-        })),
-        hourlyStats: (hourlyStats as any[]).map((item: any) => ({
-          hour: item.hour,
-          requests: Number(item.requests),
-        })),
-        statusDistribution: statusDistribution.reduce((acc: any, item: any) => {
-          acc[item.statusCode.toString()] = item._count;
-          return acc;
-        }, {} as Record<string, number>),
-        tierDistribution,
-      };
+          return {
+            totalRequests,
+            uniqueApiKeys,
+            averageResponseTime: avgResponseTime._avg.responseTime || 0,
+            successRate,
+            errorRate,
+            topEndpoints: endpointStats.map((item: any) => ({
+              endpoint: item.endpoint,
+              count: item._count,
+              avgResponseTime: item._avg.responseTime || 0,
+            })),
+            hourlyStats: (hourlyStats as any[]).map((item: any) => ({
+              hour: item.hour,
+              requests: Number(item.requests),
+            })),
+            statusDistribution: statusDistribution.reduce((acc: any, item: any) => {
+              acc[item.statusCode.toString()] = item._count;
+              return acc;
+            }, {} as Record<string, number>),
+            tierDistribution,
+          };
+        },
+        { cacheKey, cacheTTL: 300000 } // 5 minute cache
+      );
+
+      return result;
     } catch (error: any) {
       console.error('Failed to get analytics', error);
       throw new Error('Failed to get analytics');
@@ -192,59 +202,68 @@ export class UsageTrackingService {
     }>;
   }> {
     try {
-      const whereClause: any = { apiKeyId, deletedAt: null };
-      
-      if (startDate || endDate) {
-        whereClause.timestamp = {};
-        if (startDate) whereClause.timestamp.gte = startDate;
-        if (endDate) whereClause.timestamp.lte = endDate;
-      }
-
-      const [totalRequests, avgResponseTime, successCount, endpointBreakdown, dailyUsage] = await Promise.all([
-        this.prisma.apiUsage.count({ where: whereClause }),
-        this.prisma.apiUsage.aggregate({
-          where: whereClause,
-          _avg: { responseTime: true },
-        }),
-        this.prisma.apiUsage.count({
-          where: { ...whereClause, statusCode: { lt: 400 } },
-        }),
-        this.prisma.apiUsage.groupBy({
-          by: ['endpoint'],
-          where: whereClause,
-          _count: true,
-          _avg: { responseTime: true },
-          orderBy: { _count: { endpoint: 'desc' } },
-        }),
-        this.prisma.$queryRaw`
-          SELECT 
-            DATE(timestamp) as date,
-            COUNT(*) as requests
-          FROM api_usage 
-          WHERE api_key_id = ${apiKeyId}
-            AND timestamp >= datetime('now', '-30 days')
-            AND deletedAt IS NULL
-          GROUP BY DATE(timestamp)
-          ORDER BY date DESC
-        `,
-      ]);
-
-      const successRate = totalRequests > 0 ? (successCount / totalRequests) * 100 : 0;
-
-      return {
-        totalRequests,
-        averageResponseTime: avgResponseTime._avg.responseTime || 0,
-        successRate,
-        endpointBreakdown: endpointBreakdown.map((item: any) => ({
-          endpoint: item.endpoint,
-          count: item._count,
-          avgResponseTime: item._avg.responseTime || 0,
-        })),
-        dailyUsage: (dailyUsage as any[]).map((item: any) => ({
-          date: item.date,
-          requests: Number(item.requests),
-        })),
+      const timestampFilter = createDateRangeFilter(startDate, endDate);
+      const whereClause: any = { 
+        apiKeyId, 
+        deletedAt: null,
+        ...timestampFilter
       };
+
+      const cacheKey = `apiKeyUsage:${apiKeyId}:${startDate?.toISOString()}:${endDate?.toISOString()}`;
+
+      const result = await executeQuery(
+        this.prisma,
+        async () => {
+          const [totalRequests, avgResponseTime, successCount, endpointBreakdown, dailyUsage] = await Promise.all([
+            this.prisma.apiUsage.count({ where: whereClause }),
+            this.prisma.apiUsage.aggregate({
+              where: whereClause,
+              _avg: { responseTime: true },
+            }),
+            this.prisma.apiUsage.count({
+              where: { ...whereClause, statusCode: { lt: 400 } },
+            }),
+            this.prisma.apiUsage.groupBy({
+              by: ['endpoint'],
+              where: whereClause,
+              _count: true,
+              _avg: { responseTime: true },
+              orderBy: { _count: { endpoint: 'desc' } },
+            }),
+            this.prisma.$queryRaw`
+              SELECT 
+                DATE(timestamp) as date,
+                COUNT(*) as requests
+              FROM api_usage 
+              WHERE api_key_id = ${apiKeyId}
+                AND timestamp >= datetime('now', '-30 days')
+                AND deletedAt IS NULL
+              GROUP BY DATE(timestamp)
+              ORDER BY date DESC
+            `,
+          ]);
+
+          const successRate = totalRequests > 0 ? (successCount / totalRequests) * 100 : 0;
+
+          return {
+            totalRequests,
+            averageResponseTime: avgResponseTime._avg.responseTime || 0,
+            successRate,
+            endpointBreakdown: endpointBreakdown.map((item: any) => ({
+              endpoint: item.endpoint,
+              count: item._count,
+              avgResponseTime: item._avg.responseTime || 0,
+            })),
+            dailyUsage: (dailyUsage as any[]).map((item: any) => ({
+              date: item.date,
+              requests: Number(item.requests),
+            })),
+          };
+        },
+        { cacheKey, cacheTTL: 300000 } // 5 minute cache
+      );
+
+      return result;
     } catch (error: any) {
       console.error('Failed to get API key usage', error);
       throw new Error('Failed to get API key usage');
@@ -266,58 +285,69 @@ export class UsageTrackingService {
       const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-      const [
-        requestsLastMinute,
-        requestsLastHour,
-        activeApiKeys,
-        recentMetrics,
-        errorCount,
-      ] = await Promise.all([
-        this.prisma.apiUsage.count({
-          where: {
-            timestamp: { gte: oneMinuteAgo },
-            deletedAt: null,
-          },
-        }),
-        this.prisma.apiUsage.count({
-          where: {
-            timestamp: { gte: oneHourAgo },
-            deletedAt: null,
-          },
-        }),
-        this.prisma.apiUsage.groupBy({
-          by: ['apiKeyId'],
-          where: {
-            timestamp: { gte: oneMinuteAgo },
-            deletedAt: null,
-          },
-        }).then(results => results.length),
-        this.prisma.apiUsage.aggregate({
-          where: {
-            timestamp: { gte: oneMinuteAgo },
-            deletedAt: null,
-          },
-          _avg: { responseTime: true },
-          _count: true,
-        }),
-        this.prisma.apiUsage.count({
-          where: {
-            timestamp: { gte: oneMinuteAgo },
-            statusCode: { gte: 400 },
-            deletedAt: null,
-          },
-        }),
-      ]);
+      const cacheKey = `realTimeMetrics:${now.toISOString()}`;
 
-      const errorRate = recentMetrics._count > 0 ? (errorCount / recentMetrics._count) * 100 : 0;
+      const result = await executeQuery(
+        this.prisma,
+        async () => {
+          const [
+            requestsLastMinute,
+            requestsLastHour,
+            activeApiKeys,
+            recentMetrics,
+            errorCount,
+          ] = await Promise.all([
+            this.prisma.apiUsage.count({
+              where: {
+                timestamp: { gte: oneMinuteAgo },
+                deletedAt: null,
+              },
+            }),
+            this.prisma.apiUsage.count({
+              where: {
+                timestamp: { gte: oneHourAgo },
+                deletedAt: null,
+              },
+            }),
+            this.prisma.apiUsage.findMany({
+              where: {
+                timestamp: { gte: oneMinuteAgo },
+                deletedAt: null,
+              },
+              select: { apiKeyId: true },
+              distinct: ['apiKeyId'],
+            }).then(results => results.length),
+            this.prisma.apiUsage.aggregate({
+              where: {
+                timestamp: { gte: oneMinuteAgo },
+                deletedAt: null,
+              },
+              _avg: { responseTime: true },
+              _count: true,
+            }),
+            this.prisma.apiUsage.count({
+              where: {
+                timestamp: { gte: oneMinuteAgo },
+                statusCode: { gte: 400 },
+                deletedAt: null,
+              },
+            }),
+          ]);
 
-      return {
-        requestsLastMinute,
-        requestsLastHour,
-        activeApiKeys,
-        averageResponseTime: recentMetrics._avg.responseTime || 0,
-        errorRate,
-      };
+          const errorRate = recentMetrics._count > 0 ? (errorCount / recentMetrics._count) * 100 : 0;
+
+          return {
+            requestsLastMinute,
+            requestsLastHour,
+            activeApiKeys,
+            averageResponseTime: recentMetrics._avg.responseTime || 0,
+            errorRate,
+          };
+        },
+        { cacheKey, cacheTTL: 10000 } // 10 second cache for real-time data
+      );
+
+      return result;
     } catch (error: any) {
       console.error('Failed to get real-time metrics', error);
       throw new Error('Failed to get real-time metrics');

@@ -32,6 +32,9 @@ import { loadVaultSecrets } from './config/secrets';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { getDistributedRateLimiter } from './middleware/distributedRateLimiter';
 import { getHealthService } from './services/healthService';
+import { createQueryLogger, queryLoggerMiddleware } from './middleware/queryLogger';
+import { createQueryOptimizer } from './services/queryOptimizer';
+import { startCacheCleanup } from './utils/queryUtils';
 
 const app: express.Application = express();
 
@@ -106,6 +109,14 @@ export const startServer = async (): Promise<void> => {
   const rateLimiter = createTieredRateLimiter(redis);
   const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
 
+  // Initialize query logger and optimizer
+  const queryLogger = createQueryLogger(prisma);
+  const queryOptimizer = createQueryOptimizer(prisma);
+  app.use(queryLoggerMiddleware(queryLogger));
+
+  // Start cache cleanup interval
+  startCacheCleanup(60000); // Clean up expired cache entries every minute
+
   // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
   const healthService = getHealthService(prisma);
   healthService.startMonitoring();
@@ -113,6 +124,16 @@ export const startServer = async (): Promise<void> => {
   const PORT = process.env.PORT || 5000;
 
   await initializeMonitoring();
+
+  // Add query statistics endpoint
+  app.get('/api/query-stats', (_req: Request, res: Response) => {
+    const stats = queryLogger.getStatistics();
+    const optimizerStats = queryOptimizer.getPerformanceStats();
+    res.json({
+      queryLogger: stats,
+      queryOptimizer: optimizerStats
+    });
+  });
 
   const shutdown = async () => {
     try {
@@ -132,7 +153,8 @@ export const startServer = async (): Promise<void> => {
     console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
     console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
-    console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
+    console.log(`� Query stats:   http://localhost:${PORT}/api/query-stats`);
+    console.log(`�📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
 
     try {
       await ensureRedisConnection();
@@ -140,6 +162,8 @@ export const startServer = async (): Promise<void> => {
     } catch (_err) {
       console.warn('⚠️  Redis not available. Continuing without cache.');
     }
+
+    console.log('🗄️  Query optimization enabled');
   });
 };
 
