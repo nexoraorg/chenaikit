@@ -10,6 +10,12 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
+    "seed": "ts-node src/scripts/seed.ts",
+    "seed:dev": "ts-node src/scripts/seed.ts seed:dev",
+    "seed:test": "ts-node src/scripts/seed.ts seed:test",
+    "seed:prod": "ts-node src/scripts/seed.ts seed:prod",
+    "seed:reset": "ts-node src/scripts/seed.ts seed:reset",
+    "seed:validate": "ts-node src/scripts/seed.ts seed:validate",
     "test": "jest",
     "lint": "eslint src/**/*.ts"
   },
