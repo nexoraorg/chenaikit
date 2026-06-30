@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Grid,
   Box,
   Typography,
   Card,
   CardContent,
-  CircularProgress,
   Button,
   FormControl,
   InputLabel,
@@ -301,13 +300,30 @@ export const AnalyticsDashboard: React.FC = () => {
     );
 
   return (
-    <Box sx={{ flexGrow: 1, p: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+    <Box
+      sx={{
+        flexGrow: 1,
+        p: 4,
+        bgcolor: "background.default",
+        minHeight: "100vh",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
+        }}
+      >
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 700, color: "text.primary" }}
+          >
             Business Intelligence Dashboard
           </Typography>
-          <Typography variant="subtitle1" sx={{ color: 'text.secondary' }}>
+          <Typography variant="subtitle1" sx={{ color: "text.secondary" }}>
             Real-time insights across systems, AI, and blockchain
           </Typography>
         </Box>
@@ -333,20 +349,19 @@ export const AnalyticsDashboard: React.FC = () => {
               <MenuItem value="90">Last 90 Days</MenuItem>
             </Select>
           </FormControl>
-          <ExportButton
-            onExport={async (format) => {
-              await handleExportModal(format, {});
-            }}
-            disabled={!dashboardData || !trendData}
+          <Button
+            startIcon={<Download />}
             variant="outlined"
-          />
+            onClick={() => handleExport("csv")}
+          >
+            Export CSV
+          </Button>
           <Button
             startIcon={<Download />}
             variant="contained"
-            onClick={() => setExportModalOpen(true)}
-            disabled={!dashboardData || !trendData}
+            onClick={() => handleExport("pdf")}
           >
-            Advanced Export
+            Export PDF
           </Button>
         </Box>
       </Box>
@@ -381,128 +396,154 @@ export const AnalyticsDashboard: React.FC = () => {
 
       {/* KPI Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <KpiCard
-          title="Total Requests"
-          value={
-            dashboardData?.systemUsage.totalRequests.toLocaleString() || "0"
-          }
-          icon={<Assessment color="primary" />}
-          color="#3B82F6"
-          isRealtime={!!realtimeMetrics}
-        />
-        <KpiCard
-          title="Avg Latency"
-          value={
-            `${dashboardData?.systemUsage.avgLatency.toFixed(2)}ms` || "0ms"
-          }
-          icon={<TrendingUp sx={{ color: "#10B981" }} />}
-          color="#10B981"
-          isRealtime={!!realtimeMetrics}
-        />
-        <KpiCard
-          title="Avg Credit Score"
-          value={dashboardData?.aiPerformance.avgCreditScore.toFixed(0) || "0"}
-          icon={<BugReport color="warning" />}
-          color="#F59E0B"
-        />
-        <KpiCard
-          title="Blockchain Vol"
-          value={
-            dashboardData?.blockchainActivity.totalVolume.toLocaleString() ||
-            "0"
-          }
-          icon={<Public color="secondary" />}
-          color="#8B5CF6"
-          isRealtime={!!latestTransaction}
-        />
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <SkeletonCard lines={2} />
+            </Grid>
+          ))
+        ) : (
+          <>
+            <KpiCard
+              title="Total Requests"
+              value={
+                dashboardData?.systemUsage.totalRequests.toLocaleString() || "0"
+              }
+              icon={<Assessment color="primary" />}
+              color="#3B82F6"
+            />
+            <KpiCard
+              title="Avg Latency"
+              value={
+                `${dashboardData?.systemUsage.avgLatency.toFixed(2)}ms` || "0ms"
+              }
+              icon={<TrendingUp sx={{ color: "#10B981" }} />}
+              color="#10B981"
+            />
+            <KpiCard
+              title="Avg Credit Score"
+              value={
+                dashboardData?.aiPerformance.avgCreditScore.toFixed(0) || "0"
+              }
+              icon={<BugReport color="warning" />}
+              color="#F59E0B"
+            />
+            <KpiCard
+              title="Blockchain Vol"
+              value={
+                dashboardData?.blockchainActivity.totalVolume.toLocaleString() ||
+                "0"
+              }
+              icon={<Public color="secondary" />}
+              color="#8B5CF6"
+            />
+          </>
+        )}
       </Grid>
 
       <Grid container spacing={3}>
         {/* Main Trend Chart */}
         <Grid item xs={12} lg={8}>
-          {trendData && (
-            <UsageChart
-              data={trendData.history}
-              forecast={trendData.forecast}
-              title="System Traffic & Forecast"
-            />
+          {loading ? (
+            <SkeletonChart height={350} />
+          ) : (
+            trendData && (
+              <UsageChart
+                data={trendData.history}
+                forecast={trendData.forecast}
+                title="System Traffic & Forecast"
+              />
+            )
           )}
         </Grid>
 
         {/* AI Distribution Chart */}
         <Grid item xs={12} md={6} lg={4}>
-          {dashboardData && (
-            <DistributionChart
-              data={dashboardData.aiPerformance.riskDistribution}
-              title="Risk Level Distribution"
-            />
+          {loading ? (
+            <SkeletonChart height={300} />
+          ) : (
+            dashboardData && (
+              <DistributionChart
+                data={dashboardData.aiPerformance.riskDistribution}
+                title="Risk Level Distribution"
+              />
+            )
           )}
         </Grid>
 
         {/* Asset Distribution */}
         <Grid item xs={12} md={6} lg={4}>
-          {dashboardData && (
-            <DistributionChart
-              data={dashboardData.blockchainActivity.assetDistribution}
-              title="Blockchain Assets"
-            />
+          {loading ? (
+            <SkeletonChart height={300} />
+          ) : (
+            dashboardData && (
+              <DistributionChart
+                data={dashboardData.blockchainActivity.assetDistribution}
+                title="Blockchain Assets"
+              />
+            )
           )}
         </Grid>
 
         {/* System Health Summary */}
         <Grid item xs={12} lg={8}>
-          <Paper sx={{ p: 3, borderRadius: 2 }}>
-            <Typography
-              variant="h6"
-              gutterBottom
-              color="primary"
-              sx={{ fontWeight: 600 }}
-            >
-              System Health & Performance
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Grid container spacing={2}>
-              <HealthStat
-                label="Success Rate"
-                value={`${dashboardData?.systemUsage.successRate.toFixed(1)}%`}
-                status={
-                  dashboardData?.systemUsage.successRate &&
-                  dashboardData.systemUsage.successRate > 95
-                    ? "good"
-                    : "warning"
-                }
-              />
-              <HealthStat
-                label="Error Rate"
-                value={`${dashboardData?.systemUsage.errorRate.toFixed(1)}%`}
-                status={
-                  dashboardData?.systemUsage.errorRate &&
-                  dashboardData.systemUsage.errorRate < 5
-                    ? "good"
-                    : "critical"
-                }
-              />
-              <HealthStat
-                label="Fraud Alerts"
-                value={
-                  dashboardData?.aiPerformance.totalFraudAlerts.toString() ||
-                  "0"
-                }
-                status={
-                  dashboardData?.aiPerformance.totalFraudAlerts === 0
-                    ? "good"
-                    : "warning"
-                }
-              />
-              <HealthStat
-                label="Resolved Alerts"
-                value={
-                  dashboardData?.aiPerformance.resolvedAlerts.toString() || "0"
-                }
-                status="none"
-              />
-            </Grid>
-          </Paper>
+          {loading ? (
+            <SkeletonCard lines={4} />
+          ) : (
+            <Paper sx={{ p: 3, borderRadius: 2 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                color="primary"
+                sx={{ fontWeight: 600 }}
+              >
+                System Health & Performance
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Grid container spacing={2}>
+                <HealthStat
+                  label="Success Rate"
+                  value={`${dashboardData?.systemUsage.successRate.toFixed(1)}%`}
+                  status={
+                    dashboardData?.systemUsage.successRate &&
+                    dashboardData.systemUsage.successRate > 95
+                      ? "good"
+                      : "warning"
+                  }
+                />
+                <HealthStat
+                  label="Error Rate"
+                  value={`${dashboardData?.systemUsage.errorRate.toFixed(1)}%`}
+                  status={
+                    dashboardData?.systemUsage.errorRate &&
+                    dashboardData.systemUsage.errorRate < 5
+                      ? "good"
+                      : "critical"
+                  }
+                />
+                <HealthStat
+                  label="Fraud Alerts"
+                  value={
+                    dashboardData?.aiPerformance.totalFraudAlerts.toString() ||
+                    "0"
+                  }
+                  status={
+                    dashboardData?.aiPerformance.totalFraudAlerts === 0
+                      ? "good"
+                      : "warning"
+                  }
+                />
+                <HealthStat
+                  label="Resolved Alerts"
+                  value={
+                    dashboardData?.aiPerformance.resolvedAlerts.toString() ||
+                    "0"
+                  }
+                  status="none"
+                />
+              </Grid>
+            </Paper>
+          )}
         </Grid>
       </Grid>
 
@@ -583,7 +624,7 @@ const KpiCard: React.FC<{
         >
           {icon}
         </Box>
-        <Box sx={{ flex: 1 }}>
+        <Box>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
             {title}
           </Typography>
@@ -618,6 +659,13 @@ const HealthStat: React.FC<{
   value: string;
   status: "good" | "warning" | "critical" | "none";
 }> = ({ label, value, status }) => {
+  const statusLabels = {
+    good: "Healthy",
+    warning: "Needs attention",
+    critical: "Critical",
+    none: "Informational",
+  } as const;
+
   const getStatusColor = () => {
     switch (status) {
       case "good":
@@ -636,8 +684,13 @@ const HealthStat: React.FC<{
       <Typography variant="caption" color="textSecondary">
         {label}
       </Typography>
-      <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+      <Box
+        sx={{ display: "flex", alignItems: "center", mt: 0.5 }}
+        aria-label={`${label}: ${value}. Status: ${statusLabels[status]}`}
+      >
         <Box
+          component="span"
+          aria-hidden="true"
           sx={{
             width: 8,
             height: 8,
@@ -646,8 +699,11 @@ const HealthStat: React.FC<{
             mr: 1,
           }}
         />
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+        <Typography variant="h6" component="span" sx={{ fontWeight: 600 }}>
           {value}
+        </Typography>
+        <Typography component="span" className="sr-only">
+          {` (${statusLabels[status]})`}
         </Typography>
       </Box>
     </Grid>

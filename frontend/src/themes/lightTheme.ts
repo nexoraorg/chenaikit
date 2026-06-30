@@ -1,4 +1,5 @@
 import { createTheme } from '@mui/material/styles';
+import { a11yComponentOverrides } from './a11yOverrides';
 
 export const lightTheme = createTheme({
   palette: {
@@ -55,6 +56,7 @@ export const lightTheme = createTheme({
   },
   shape: { borderRadius: 8 },
   components: {
+    ...a11yComponentOverrides,
     MuiCard: {
       styleOverrides: {
         root: {
@@ -68,12 +70,16 @@ export const lightTheme = createTheme({
     },
     MuiButton: {
       styleOverrides: {
-        root: { textTransform: 'none', fontWeight: 600, borderRadius: 8 },
-      },
-    },
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: { transition: 'background-color 0.3s ease, color 0.3s ease' },
+        root: ({ theme }) => ({
+          textTransform: 'none',
+          fontWeight: 600,
+          borderRadius: 8,
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: theme.palette.primary.main,
+            outlineOffset: 2,
+          },
+        }),
       },
     },
   },
