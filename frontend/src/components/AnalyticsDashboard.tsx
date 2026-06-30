@@ -487,63 +487,58 @@ export const AnalyticsDashboard: React.FC = () => {
 
         {/* System Health Summary */}
         <Grid item xs={12} lg={8}>
-          {loading ? (
-            <SkeletonCard lines={4} />
-          ) : (
-            <Paper sx={{ p: 3, borderRadius: 2 }}>
-              <Typography
-                variant="h6"
-                gutterBottom
-                color="primary"
-                sx={{ fontWeight: 600 }}
-              >
-                System Health & Performance
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Grid container spacing={2}>
-                <HealthStat
-                  label="Success Rate"
-                  value={`${dashboardData?.systemUsage.successRate.toFixed(1)}%`}
-                  status={
-                    dashboardData?.systemUsage.successRate &&
-                    dashboardData.systemUsage.successRate > 95
-                      ? "good"
-                      : "warning"
-                  }
-                />
-                <HealthStat
-                  label="Error Rate"
-                  value={`${dashboardData?.systemUsage.errorRate.toFixed(1)}%`}
-                  status={
-                    dashboardData?.systemUsage.errorRate &&
-                    dashboardData.systemUsage.errorRate < 5
-                      ? "good"
-                      : "critical"
-                  }
-                />
-                <HealthStat
-                  label="Fraud Alerts"
-                  value={
-                    dashboardData?.aiPerformance.totalFraudAlerts.toString() ||
-                    "0"
-                  }
-                  status={
-                    dashboardData?.aiPerformance.totalFraudAlerts === 0
-                      ? "good"
-                      : "warning"
-                  }
-                />
-                <HealthStat
-                  label="Resolved Alerts"
-                  value={
-                    dashboardData?.aiPerformance.resolvedAlerts.toString() ||
-                    "0"
-                  }
-                  status="none"
-                />
-              </Grid>
-            </Paper>
-          )}
+          <Paper sx={{ p: 3, borderRadius: 2 }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              color="primary"
+              sx={{ fontWeight: 600 }}
+            >
+              System Health & Performance
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Grid container spacing={2}>
+              <HealthStat
+                label="Success Rate"
+                value={`${dashboardData?.systemUsage.successRate.toFixed(1)}%`}
+                status={
+                  dashboardData?.systemUsage.successRate &&
+                  dashboardData.systemUsage.successRate > 95
+                    ? "good"
+                    : "warning"
+                }
+              />
+              <HealthStat
+                label="Error Rate"
+                value={`${dashboardData?.systemUsage.errorRate.toFixed(1)}%`}
+                status={
+                  dashboardData?.systemUsage.errorRate &&
+                  dashboardData.systemUsage.errorRate < 5
+                    ? "good"
+                    : "critical"
+                }
+              />
+              <HealthStat
+                label="Fraud Alerts"
+                value={
+                  dashboardData?.aiPerformance.totalFraudAlerts.toString() ||
+                  "0"
+                }
+                status={
+                  dashboardData?.aiPerformance.totalFraudAlerts === 0
+                    ? "good"
+                    : "warning"
+                }
+              />
+              <HealthStat
+                label="Resolved Alerts"
+                value={
+                  dashboardData?.aiPerformance.resolvedAlerts.toString() || "0"
+                }
+                status="none"
+              />
+            </Grid>
+          </Paper>
         </Grid>
       </Grid>
 
