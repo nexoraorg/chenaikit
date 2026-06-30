@@ -73,7 +73,9 @@ const PrivacyPage: React.FC = () => {
 };
 
 const DashboardShell: React.FC = () => {
-  const [activeDemo, setActiveDemo] = useState<DemoView>('analytics');
+  const [activeDemo, setActiveDemo] = useState<
+    "analytics" | "forms" | "visualization"
+  >("analytics");
   const { user, logout } = useAuth();
 
   return (

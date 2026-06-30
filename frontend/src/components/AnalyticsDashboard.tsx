@@ -13,6 +13,7 @@ import {
   Alert,
   Divider,
   Paper,
+  Stack,
 } from "@mui/material";
 import {
   TrendingUp,
@@ -24,7 +25,13 @@ import {
 import axios from "axios";
 import { UsageChart } from "./charts/UsageChart";
 import { DistributionChart } from "./charts/DistributionChart";
-import { SkeletonCard, SkeletonChart } from "./index";
+import {
+  useTransactionUpdates,
+  useMetricsUpdates,
+} from "../hooks/useWebSocket";
+import { ConnectionStatusBadge } from "./ConnectionStatusBadge";
+import { UpdateControlButton } from "./UpdateControlButton";
+import { LiveDataIndicator } from "./LiveDataIndicator";
 
 interface DashboardData {
   systemUsage: {
@@ -59,6 +66,10 @@ export const AnalyticsDashboard: React.FC = () => {
   );
   const [trendData, setTrendData] = useState<TrendData | null>(null);
   const [timeRange, setTimeRange] = useState("30");
+
+  // Real-time hooks
+  const { latestTransaction, recentTransactions } = useTransactionUpdates(500);
+  const realtimeMetrics = useMetricsUpdates(1000);
 
   useEffect(() => {
     fetchData();
@@ -129,7 +140,9 @@ export const AnalyticsDashboard: React.FC = () => {
             Real-time insights across systems, AI, and blockchain
           </Typography>
         </Box>
-        <Box sx={{ display: "flex", gap: 2 }}>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <UpdateControlButton size="medium" />
+          <ConnectionStatusBadge variant="compact" />
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>Range</InputLabel>
             <Select
@@ -158,6 +171,34 @@ export const AnalyticsDashboard: React.FC = () => {
           </Button>
         </Box>
       </Box>
+
+      {/* Real-time activity summary */}
+      {recentTransactions.length > 0 && (
+        <Paper
+          sx={{
+            p: 2,
+            mb: 3,
+            bgcolor: "#ECFDF5",
+            borderLeft: "4px solid #10B981",
+          }}
+        >
+          <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+            <Box>
+              <Typography
+                variant="subtitle2"
+                color="success.dark"
+                sx={{ fontWeight: 600 }}
+              >
+                ✓ Real-time Data Active
+              </Typography>
+              <Typography variant="caption" color="success.dark">
+                Last update: {new Date().toLocaleTimeString()} •{" "}
+                {recentTransactions.length} transactions received
+              </Typography>
+            </Box>
+          </Stack>
+        </Paper>
+      )}
 
       {/* KPI Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -252,63 +293,58 @@ export const AnalyticsDashboard: React.FC = () => {
 
         {/* System Health Summary */}
         <Grid item xs={12} lg={8}>
-          {loading ? (
-            <SkeletonCard lines={4} />
-          ) : (
-            <Paper sx={{ p: 3, borderRadius: 2 }}>
-              <Typography
-                variant="h6"
-                gutterBottom
-                color="primary"
-                sx={{ fontWeight: 600 }}
-              >
-                System Health & Performance
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Grid container spacing={2}>
-                <HealthStat
-                  label="Success Rate"
-                  value={`${dashboardData?.systemUsage.successRate.toFixed(1)}%`}
-                  status={
-                    dashboardData?.systemUsage.successRate &&
-                    dashboardData.systemUsage.successRate > 95
-                      ? "good"
-                      : "warning"
-                  }
-                />
-                <HealthStat
-                  label="Error Rate"
-                  value={`${dashboardData?.systemUsage.errorRate.toFixed(1)}%`}
-                  status={
-                    dashboardData?.systemUsage.errorRate &&
-                    dashboardData.systemUsage.errorRate < 5
-                      ? "good"
-                      : "critical"
-                  }
-                />
-                <HealthStat
-                  label="Fraud Alerts"
-                  value={
-                    dashboardData?.aiPerformance.totalFraudAlerts.toString() ||
-                    "0"
-                  }
-                  status={
-                    dashboardData?.aiPerformance.totalFraudAlerts === 0
-                      ? "good"
-                      : "warning"
-                  }
-                />
-                <HealthStat
-                  label="Resolved Alerts"
-                  value={
-                    dashboardData?.aiPerformance.resolvedAlerts.toString() ||
-                    "0"
-                  }
-                  status="none"
-                />
-              </Grid>
-            </Paper>
-          )}
+          <Paper sx={{ p: 3, borderRadius: 2 }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              color="primary"
+              sx={{ fontWeight: 600 }}
+            >
+              System Health & Performance
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Grid container spacing={2}>
+              <HealthStat
+                label="Success Rate"
+                value={`${dashboardData?.systemUsage.successRate.toFixed(1)}%`}
+                status={
+                  dashboardData?.systemUsage.successRate &&
+                  dashboardData.systemUsage.successRate > 95
+                    ? "good"
+                    : "warning"
+                }
+              />
+              <HealthStat
+                label="Error Rate"
+                value={`${dashboardData?.systemUsage.errorRate.toFixed(1)}%`}
+                status={
+                  dashboardData?.systemUsage.errorRate &&
+                  dashboardData.systemUsage.errorRate < 5
+                    ? "good"
+                    : "critical"
+                }
+              />
+              <HealthStat
+                label="Fraud Alerts"
+                value={
+                  dashboardData?.aiPerformance.totalFraudAlerts.toString() ||
+                  "0"
+                }
+                status={
+                  dashboardData?.aiPerformance.totalFraudAlerts === 0
+                    ? "good"
+                    : "warning"
+                }
+              />
+              <HealthStat
+                label="Resolved Alerts"
+                value={
+                  dashboardData?.aiPerformance.resolvedAlerts.toString() || "0"
+                }
+                status="none"
+              />
+            </Grid>
+          </Paper>
         </Grid>
       </Grid>
     </Box>
@@ -320,10 +356,17 @@ const KpiCard: React.FC<{
   value: string;
   icon: React.ReactNode;
   color: string;
-}> = ({ title, value, icon, color }) => (
+  isRealtime?: boolean;
+}> = ({ title, value, icon, color, isRealtime }) => (
   <Grid item xs={12} sm={6} md={3}>
     <Card
-      sx={{ borderRadius: 2, height: "100%", borderTop: `4px solid ${color}` }}
+      sx={{
+        borderRadius: 2,
+        height: "100%",
+        borderTop: `4px solid ${color}`,
+        position: "relative",
+        overflow: "visible",
+      }}
     >
       <CardContent sx={{ display: "flex", alignItems: "center" }}>
         <Box
@@ -344,7 +387,24 @@ const KpiCard: React.FC<{
             {value}
           </Typography>
         </Box>
+        {isRealtime && (
+          <Box
+            sx={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              backgroundColor: "#EF4444",
+              animation: "pulse 2s ease-in-out infinite",
+            }}
+          />
+        )}
       </CardContent>
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+      `}</style>
     </Card>
   </Grid>
 );

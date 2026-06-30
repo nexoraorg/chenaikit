@@ -1,12 +1,12 @@
 // ChenAIKit Backend Server
-import 'reflect-metadata';
-import dotenv from 'dotenv';
+import "reflect-metadata";
+import dotenv from "dotenv";
 dotenv.config();
 
 // Initialize Sentry first
-import { initSentry, sentryErrorHandler } from './middleware/errorTracking';
+import { initSentry, sentryErrorHandler } from "./middleware/errorTracking";
 if (process.env.SENTRY_DSN) {
-  initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || 'development');
+  initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || "development");
 }
 
 import express, { Request, Response } from 'express';
@@ -34,17 +34,18 @@ import { getDistributedRateLimiter } from './middleware/distributedRateLimiter';
 import { getHealthService } from './services/healthService';
 
 const app: express.Application = express();
+const httpServer = createServer(app);
 
 applySecurityMiddleware(app);
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
 app.use('/api', getDistributedRateLimiter().middleware());
 // Health checks remain unversioned and must be matched before the version dispatcher.
-app.use('/api', healthRouter);
+app.use("/api", healthRouter);
 
 // Version discovery endpoint: lists supported versions and their lifecycle.
-app.get('/api/versions', (_req: Request, res: Response) => {
+app.get("/api/versions", (_req: Request, res: Response) => {
   res.json({
     success: true,
     data: {
@@ -60,26 +61,26 @@ app.get('/api/versions', (_req: Request, res: Response) => {
 // (?version) versioning. Unversioned requests fall back to the default version,
 // keeping existing clients working.
 app.use(
-  '/api',
+  "/api",
   detectVersion(),
   versionHeaders(),
-  createVersionRouter({ v1: v1Router, v2: v2Router })
+  createVersionRouter({ v1: v1Router, v2: v2Router }),
 );
 
 // Prometheus metrics endpoint
-app.get('/metrics', async (_req: Request, res: Response) => {
+app.get("/metrics", async (_req: Request, res: Response) => {
   try {
     const metrics = await metricsService.getMetrics();
-    res.set('Content-Type', 'text/plain');
+    res.set("Content-Type", "text/plain");
     res.send(metrics);
   } catch (e: unknown) {
     const error = e as Error;
-    res.status(500).send(error?.message || 'metrics error');
+    res.status(500).send(error?.message || "metrics error");
   }
 });
 
 // 404 handler
-app.use('*', notFoundHandler);
+app.use("*", notFoundHandler);
 
 // Sentry error handler (must be before other error handlers)
 if (process.env.SENTRY_DSN) {
@@ -100,11 +101,18 @@ export const startServer = async (): Promise<void> => {
   validateEnvironment();
 
   const prisma = new PrismaClient();
-  const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+  const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
   const apiKeyService = new ApiKeyService(prisma);
   const usageTrackingService = new UsageTrackingService(prisma);
   const rateLimiter = createTieredRateLimiter(redis);
-  const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
+  const apiGateway = new ApiGateway(
+    apiKeyService,
+    usageTrackingService,
+    rateLimiter,
+  );
+
+  // Initialize WebSocket
+  const wsService = initializeWebSocket(httpServer);
 
   // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
   const healthService = getHealthService(prisma);
@@ -118,6 +126,7 @@ export const startServer = async (): Promise<void> => {
     try {
       healthService.stopMonitoring();
       await shutdownMonitoring();
+      await wsService.shutdown();
       await redis.quit();
       await prisma.$disconnect();
     } catch {
@@ -125,27 +134,28 @@ export const startServer = async (): Promise<void> => {
     }
   };
 
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 
-  const server = app.listen(PORT, async () => {
+  httpServer.listen(PORT, async () => {
     console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
     console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
+    console.log(`🔌 WebSocket:     ws://localhost:${PORT}`);
     console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
 
     try {
       await ensureRedisConnection();
-      console.log('🧠 Redis cache ready');
+      console.log("🧠 Redis cache ready");
     } catch (_err) {
-      console.warn('⚠️  Redis not available. Continuing without cache.');
+      console.warn("⚠️  Redis not available. Continuing without cache.");
     }
   });
 };
 
 if (require.main === module) {
   startServer().catch((error) => {
-    console.error('Failed to start server', error);
+    console.error("Failed to start server", error);
     process.exit(1);
   });
 }
