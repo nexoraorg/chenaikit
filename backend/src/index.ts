@@ -9,41 +9,29 @@ if (process.env.SENTRY_DSN) {
   initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || "development");
 }
 
-import express, { Request, Response } from "express";
-import { createServer } from "http";
-import { log } from "./utils/logger";
-import { requestLoggingMiddleware } from "./middleware/logging";
-import healthRouter from "./routes/health";
-import { metricsService, metricsMiddleware } from "./services/metricsService";
-import {
-  validateEnvironment,
-  initializeMonitoring,
-  shutdownMonitoring,
-} from "./config/monitoring";
-import { UserPayload } from "./types/auth";
-import { ensureRedisConnection } from "./config/redis";
-import {
-  detectVersion,
-  versionHeaders,
-  createVersionRouter,
-} from "./middleware/versioning";
-import v1Router from "./routes/v1";
-import v2Router from "./routes/v2";
-import {
-  API_VERSIONS,
-  LATEST_VERSION,
-  DEFAULT_VERSION,
-} from "./utils/versionUtils";
-import { PrismaClient } from "@prisma/client";
-import { ApiKeyService } from "./services/apiKeyService";
-import { UsageTrackingService } from "./services/usageTrackingService";
-import { ApiGateway } from "./middleware/apiGateway";
-import { createTieredRateLimiter } from "./middleware/advancedRateLimiter";
-import Redis from "ioredis";
-import { applySecurityMiddleware } from "./middleware/security";
-import { loadVaultSecrets } from "./config/secrets";
-import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
-import { initializeWebSocket } from "./services/webSocketService";
+import express, { Request, Response } from 'express';
+import { log } from './utils/logger';
+import { requestLoggingMiddleware } from './middleware/logging';
+import healthRouter from './routes/health';
+import { metricsService, metricsMiddleware } from './services/metricsService';
+import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
+import { UserPayload } from './types/auth';
+import { ensureRedisConnection } from './config/redis';
+import { detectVersion, versionHeaders, createVersionRouter } from './middleware/versioning';
+import v1Router from './routes/v1';
+import v2Router from './routes/v2';
+import { API_VERSIONS, LATEST_VERSION, DEFAULT_VERSION } from './utils/versionUtils';
+import { PrismaClient } from '@prisma/client';
+import { ApiKeyService } from './services/apiKeyService';
+import { UsageTrackingService } from './services/usageTrackingService';
+import { ApiGateway } from './middleware/apiGateway';
+import { createTieredRateLimiter } from './middleware/advancedRateLimiter';
+import Redis from 'ioredis';
+import { applySecurityMiddleware } from './middleware/security';
+import { loadVaultSecrets } from './config/secrets';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { getDistributedRateLimiter } from './middleware/distributedRateLimiter';
+import { getHealthService } from './services/healthService';
 
 const app: express.Application = express();
 const httpServer = createServer(app);
@@ -52,6 +40,7 @@ applySecurityMiddleware(app);
 app.use(express.json({ limit: "10mb" }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
+app.use('/api', getDistributedRateLimiter().middleware());
 // Health checks remain unversioned and must be matched before the version dispatcher.
 app.use("/api", healthRouter);
 
@@ -126,6 +115,8 @@ export const startServer = async (): Promise<void> => {
   const wsService = initializeWebSocket(httpServer);
 
   // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
+  const healthService = getHealthService(prisma);
+  healthService.startMonitoring();
 
   const PORT = process.env.PORT || 5000;
 
@@ -133,6 +124,7 @@ export const startServer = async (): Promise<void> => {
 
   const shutdown = async () => {
     try {
+      healthService.stopMonitoring();
       await shutdownMonitoring();
       await wsService.shutdown();
       await redis.quit();

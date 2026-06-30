@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Grid,
   Box,
   Typography,
   Card,
   CardContent,
-  CircularProgress,
   Button,
   FormControl,
   InputLabel,
@@ -96,63 +95,12 @@ export const AnalyticsDashboard: React.FC = () => {
     }
   };
 
-  // Update dashboard data with real-time metrics
-  useEffect(() => {
-    if (realtimeMetrics && dashboardData) {
-      setDashboardData((prev) =>
-        prev
-          ? {
-              ...prev,
-              systemUsage: {
-                ...prev.systemUsage,
-                totalRequests: realtimeMetrics.totalRequests,
-                avgLatency: realtimeMetrics.avgLatency,
-                errorRate: realtimeMetrics.errorRate,
-                successRate: realtimeMetrics.successRate,
-              },
-            }
-          : null,
-      );
-    }
-  }, [realtimeMetrics]);
-
-  // Update transaction count with real-time data
-  useEffect(() => {
-    if (latestTransaction && dashboardData) {
-      setDashboardData((prev) =>
-        prev
-          ? {
-              ...prev,
-              blockchainActivity: {
-                ...prev.blockchainActivity,
-                totalTxCount: prev.blockchainActivity.totalTxCount + 1,
-              },
-            }
-          : null,
-      );
-    }
-  }, [latestTransaction]);
-
   const handleExport = async (format: "csv" | "pdf") => {
     window.open(
       `/api/v1/analytics/export?format=${format}&days=${timeRange}`,
       "_blank",
     );
   };
-
-  if (loading)
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "80vh",
-        }}
-      >
-        <CircularProgress size={60} />
-      </Box>
-    );
 
   if (error)
     return (
@@ -165,13 +113,30 @@ export const AnalyticsDashboard: React.FC = () => {
     );
 
   return (
-    <Box sx={{ flexGrow: 1, p: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+    <Box
+      sx={{
+        flexGrow: 1,
+        p: 4,
+        bgcolor: "background.default",
+        minHeight: "100vh",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
+        }}
+      >
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 700, color: "text.primary" }}
+          >
             Business Intelligence Dashboard
           </Typography>
-          <Typography variant="subtitle1" sx={{ color: 'text.secondary' }}>
+          <Typography variant="subtitle1" sx={{ color: "text.secondary" }}>
             Real-time insights across systems, AI, and blockchain
           </Typography>
         </Box>
@@ -237,71 +202,92 @@ export const AnalyticsDashboard: React.FC = () => {
 
       {/* KPI Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <KpiCard
-          title="Total Requests"
-          value={
-            dashboardData?.systemUsage.totalRequests.toLocaleString() || "0"
-          }
-          icon={<Assessment color="primary" />}
-          color="#3B82F6"
-          isRealtime={!!realtimeMetrics}
-        />
-        <KpiCard
-          title="Avg Latency"
-          value={
-            `${dashboardData?.systemUsage.avgLatency.toFixed(2)}ms` || "0ms"
-          }
-          icon={<TrendingUp sx={{ color: "#10B981" }} />}
-          color="#10B981"
-          isRealtime={!!realtimeMetrics}
-        />
-        <KpiCard
-          title="Avg Credit Score"
-          value={dashboardData?.aiPerformance.avgCreditScore.toFixed(0) || "0"}
-          icon={<BugReport color="warning" />}
-          color="#F59E0B"
-        />
-        <KpiCard
-          title="Blockchain Vol"
-          value={
-            dashboardData?.blockchainActivity.totalVolume.toLocaleString() ||
-            "0"
-          }
-          icon={<Public color="secondary" />}
-          color="#8B5CF6"
-          isRealtime={!!latestTransaction}
-        />
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <SkeletonCard lines={2} />
+            </Grid>
+          ))
+        ) : (
+          <>
+            <KpiCard
+              title="Total Requests"
+              value={
+                dashboardData?.systemUsage.totalRequests.toLocaleString() || "0"
+              }
+              icon={<Assessment color="primary" />}
+              color="#3B82F6"
+            />
+            <KpiCard
+              title="Avg Latency"
+              value={
+                `${dashboardData?.systemUsage.avgLatency.toFixed(2)}ms` || "0ms"
+              }
+              icon={<TrendingUp sx={{ color: "#10B981" }} />}
+              color="#10B981"
+            />
+            <KpiCard
+              title="Avg Credit Score"
+              value={
+                dashboardData?.aiPerformance.avgCreditScore.toFixed(0) || "0"
+              }
+              icon={<BugReport color="warning" />}
+              color="#F59E0B"
+            />
+            <KpiCard
+              title="Blockchain Vol"
+              value={
+                dashboardData?.blockchainActivity.totalVolume.toLocaleString() ||
+                "0"
+              }
+              icon={<Public color="secondary" />}
+              color="#8B5CF6"
+            />
+          </>
+        )}
       </Grid>
 
       <Grid container spacing={3}>
         {/* Main Trend Chart */}
         <Grid item xs={12} lg={8}>
-          {trendData && (
-            <UsageChart
-              data={trendData.history}
-              forecast={trendData.forecast}
-              title="System Traffic & Forecast"
-            />
+          {loading ? (
+            <SkeletonChart height={350} />
+          ) : (
+            trendData && (
+              <UsageChart
+                data={trendData.history}
+                forecast={trendData.forecast}
+                title="System Traffic & Forecast"
+              />
+            )
           )}
         </Grid>
 
         {/* AI Distribution Chart */}
         <Grid item xs={12} md={6} lg={4}>
-          {dashboardData && (
-            <DistributionChart
-              data={dashboardData.aiPerformance.riskDistribution}
-              title="Risk Level Distribution"
-            />
+          {loading ? (
+            <SkeletonChart height={300} />
+          ) : (
+            dashboardData && (
+              <DistributionChart
+                data={dashboardData.aiPerformance.riskDistribution}
+                title="Risk Level Distribution"
+              />
+            )
           )}
         </Grid>
 
         {/* Asset Distribution */}
         <Grid item xs={12} md={6} lg={4}>
-          {dashboardData && (
-            <DistributionChart
-              data={dashboardData.blockchainActivity.assetDistribution}
-              title="Blockchain Assets"
-            />
+          {loading ? (
+            <SkeletonChart height={300} />
+          ) : (
+            dashboardData && (
+              <DistributionChart
+                data={dashboardData.blockchainActivity.assetDistribution}
+                title="Blockchain Assets"
+              />
+            )
           )}
         </Grid>
 
@@ -393,7 +379,7 @@ const KpiCard: React.FC<{
         >
           {icon}
         </Box>
-        <Box sx={{ flex: 1 }}>
+        <Box>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
             {title}
           </Typography>
@@ -428,6 +414,13 @@ const HealthStat: React.FC<{
   value: string;
   status: "good" | "warning" | "critical" | "none";
 }> = ({ label, value, status }) => {
+  const statusLabels = {
+    good: "Healthy",
+    warning: "Needs attention",
+    critical: "Critical",
+    none: "Informational",
+  } as const;
+
   const getStatusColor = () => {
     switch (status) {
       case "good":
@@ -446,8 +439,13 @@ const HealthStat: React.FC<{
       <Typography variant="caption" color="textSecondary">
         {label}
       </Typography>
-      <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+      <Box
+        sx={{ display: "flex", alignItems: "center", mt: 0.5 }}
+        aria-label={`${label}: ${value}. Status: ${statusLabels[status]}`}
+      >
         <Box
+          component="span"
+          aria-hidden="true"
           sx={{
             width: 8,
             height: 8,
@@ -456,8 +454,11 @@ const HealthStat: React.FC<{
             mr: 1,
           }}
         />
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+        <Typography variant="h6" component="span" sx={{ fontWeight: 600 }}>
           {value}
+        </Typography>
+        <Typography component="span" className="sr-only">
+          {` (${statusLabels[status]})`}
         </Typography>
       </Box>
     </Grid>
