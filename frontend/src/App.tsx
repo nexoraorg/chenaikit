@@ -134,113 +134,116 @@ const DashboardShell: React.FC = () => {
           </Box>
         )}
 
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
-          ChenaiKit - BI &amp; Analytics Dashboard
-        </Typography>
-        <Typography variant="h6" component="p" sx={{ opacity: 0.9, mb: 3, fontWeight: 400 }}>
-          Advanced AI Insights &amp; Blockchain Monitoring
-        </Typography>
-
-        <Box
-          component="nav"
-          aria-label="Main navigation"
-          sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}
+        <h1
+          style={{ fontSize: "32px", fontWeight: "700", marginBottom: "8px" }}
         >
-          <Tabs
-            value={activeDemo}
-            onChange={(_, value: DemoView) => setActiveDemo(value)}
-            aria-label="Dashboard views"
-            textColor="inherit"
-            indicatorColor="secondary"
-            sx={{
-              '& .MuiTab-root': {
-                color: 'rgba(255,255,255,0.75)',
-                fontWeight: 600,
-                textTransform: 'none',
-                minHeight: 48,
-              },
-              '& .Mui-selected': { color: '#ffffff' },
-              '& .MuiTabs-indicator': { backgroundColor: '#38bdf8' },
+          ChenaiKit - BI & Analytics Dashboard
+        </h1>
+        <p style={{ fontSize: "18px", opacity: 0.9, marginBottom: "30px" }}>
+          Advanced AI Insights & Blockchain Monitoring
+        </p>
+        
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setActiveDemo("analytics")}
+            style={{
+              padding: "12px 24px",
+              background:
+                activeDemo === "analytics"
+                  ? "rgba(255, 255, 255, 0.2)"
+                  : "transparent",
+              color: "white",
+              border: "2px solid rgba(255, 255, 255, 0.3)",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "500",
+              transition: "all 0.3s ease",
             }}
           >
-            {DEMO_TABS.map((tab, index) => (
-              <Tab
-                key={tab.id}
-                value={tab.id}
-                label={tab.label}
-                id={`dashboard-tab-${index}`}
-                aria-controls={`dashboard-panel-${tab.id}`}
-              />
-            ))}
-          </Tabs>
+            📈 Analytics Dashboard
+          </button>
+          <button
+            onClick={() => setActiveDemo("forms")}
+            style={{
+              padding: "12px 24px",
+              background:
+                activeDemo === "forms"
+                  ? "rgba(255, 255, 255, 0.2)"
+                  : "transparent",
+              color: "white",
+              border: "2px solid rgba(255, 255, 255, 0.3)",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "500",
+              transition: "all 0.3s ease",
+            }}
+          >
+            📝 Forms
+          </button>
+          <button
+            onClick={() => setActiveDemo("visualization")}
+            style={{
+              padding: "12px 24px",
+              background:
+                activeDemo === "visualization"
+                  ? "rgba(255, 255, 255, 0.2)"
+                  : "transparent",
+              color: "white",
+              border: "2px solid rgba(255, 255, 255, 0.3)",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "500",
+              transition: "all 0.3s ease",
+            }}
+          >
+            📊 Sandbox
+          </button>
+          <Link to="/profile" style={{
+              padding: '12px 24px',
+              background: 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+            👤 Profile
+          </Link>
+          <Link to="/settings" style={{
+              padding: '12px 24px',
+              background: 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+            ⚙️ Settings
+          </Link>
+        </div>
+      </header>
 
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Button
-              component={RouterLink}
-              to="/profile"
-              variant="outlined"
-              aria-label="Open profile page"
-              sx={{
-                color: 'white',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                textTransform: 'none',
-                borderRadius: '8px',
-                '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-              }}
-            >
-              Profile
-            </Button>
-            <Button
-              component={RouterLink}
-              to="/settings"
-              variant="outlined"
-              aria-label="Open settings page"
-              sx={{
-                color: 'white',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                textTransform: 'none',
-                borderRadius: '8px',
-                '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-              }}
-            >
-              Settings
-            </Button>
-          </Box>
-        </Box>
-      </Box>
-
-      <Box
-        component="main"
-        id="main-content"
-        role="main"
-        tabIndex={-1}
-        aria-labelledby={`dashboard-tab-${DEMO_TABS.findIndex((t) => t.id === activeDemo)}`}
-        sx={{ minHeight: 'calc(100vh - 200px)' }}
-      >
-        <Suspense fallback={<LoadingSpinner fullScreen message="Loading dashboard content" />}>
-          {DEMO_TABS.map((tab, index) => (
-            <Box
-              key={tab.id}
-              id={`dashboard-panel-${tab.id}`}
-              role="tabpanel"
-              aria-labelledby={`dashboard-tab-${index}`}
-              hidden={activeDemo !== tab.id}
-            >
-              <ErrorBoundary
-                name={`${tab.label} section`}
-                compact
-                resetKeys={[activeDemo]}
-                fallbackMessage="This dashboard section failed to render. Try resetting the section or switching tabs."
-              >
-                {tab.id === 'analytics' && <AnalyticsDashboard />}
-                {tab.id === 'forms' && <FormValidationExample />}
-                {tab.id === 'visualization' && <DataVisualizationExample />}
-              </ErrorBoundary>
-            </Box>
-          ))}
-        </Suspense>
-      </Box>
-
+      <main style={{ minHeight: "calc(100vh - 200px)" }}>
+        {activeDemo === "analytics" && <AnalyticsDashboard />}
+        {activeDemo === "forms" && <FormValidationExample />}
+        {activeDemo === "visualization" && <DataVisualizationExample />}
+      </main>
+      
       <Box
         component="footer"
         sx={{

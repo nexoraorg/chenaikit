@@ -87,7 +87,8 @@
     "jspdf": "^3.0.3",
     "react-spring": "^10.0.3",
     "recharts": "^3.2.1",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "xlsx": "^0.18.5"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

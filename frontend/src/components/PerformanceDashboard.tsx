@@ -19,19 +19,28 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Snackbar,
+  Button,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material";
 import { useMetricsUpdates } from "../hooks/useWebSocket";
 import { ConnectionStatusBadge } from "./ConnectionStatusBadge";
 import { UpdateControlButton } from "./UpdateControlButton";
 import { LiveDataIndicator } from "./LiveDataIndicator";
+import ExportButton from "./ExportButton";
+import ExportModal from "./ExportModal";
+import {
+  exportDashboard,
+  ExportFormat,
+  ExportOptions,
+  ProgressCallback,
+} from "../utils/exportUtils";
 
 interface PerformanceMetrics {
   api: {
@@ -97,6 +106,12 @@ const PerformanceDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const realtimeMetrics = useMetricsUpdates(1000);
+
+  // Export state
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportSuccess, setExportSuccess] = useState(false);
 
   const thresholds = {
     api: {
@@ -211,6 +226,154 @@ const PerformanceDashboard: React.FC = () => {
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+
+  // Prepare export data
+  const exportData = metrics
+    ? [
+        {
+          category: "API",
+          metric: "Avg Response Time",
+          value: metrics.api.avgResponseTime,
+          unit: "ms",
+        },
+        {
+          category: "API",
+          metric: "95th Percentile",
+          value: metrics.api.p95ResponseTime,
+          unit: "ms",
+        },
+        {
+          category: "API",
+          metric: "Error Rate",
+          value: metrics.api.errorRate,
+          unit: "%",
+        },
+        {
+          category: "API",
+          metric: "Throughput",
+          value: metrics.api.throughput,
+          unit: "RPS",
+        },
+        {
+          category: "Frontend",
+          metric: "Lighthouse Score",
+          value: metrics.frontend.lighthouseScore,
+          unit: "",
+        },
+        {
+          category: "Frontend",
+          metric: "Bundle Size",
+          value: metrics.frontend.bundleSize,
+          unit: "B",
+        },
+        {
+          category: "Frontend",
+          metric: "FCP",
+          value: metrics.frontend.fcp,
+          unit: "ms",
+        },
+        {
+          category: "Frontend",
+          metric: "LCP",
+          value: metrics.frontend.lcp,
+          unit: "ms",
+        },
+        {
+          category: "Database",
+          metric: "Avg Query Time",
+          value: metrics.database.avgQueryTime,
+          unit: "ms",
+        },
+        {
+          category: "Database",
+          metric: "95th Percentile",
+          value: metrics.database.p95QueryTime,
+          unit: "ms",
+        },
+        {
+          category: "Database",
+          metric: "Index Usage",
+          value: metrics.database.indexUsage,
+          unit: "%",
+        },
+        {
+          category: "Database",
+          metric: "Cache Hit Rate",
+          value: metrics.database.cacheHitRate,
+          unit: "%",
+        },
+        {
+          category: "Contracts",
+          metric: "Avg Gas Usage",
+          value: metrics.contracts.avgGasUsage,
+          unit: "gas",
+        },
+        {
+          category: "Contracts",
+          metric: "Max Gas Usage",
+          value: metrics.contracts.maxGasUsage,
+          unit: "gas",
+        },
+        {
+          category: "Contracts",
+          metric: "Avg Execution Time",
+          value: metrics.contracts.avgExecutionTime,
+          unit: "ms",
+        },
+        ...issues.map((issue) => ({
+          category: "Issues",
+          type: issue.type,
+          description: issue.description,
+          severity: issue.severity,
+          actual: issue.actual,
+          threshold: issue.threshold,
+        })),
+      ]
+    : [];
+
+  const handleExportModal = async (
+    format: ExportFormat,
+    options: ExportOptions,
+  ) => {
+    try {
+      setExporting(true);
+      setExportError(null);
+
+      const progressCallback: ProgressCallback = (progress, _message) => {
+        // Progress updates handled internally
+      };
+
+      if (format === "pdf") {
+        await exportDashboard(
+          format,
+          exportData,
+          {
+            ...options,
+            metadata: {
+              ...options.metadata,
+              elementId: "performance-dashboard-container",
+              title: "Performance Dashboard Report",
+            },
+          },
+          progressCallback,
+        );
+      } else {
+        await exportDashboard(format, exportData, options, progressCallback);
+      }
+
+      setExportSuccess(true);
+      setTimeout(() => {
+        setExportSuccess(false);
+      }, 4000);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to export dashboard";
+      setExportError(message);
+      console.error("Export failed:", err);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const getStatusColor = (
@@ -524,7 +687,7 @@ const PerformanceDashboard: React.FC = () => {
   }
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box id="performance-dashboard-container" sx={{ width: "100%" }}>
       <Box
         display="flex"
         justifyContent="space-between"
@@ -537,7 +700,7 @@ const PerformanceDashboard: React.FC = () => {
           </Typography>
           <LiveDataIndicator label="Live" size="small" />
         </Box>
-        <Box display="flex" alignItems="center" gap={2}>
+        <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
           <UpdateControlButton size="medium" />
           <ConnectionStatusBadge variant="compact" />
           <Typography variant="body2" color="textSecondary">
@@ -548,6 +711,22 @@ const PerformanceDashboard: React.FC = () => {
               <RefreshIcon />
             </IconButton>
           </Tooltip>
+          <ExportButton
+            onExport={async (format) => {
+              await handleExportModal(format, {});
+            }}
+            disabled={!metrics}
+            variant="outlined"
+            size="small"
+          />
+          <Button
+            startIcon={<DownloadIcon />}
+            size="small"
+            onClick={() => setExportModalOpen(true)}
+            disabled={!metrics}
+          >
+            Export
+          </Button>
         </Box>
       </Box>
 
@@ -595,6 +774,52 @@ const PerformanceDashboard: React.FC = () => {
       <TabPanel value={tabValue} index={4}>
         {renderIssuesTable()}
       </TabPanel>
+
+      {/* Export Modal */}
+      <ExportModal
+        open={exportModalOpen}
+        onClose={() => {
+          setExportModalOpen(false);
+          setExportError(null);
+        }}
+        onExport={handleExportModal}
+        loading={exporting}
+        error={exportError}
+      />
+
+      {/* Success Notification */}
+      <Snackbar
+        open={exportSuccess}
+        autoHideDuration={4000}
+        onClose={() => setExportSuccess(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setExportSuccess(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+          icon={<CheckCircleIcon />}
+        >
+          Data exported successfully!
+        </Alert>
+      </Snackbar>
+
+      {/* Error Notification */}
+      <Snackbar
+        open={!!exportError}
+        autoHideDuration={6000}
+        onClose={() => setExportError(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setExportError(null)}
+          severity="error"
+          sx={{ width: "100%" }}
+          icon={<ErrorIcon />}
+        >
+          {exportError}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
