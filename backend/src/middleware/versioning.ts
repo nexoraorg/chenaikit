@@ -77,8 +77,8 @@ export function detectVersion(): RequestHandler {
     }
 
     if (raw === undefined) {
-      req.apiVersion = DEFAULT_VERSION;
-      req.apiVersionSource = 'default';
+      (req as any).apiVersion = DEFAULT_VERSION;
+      (req as any).apiVersionSource = 'default';
       next();
       return;
     }
@@ -98,8 +98,8 @@ export function detectVersion(): RequestHandler {
       return;
     }
 
-    req.apiVersion = normalized;
-    req.apiVersionSource = source;
+    (req as any).apiVersion = normalized;
+    (req as any).apiVersionSource = source;
     next();
   };
 }
@@ -116,7 +116,7 @@ export function detectVersion(): RequestHandler {
  */
 export function versionHeaders(): RequestHandler {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const version = req.apiVersion || DEFAULT_VERSION;
+    const version = (req as any).apiVersion || DEFAULT_VERSION;
     const cfg = getVersionConfig(version);
 
     res.setHeader(RESPONSE_VERSION_HEADER, version);
@@ -136,7 +136,7 @@ export function versionHeaders(): RequestHandler {
       log.warn('Sunset API version requested', {
         version,
         path: req.originalUrl,
-        source: req.apiVersionSource,
+        source: (req as any).apiVersionSource,
       });
       res.status(410).json({
         success: false,
@@ -172,7 +172,7 @@ export function versionHeaders(): RequestHandler {
       log.warn('Deprecated API version used', {
         version,
         path: req.originalUrl,
-        source: req.apiVersionSource,
+        source: (req as any).apiVersionSource,
       });
     }
 
@@ -189,7 +189,7 @@ export function versionHeaders(): RequestHandler {
  */
 export function createVersionRouter(routers: Record<string, RequestHandler>): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
-    const version = req.apiVersion || DEFAULT_VERSION;
+    const version = (req as any).apiVersion || DEFAULT_VERSION;
     const handler = routers[version] || routers[DEFAULT_VERSION];
     if (!handler) {
       next();
@@ -206,7 +206,7 @@ export function createVersionRouter(routers: Record<string, RequestHandler>): Re
  */
 export function requireVersion(...versions: string[]): RequestHandler {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const version = req.apiVersion || DEFAULT_VERSION;
+    const version = (req as any).apiVersion || DEFAULT_VERSION;
     if (versions.includes(version)) {
       next();
       return;

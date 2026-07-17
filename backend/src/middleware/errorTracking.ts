@@ -34,7 +34,7 @@ export function errorTrackingMiddleware(
   res: Response
 ): void {
   Sentry.captureException(err, {
-    user: { id: req.user?.id },
+    user: (req as any).user ? { id: (req as any).user.id } : undefined,
     tags: {
       path: req.path,
       method: req.method
