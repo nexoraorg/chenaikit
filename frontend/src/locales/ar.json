@@ -61,6 +61,7 @@
     "createAccount": "إنشاء حساب جديد",
     "signupSubtitle": "سجل لمراقبة تحليلات سلسلة الكتل ومقاييس الائتمان",
     "iAgreeTo": "أوافق على",
+    "termsAgreement": "أوافق على <termsLink>شروط الخدمة</termsLink> و<privacyLink>سياسة الخصوصية</privacyLink>",
     "and": "و",
     "alreadyHaveAccount": "لديك حساب بالفعل؟ ",
     "weak": "ضعيف",
@@ -297,8 +298,12 @@
     "lastUpdated": "آخر تحديث",
     "outOf100": "من 100",
     "scoreRange": "نطاق الدرجات",
+    "pointsDifference_zero": "{{count}} نقطة",
     "pointsDifference_one": "{{count}} نقطة",
-    "pointsDifference_other": "{{count}} نقاط"
+    "pointsDifference_two": "{{count}} نقطتان",
+    "pointsDifference_few": "{{count}} نقاط",
+    "pointsDifference_many": "{{count}} نقطة",
+    "pointsDifference_other": "{{count}} نقطة"
   },
   "errors": {
     "networkError": "حدث خطأ في الشبكة",

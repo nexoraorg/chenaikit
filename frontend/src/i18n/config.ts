@@ -132,8 +132,10 @@ i18n
 
 // Update HTML document attributes when language changes
 i18n.on('languageChanged', (lng) => {
-  document.documentElement.dir = getLanguageDirection(lng);
-  document.documentElement.lang = lng;
+  if (typeof document !== 'undefined') {
+    document.documentElement.dir = getLanguageDirection(lng);
+    document.documentElement.lang = lng;
+  }
 });
 
 // Set initial document attributes

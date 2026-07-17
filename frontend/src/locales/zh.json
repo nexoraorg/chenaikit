@@ -61,6 +61,7 @@
     "createAccount": "创建账户",
     "signupSubtitle": "注册以监控区块链分析和信用指标",
     "iAgreeTo": "我同意",
+    "termsAgreement": "我同意<termsLink>服务条款</termsLink>和<privacyLink>隐私政策</privacyLink>",
     "and": "和",
     "alreadyHaveAccount": "已有账户？ ",
     "weak": "弱",

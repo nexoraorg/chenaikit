@@ -61,6 +61,7 @@
     "createAccount": "Crear una cuenta",
     "signupSubtitle": "Regístrese para monitorear análisis de blockchain y métricas de crédito",
     "iAgreeTo": "Estoy de acuerdo con los",
+    "termsAgreement": "Acepto los <termsLink>Términos de Servicio</termsLink> y la <privacyLink>Política de Privacidad</privacyLink>",
     "and": "y",
     "alreadyHaveAccount": "¿Ya tiene una cuenta? ",
     "weak": "Débil",

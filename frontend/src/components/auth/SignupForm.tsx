@@ -21,7 +21,7 @@ import {
   CheckCircleOutline
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { ValidationRules } from '@chenaikit/core';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { useAuth } from './AuthContext';
@@ -296,22 +296,25 @@ export const SignupForm: React.FC = () => {
             }
             label={
               <Typography variant="body2" sx={{ color: 'text.secondary', userSelect: 'none' }}>
-                {t('auth.iAgreeTo')}{' '}
-                <MuiLink 
-                  component={Link}
-                  to="/terms"
-                  sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-                >
-                  {t('app.termsTitle')}
-                </MuiLink>{' '}
-                {t('auth.and')}{' '}
-                <MuiLink 
-                  component={Link}
-                  to="/privacy"
-                  sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-                >
-                  {t('app.privacyTitle')}
-                </MuiLink>
+                <Trans
+                  i18nKey="auth.termsAgreement"
+                  components={{
+                    termsLink: (
+                      <MuiLink
+                        component={Link}
+                        to="/terms"
+                        sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+                      />
+                    ),
+                    privacyLink: (
+                      <MuiLink
+                        component={Link}
+                        to="/privacy"
+                        sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+                      />
+                    ),
+                  }}
+                />
               </Typography>
             }
             sx={{ mt: -0.5 }}
