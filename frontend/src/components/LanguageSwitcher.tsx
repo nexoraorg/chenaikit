@@ -120,6 +120,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
         ))}
       </Box>
   );
+  };
 
   const renderAvatarVariant = () => {
     const currentLangInfo = getCurrentLanguageInfo();

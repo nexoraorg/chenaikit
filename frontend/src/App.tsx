@@ -248,7 +248,7 @@ const DashboardShell: React.FC = () => {
             ⚙️ {t('app.settings')}
           </Link>
         </div>
-      </header>
+      </Box>
       
       <main style={{ minHeight: 'calc(100vh - 200px)' }}>
         {activeDemo === 'analytics' && <AnalyticsDashboard />}
