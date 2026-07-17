@@ -15,7 +15,7 @@ import { supportedLanguages, changeLanguage, getCurrentLanguage } from '../i18n/
 import { SxProps, Theme } from '@mui/material';
 
 interface LanguageSwitcherProps {
-  variant?: 'select' | 'chip' | 'avatar';
+  variant?: 'select' | 'chip' | 'avatar' | 'compact';
   size?: 'small' | 'medium' | 'large';
   showFlag?: boolean;
   showNativeName?: boolean;
@@ -49,12 +49,13 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
         value={currentLang}
         onChange={handleLanguageChange}
         displayEmpty
+        inputProps={{ 'aria-label': 'Select language' }}
         sx={{
-          minWidth: compact ? 120 : 200,
           '& .MuiSelect-select': {
             display: 'flex',
             alignItems: 'center',
-            gap: 1
+            gap: 1,
+            py: size === 'small' ? 0.5 : 1
           }
         }}
       >
@@ -62,20 +63,20 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           <MenuItem key={language.code} value={language.code}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {showFlag && (
-                <Typography sx={{ fontSize: '1.2em' }}>
+                <Typography component="span" sx={{ fontSize: '1.1rem' }}>
                   {language.flag}
                 </Typography>
               )}
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              {showNativeName && (
+                <Typography component="span" sx={{ fontWeight: 500 }}>
                   {language.nativeName}
                 </Typography>
-                {!compact && (
-                  <Typography variant="caption" color="text.secondary">
-                    {language.name}
-                  </Typography>
-                )}
-              </Box>
+              )}
+              {(!compact && showNativeName) && (
+                <Typography component="span" color="textSecondary" sx={{ fontSize: '0.85rem' }}>
+                  ({language.name})
+                </Typography>
+              )}
             </Box>
           </MenuItem>
         ))}
@@ -84,8 +85,6 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   );
 
   const renderChipVariant = () => {
-    const currentLangInfo = getCurrentLanguageInfo();
-    
     return (
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         {supportedLanguages.map((language) => (
@@ -191,6 +190,8 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       return renderChipVariant();
     case 'avatar':
       return renderAvatarVariant();
+    case 'compact':
+      return renderCompactVariant();
     default:
       return renderSelectVariant();
   }
@@ -249,7 +250,6 @@ export const MobileLanguageSelector: React.FC = () => {
 
 // Language info display component
 export const LanguageInfo: React.FC = () => {
-  const { t, i18n } = useTranslation();
   const currentLang = getCurrentLanguage();
   const currentLangInfo = supportedLanguages.find(lang => lang.code === currentLang) || supportedLanguages[0];
 
