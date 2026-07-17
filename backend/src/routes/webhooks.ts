@@ -14,9 +14,9 @@ const webhookLimiter = rateLimit({
   message: { message: 'Too many webhook requests, try again later.' },
 });
 
-// Apply authentication to all webhook routes
-router.use(authenticate);
+// Apply rate limiting before authentication
 router.use(webhookLimiter);
+router.use(authenticate);
 
 /**
  * POST /api/webhooks - Create a new webhook
@@ -51,6 +51,7 @@ router.post('/', async (req: any, res) => {
         id: webhook.id,
         url: webhook.url,
         events: JSON.parse(webhook.events),
+        secret: webhook.secret, // Return secret on creation so client can verify deliveries
         isActive: webhook.isActive,
         retryCount: webhook.retryCount,
         timeout: webhook.timeout,
@@ -166,7 +167,7 @@ router.put('/:id', async (req: any, res) => {
 
     const webhook = await webhookService.updateWebhook(
       req.params.id,
-      req.user.id,
+      req.user.role === 'admin' ? undefined : req.user.id,
       {
         url,
         events,
@@ -220,7 +221,7 @@ router.put('/:id', async (req: any, res) => {
  */
 router.delete('/:id', async (req: any, res) => {
   try {
-    await webhookService.deleteWebhook(req.params.id, req.user.id);
+    await webhookService.deleteWebhook(req.params.id, req.user.role === 'admin' ? undefined : req.user.id);
 
     res.json({
       success: true,
@@ -254,7 +255,7 @@ router.delete('/:id', async (req: any, res) => {
  */
 router.post('/:id/test', async (req: any, res) => {
   try {
-    const result = await webhookService.testWebhook(req.params.id, req.user.id);
+    const result = await webhookService.testWebhook(req.params.id, req.user.role === 'admin' ? undefined : req.user.id);
 
     res.json({
       success: true,
@@ -288,7 +289,7 @@ router.post('/:id/test', async (req: any, res) => {
  */
 router.get('/:id/stats', async (req: any, res) => {
   try {
-    const stats = await webhookService.getWebhookStats(req.params.id, req.user.id);
+    const stats = await webhookService.getWebhookStats(req.params.id, req.user.role === 'admin' ? undefined : req.user.id);
 
     res.json({
       success: true,
@@ -322,7 +323,7 @@ router.get('/:id/stats', async (req: any, res) => {
  */
 router.post('/:id/regenerate-secret', async (req: any, res) => {
   try {
-    const webhook = await webhookService.regenerateSecret(req.params.id, req.user.id);
+    const webhook = await webhookService.regenerateSecret(req.params.id, req.user.role === 'admin' ? undefined : req.user.id);
 
     res.json({
       success: true,

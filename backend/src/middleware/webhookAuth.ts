@@ -60,8 +60,19 @@ export const verifyWebhookSignature = async (
     }
 
     // Get raw body for signature verification
-    const rawBody = req.body;
-    const payload = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);
+    // Note: This requires express.raw() middleware to be configured before this middleware
+    const rawBody = (req as any).rawBody;
+    if (!rawBody) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_RAW_BODY',
+          message: 'Raw request body not available for signature verification',
+        },
+      });
+    }
+
+    const payload = typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8');
 
     if (!verifySignature(payload, signature, webhook.secret)) {
       return res.status(401).json({

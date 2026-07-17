@@ -1,6 +1,7 @@
 import { prisma } from '../prisma/client';
-import { generateSignature, calculateNextRetry, parseHeaders, stringifyHeaders, parseEvents } from '../utils/webhookUtils';
+import { generateSignature, calculateNextRetry, parseHeaders, stringifyHeaders, parseEvents, redactSensitiveFields } from '../utils/webhookUtils';
 import { WebhookEventType, WebhookPayload } from '../models/Webhook';
+import crypto from 'crypto';
 
 class WebhookService {
   /**
@@ -176,12 +177,15 @@ class WebhookService {
       const statusCode = response.status;
       const responseText = await response.text();
 
+      // Redact sensitive fields before logging
+      const redactedPayload = JSON.stringify(redactSensitiveFields(payload));
+
       // Log delivery
       await prisma.webhookDelivery.create({
         data: {
           webhookId,
           eventType: payload.eventType,
-          payload: payloadString,
+          payload: redactedPayload,
           statusCode,
           response: responseText,
           attempt,
@@ -197,7 +201,7 @@ class WebhookService {
           data: {
             webhookId,
             eventType: payload.eventType,
-            payload: payloadString,
+            payload: redactedPayload,
             attempt: attempt + 1,
             success: false,
             nextRetryAt,
@@ -207,12 +211,15 @@ class WebhookService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
+      // Redact sensitive fields before logging
+      const redactedPayload = JSON.stringify(redactSensitiveFields(payload));
+
       // Log failed delivery
       await prisma.webhookDelivery.create({
         data: {
           webhookId,
           eventType: payload.eventType,
-          payload: payloadString,
+          payload: redactedPayload,
           attempt,
           success: false,
           error: errorMessage,
@@ -226,7 +233,7 @@ class WebhookService {
           data: {
             webhookId,
             eventType: payload.eventType,
-            payload: payloadString,
+            payload: redactedPayload,
             attempt: attempt + 1,
             success: false,
             nextRetryAt,
@@ -282,9 +289,33 @@ class WebhookService {
       webhookId: webhook.id,
     };
 
-    await this.deliverWebhook(webhook, testPayload);
+    try {
+      await this.deliverWebhook(webhook, testPayload);
+      
+      // Get the most recent delivery to check success
+      const latestDelivery = await prisma.webhookDelivery.findFirst({
+        where: { webhookId: id, eventType: 'test' },
+        orderBy: { createdAt: 'desc' },
+      });
 
-    return { success: true, message: 'Test webhook delivered' };
+      if (latestDelivery) {
+        return {
+          success: latestDelivery.success,
+          message: latestDelivery.success ? 'Test webhook delivered successfully' : 'Test webhook delivery failed',
+          statusCode: latestDelivery.statusCode,
+          response: latestDelivery.response,
+          error: latestDelivery.error,
+        };
+      }
+
+      return { success: true, message: 'Test webhook delivered' };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Test webhook delivery failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 
   /**
@@ -335,7 +366,7 @@ class WebhookService {
    * Generate random secret
    */
   private generateSecret(): string {
-    return Buffer.from(Math.random().toString()).toString('base64').substring(0, 32);
+    return crypto.randomBytes(32).toString('hex');
   }
 }
 
