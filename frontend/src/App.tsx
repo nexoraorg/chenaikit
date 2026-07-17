@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Box, Button, Typography } from '@mui/material';
 import { Logout as LogoutIcon, AccountCircle } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import FormValidationExample from './components/FormValidationExample';
 import DataVisualizationExample from './components/DataVisualizationExample';
 import { AnalyticsDashboard, LanguageSwitcher } from './components';
@@ -17,24 +18,26 @@ import './components/FormValidation.css';
 
 // Stub page components for policy/auth routes
 const ForgotPasswordPage: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', bgcolor: 'background.default' }}>
       <Box sx={{ maxWidth: 480, width: '100%', p: 4, borderRadius: 3, boxShadow: '0 4px 32px rgba(0,0,0,0.08)', bgcolor: 'background.paper' }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>Reset your password</Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>Enter your email address and we'll send you a password reset link.</Typography>
-        <Typography variant="caption" sx={{ color: 'text.disabled' }}>Password reset functionality coming soon.</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>{t('app.forgotPasswordTitle')}</Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>{t('app.forgotPasswordDesc')}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.disabled' }}>{t('app.forgotPasswordSoon')}</Typography>
       </Box>
     </Box>
   );
 };
 
 const TermsPage: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <Box sx={{ minHeight: '100vh', p: { xs: 3, md: 6 }, bgcolor: 'background.default' }}>
       <Box sx={{ maxWidth: 800, mx: 'auto' }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, color: 'text.primary' }}>Terms of Service</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, color: 'text.primary' }}>{t('app.termsTitle')}</Typography>
         <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8 }}>
-          These Terms of Service govern your use of ChenaiKit. By accessing or using our platform, you agree to be bound by these terms. Full terms documentation will be published here prior to production launch.
+          {t('app.termsDesc')}
         </Typography>
       </Box>
     </Box>
@@ -42,12 +45,13 @@ const TermsPage: React.FC = () => {
 };
 
 const PrivacyPage: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <Box sx={{ minHeight: '100vh', p: { xs: 3, md: 6 }, bgcolor: 'background.default' }}>
       <Box sx={{ maxWidth: 800, mx: 'auto' }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, color: 'text.primary' }}>Privacy Policy</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, color: 'text.primary' }}>{t('app.privacyTitle')}</Typography>
         <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8 }}>
-          Your privacy is important to us. ChenaiKit collects only the data necessary to provide our services and never sells personal information to third parties. Full privacy policy documentation will be published here prior to production launch.
+          {t('app.privacyDesc')}
         </Typography>
       </Box>
     </Box>
@@ -55,6 +59,7 @@ const PrivacyPage: React.FC = () => {
 };
 
 const DashboardShell: React.FC = () => {
+  const { t } = useTranslation();
   const [activeDemo, setActiveDemo] = useState<'analytics' | 'forms' | 'visualization'>('analytics');
   const { user, logout } = useAuth();
 
@@ -120,16 +125,16 @@ const DashboardShell: React.FC = () => {
                 }
               }}
             >
-              Sign Out
+              {t('app.signOut')}
             </Button>
           </Box>
         )}
 
         <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>
-          ChenaiKit - BI & Analytics Dashboard
+          {t('app.dashboardTitle')}
         </h1>
         <p style={{ fontSize: '18px', opacity: 0.9, marginBottom: '30px' }}>
-          Advanced AI Insights & Blockchain Monitoring
+          {t('app.dashboardSubtitle')}
         </p>
         
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -147,7 +152,7 @@ const DashboardShell: React.FC = () => {
               transition: 'all 0.3s ease'
             }}
           >
-            📈 Analytics Dashboard
+            📈 {t('app.analyticsDashboard')}
           </button>
           <button
             onClick={() => setActiveDemo('forms')}
@@ -163,7 +168,7 @@ const DashboardShell: React.FC = () => {
               transition: 'all 0.3s ease'
             }}
           >
-            📝 Forms
+            📝 {t('app.forms')}
           </button>
           <button
             onClick={() => setActiveDemo('visualization')}
@@ -179,7 +184,7 @@ const DashboardShell: React.FC = () => {
               transition: 'all 0.3s ease'
             }}
           >
-            📊 Sandbox
+            📊 {t('app.sandbox')}
           </button>
           <Link to="/profile" style={{
               padding: '12px 24px',
@@ -196,7 +201,7 @@ const DashboardShell: React.FC = () => {
               alignItems: 'center',
               gap: '8px'
             }}>
-            👤 Profile
+            👤 {t('app.profile')}
           </Link>
           <Link to="/settings" style={{
               padding: '12px 24px',
@@ -213,7 +218,7 @@ const DashboardShell: React.FC = () => {
               alignItems: 'center',
               gap: '8px'
             }}>
-            ⚙️ Settings
+            ⚙️ {t('app.settings')}
           </Link>
         </div>
       </header>
@@ -236,7 +241,7 @@ const DashboardShell: React.FC = () => {
           typography: 'body2',
         }}
       >
-        Built with ChenaiKit - Advanced AI and Blockchain Solutions
+        {t('app.footer')}
       </Box>
     </div>
   );

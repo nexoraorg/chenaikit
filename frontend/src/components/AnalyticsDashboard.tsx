@@ -23,6 +23,8 @@ import {
   Download,
 } from '@mui/icons-material';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
+import { formatNumber } from '../i18n/config';
 import { UsageChart } from './charts/UsageChart';
 import { DistributionChart } from './charts/DistributionChart';
 
@@ -52,6 +54,7 @@ interface TrendData {
 }
 
 export const AnalyticsDashboard: React.FC = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -74,7 +77,7 @@ export const AnalyticsDashboard: React.FC = () => {
       setTrendData(trendRes.data.data);
       setError(null);
     } catch (err: any) {
-      setError('Failed to fetch analytics data. Please ensure the backend is running.');
+      setError(t('analytics.fetchError', { defaultValue: 'Failed to fetch analytics data. Please ensure the backend is running.' }));
     } finally {
       setLoading(false);
     }
@@ -93,7 +96,7 @@ export const AnalyticsDashboard: React.FC = () => {
   if (error) return (
     <Box sx={{ p: 4 }}>
       <Alert severity="error">{error}</Alert>
-      <Button onClick={fetchData} sx={{ mt: 2 }} variant="contained">Retry</Button>
+      <Button onClick={fetchData} sx={{ mt: 2 }} variant="contained">{t('app.retry')}</Button>
     </Box>
   );
 
@@ -102,26 +105,26 @@ export const AnalyticsDashboard: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
-            Business Intelligence Dashboard
+            {t('analytics.title')}
           </Typography>
           <Typography variant="subtitle1" sx={{ color: 'text.secondary' }}>
-            Real-time insights across systems, AI, and blockchain
+            {t('analytics.subtitle')}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Range</InputLabel>
-            <Select value={timeRange} label="Range" onChange={(e) => setTimeRange(e.target.value)}>
-              <MenuItem value="7">Last 7 Days</MenuItem>
-              <MenuItem value="30">Last 30 Days</MenuItem>
-              <MenuItem value="90">Last 90 Days</MenuItem>
+            <InputLabel>{t('analytics.timeRange')}</InputLabel>
+            <Select value={timeRange} label={t('analytics.timeRange')} onChange={(e) => setTimeRange(e.target.value)}>
+              <MenuItem value="7">{t('analytics.last7Days')}</MenuItem>
+              <MenuItem value="30">{t('analytics.last30Days')}</MenuItem>
+              <MenuItem value="90">{t('analytics.last90Days')}</MenuItem>
             </Select>
           </FormControl>
           <Button startIcon={<Download />} variant="outlined" onClick={() => handleExport('csv')}>
-            Export CSV
+            {t('analytics.downloadCsv')}
           </Button>
           <Button startIcon={<Download />} variant="contained" onClick={() => handleExport('pdf')}>
-            Export PDF
+            {t('analytics.downloadPdf')}
           </Button>
         </Box>
       </Box>
@@ -129,26 +132,26 @@ export const AnalyticsDashboard: React.FC = () => {
       {/* KPI Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <KpiCard 
-          title="Total Requests" 
-          value={dashboardData?.systemUsage.totalRequests.toLocaleString() || '0'} 
+          title={t('analytics.totalRequests', { defaultValue: 'Total Requests' })} 
+          value={dashboardData ? formatNumber(dashboardData.systemUsage.totalRequests) : '0'} 
           icon={<Assessment color="primary" />} 
           color="#3B82F6"
         />
         <KpiCard 
-          title="Avg Latency" 
-          value={`${dashboardData?.systemUsage.avgLatency.toFixed(2)}ms` || '0ms'} 
+          title={t('analytics.avgLatency', { defaultValue: 'Avg Latency' })} 
+          value={dashboardData ? `${formatNumber(dashboardData.systemUsage.avgLatency)}ms` : '0ms'} 
           icon={<TrendingUp sx={{ color: '#10B981' }} />} 
           color="#10B981"
         />
         <KpiCard 
-          title="Avg Credit Score" 
-          value={dashboardData?.aiPerformance.avgCreditScore.toFixed(0) || '0'} 
+          title={t('analytics.avgCreditScore', { defaultValue: 'Avg Credit Score' })} 
+          value={dashboardData ? formatNumber(dashboardData.aiPerformance.avgCreditScore) : '0'} 
           icon={<BugReport color="warning" />} 
           color="#F59E0B"
         />
         <KpiCard 
-          title="Blockchain Vol" 
-          value={dashboardData?.blockchainActivity.totalVolume.toLocaleString() || '0'} 
+          title={t('analytics.blockchainVol', { defaultValue: 'Blockchain Vol' })} 
+          value={dashboardData ? formatNumber(dashboardData.blockchainActivity.totalVolume) : '0'} 
           icon={<Public color="secondary" />} 
           color="#8B5CF6"
         />
@@ -161,7 +164,7 @@ export const AnalyticsDashboard: React.FC = () => {
             <UsageChart 
               data={trendData.history} 
               forecast={trendData.forecast} 
-              title="System Traffic & Forecast" 
+              title={t('analytics.systemTrafficForecast', { defaultValue: 'System Traffic & Forecast' })} 
             />
           )}
         </Grid>
@@ -171,7 +174,7 @@ export const AnalyticsDashboard: React.FC = () => {
           {dashboardData && (
             <DistributionChart 
               data={dashboardData.aiPerformance.riskDistribution} 
-              title="Risk Level Distribution" 
+              title={t('analytics.riskDistribution')} 
             />
           )}
         </Grid>
@@ -181,7 +184,7 @@ export const AnalyticsDashboard: React.FC = () => {
           {dashboardData && (
             <DistributionChart 
               data={dashboardData.blockchainActivity.assetDistribution} 
-              title="Blockchain Assets" 
+              title={t('analytics.blockchainAssets', { defaultValue: 'Blockchain Assets' })} 
             />
           )}
         </Grid>
@@ -190,14 +193,14 @@ export const AnalyticsDashboard: React.FC = () => {
         <Grid item xs={12} lg={8}>
           <Paper sx={{ p: 3, borderRadius: 2 }}>
             <Typography variant="h6" gutterBottom color="primary" sx={{ fontWeight: 600 }}>
-              System Health & Performance
+              {t('dashboard.systemHealth')}
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <Grid container spacing={2}>
-              <HealthStat label="Success Rate" value={`${dashboardData?.systemUsage.successRate.toFixed(1)}%`} status={dashboardData?.systemUsage.successRate && dashboardData.systemUsage.successRate > 95 ? 'good' : 'warning'} />
-              <HealthStat label="Error Rate" value={`${dashboardData?.systemUsage.errorRate.toFixed(1)}%`} status={dashboardData?.systemUsage.errorRate && dashboardData.systemUsage.errorRate < 5 ? 'good' : 'critical'} />
-              <HealthStat label="Fraud Alerts" value={dashboardData?.aiPerformance.totalFraudAlerts.toString() || '0'} status={dashboardData?.aiPerformance.totalFraudAlerts === 0 ? 'good' : 'warning'} />
-              <HealthStat label="Resolved Alerts" value={dashboardData?.aiPerformance.resolvedAlerts.toString() || '0'} status="none" />
+              <HealthStat label={t('analytics.successRate', { defaultValue: 'Success Rate' })} value={dashboardData ? `${formatNumber(dashboardData.systemUsage.successRate)}%` : '0%'} status={dashboardData?.systemUsage.successRate && dashboardData.systemUsage.successRate > 95 ? 'good' : 'warning'} />
+              <HealthStat label={t('analytics.errorRate', { defaultValue: 'Error Rate' })} value={dashboardData ? `${formatNumber(dashboardData.systemUsage.errorRate)}%` : '0%'} status={dashboardData?.systemUsage.errorRate && dashboardData.systemUsage.errorRate < 5 ? 'good' : 'critical'} />
+              <HealthStat label={t('analytics.fraudAlerts', { defaultValue: 'Fraud Alerts' })} value={dashboardData ? formatNumber(dashboardData.aiPerformance.totalFraudAlerts) : '0'} status={dashboardData?.aiPerformance.totalFraudAlerts === 0 ? 'good' : 'warning'} />
+              <HealthStat label={t('analytics.resolvedAlerts', { defaultValue: 'Resolved Alerts' })} value={dashboardData ? formatNumber(dashboardData.aiPerformance.resolvedAlerts) : '0'} status="none" />
             </Grid>
           </Paper>
         </Grid>

@@ -17,6 +17,8 @@ import {
   AccessTime
 } from '@mui/icons-material';
 import { CreditScoreCardProps, getScoreRating } from '../types/credit-score';
+import { useTranslation } from 'react-i18next';
+import { formatRelativeTime } from '../i18n/config';
 
 export const CreditScoreCard: React.FC<CreditScoreCardProps> = ({
   score,
@@ -25,6 +27,7 @@ export const CreditScoreCard: React.FC<CreditScoreCardProps> = ({
   loading = false,
   error
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -41,7 +44,7 @@ export const CreditScoreCard: React.FC<CreditScoreCardProps> = ({
         <Box sx={{ textAlign: 'center' }}>
           <CircularProgress size={60} />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Loading credit score...
+            {t('app.loading')}
           </Typography>
         </Box>
       </Card>
@@ -74,21 +77,9 @@ export const CreditScoreCard: React.FC<CreditScoreCardProps> = ({
     return scoreDiff > 0 ? theme.palette.success.main : theme.palette.error.main;
   };
 
-  const formatDate = (date: Date): string => {
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
+  const getRatingLabelKey = (label: string): string => {
+    if (label === 'Very Poor') return 'veryPoor';
+    return label.toLowerCase();
   };
 
   return (
@@ -115,12 +106,12 @@ export const CreditScoreCard: React.FC<CreditScoreCardProps> = ({
             color="text.secondary"
             sx={{ fontSize: isMobile ? '0.875rem' : '1rem', fontWeight: 500 }}
           >
-            Your Credit Score
+            {t('creditScoring.score')}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
             <AccessTime sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
             <Typography variant="caption" color="text.secondary">
-              Updated {formatDate(lastUpdated)}
+              {t('creditScoring.lastUpdated')}{' '}{formatRelativeTime(lastUpdated)}
             </Typography>
           </Box>
         </Box>
@@ -188,7 +179,7 @@ export const CreditScoreCard: React.FC<CreditScoreCardProps> = ({
                 color="text.secondary"
                 sx={{ fontSize: '0.75rem' }}
               >
-                out of 100
+                {t('creditScoring.outOf100', { defaultValue: 'out of 100' })}
               </Typography>
             </Box>
           </Box>
@@ -201,7 +192,7 @@ export const CreditScoreCard: React.FC<CreditScoreCardProps> = ({
             alignItems: isMobile ? 'center' : 'flex-start'
           }}>
             <Chip
-              label={scoreRating.label}
+              label={t('creditScoring.' + getRatingLabelKey(scoreRating.label))}
               sx={{
                 bgcolor: scoreRating.color,
                 color: 'white',
@@ -234,7 +225,7 @@ export const CreditScoreCard: React.FC<CreditScoreCardProps> = ({
                     fontWeight: 600
                   }}
                 >
-                  {Math.abs(scoreDiff)} point{Math.abs(scoreDiff) !== 1 ? 's' : ''}
+                  {t('creditScoring.pointsDifference', { count: Math.abs(scoreDiff) })}
                 </Typography>
               </Box>
             )}
@@ -248,7 +239,7 @@ export const CreditScoreCard: React.FC<CreditScoreCardProps> = ({
             color="text.secondary"
             sx={{ mb: 1, display: 'block' }}
           >
-            Score Range
+            {t('creditScoring.scoreRange', { defaultValue: 'Score Range' })}
           </Typography>
           <Box
             sx={{

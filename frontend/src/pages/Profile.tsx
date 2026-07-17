@@ -21,6 +21,8 @@ import {
   Warning as WarningIcon
 } from '@mui/icons-material';
 import ProfileHeader from '../components/profile/ProfileHeader';
+import { useTranslation } from 'react-i18next';
+import { formatDate, formatDateTime, formatNumber } from '../i18n/config';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -81,6 +83,7 @@ export const Profile: React.FC<ProfilePageProps> = ({
   activity = [],
   onUpdateProfile
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(0);
 
   return (
@@ -102,21 +105,21 @@ export const Profile: React.FC<ProfilePageProps> = ({
               }
             }}
           >
-            <Tab label="Activity" />
-            <Tab label="Account" />
-            <Tab label="Statistics" />
+            <Tab label={t('profile.activity')} />
+            <Tab label={t('profile.account')} />
+            <Tab label={t('profile.statistics')} />
           </Tabs>
 
           <Box sx={{ p: 3 }}>
             <TabPanel value={activeTab} index={0}>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
-                Recent Activity
+                {t('profile.recentActivity')}
               </Typography>
               {activity.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 6 }}>
                   <HistoryIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
                   <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                    No recent activity
+                    {t('profile.noActivity')}
                   </Typography>
                 </Box>
               ) : (
@@ -144,7 +147,7 @@ export const Profile: React.FC<ProfilePageProps> = ({
                                 component="span"
                                 sx={{ display: 'block', color: 'text.disabled', mt: 0.5 }}
                               >
-                                {new Date(item.timestamp).toLocaleString()}
+                                {formatDateTime(item.timestamp)}
                               </Typography>
                             </Box>
                           }
@@ -161,12 +164,12 @@ export const Profile: React.FC<ProfilePageProps> = ({
                   <Card variant="outlined" sx={{ borderRadius: 2 }}>
                     <CardContent>
                       <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-                        Account Information
+                        {t('profile.accountInformation', { defaultValue: 'Account Information' })}
                       </Typography>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <Box>
                           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                            Email
+                            {t('profile.email')}
                           </Typography>
                           <Typography variant="body1" sx={{ fontWeight: 500 }}>
                             {user.email}
@@ -174,19 +177,19 @@ export const Profile: React.FC<ProfilePageProps> = ({
                         </Box>
                         <Box>
                           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                            Role
+                            {t('profile.role')}
                           </Typography>
                           <Typography variant="body1" sx={{ fontWeight: 500, textTransform: 'capitalize' }}>
-                            {user.role || 'User'}
+                            {t('profile.roleName.' + (user.role || 'user'), { defaultValue: user.role || 'User' })}
                           </Typography>
                         </Box>
                         {user.createdAt && (
                         <Box>
                           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                            Member Since
+                            {t('profile.memberSince')}
                           </Typography>
                             <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                              {new Date(user.createdAt).toLocaleDateString()}
+                              {formatDate(user.createdAt)}
                             </Typography>
                           </Box>
                         )}
@@ -199,19 +202,19 @@ export const Profile: React.FC<ProfilePageProps> = ({
                   <Card variant="outlined" sx={{ borderRadius: 2 }}>
                     <CardContent>
                       <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-                        Security Status
+                        {t('profile.securityStatus')}
                       </Typography>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2">Two-Factor Auth</Typography>
-                          <Chip label="Disabled" size="small" color="default" />
+                          <Typography variant="body2">{t('profile.twoFactorEnabled')}</Typography>
+                          <Chip label={t('common.disabled')} size="small" color="default" />
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2">Password</Typography>
-                          <Chip label="Set" size="small" color="success" />
+                          <Typography variant="body2">{t('profile.passwordSet')}</Typography>
+                          <Chip label={t('settings.set', { defaultValue: 'Set' })} size="small" color="success" />
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2">Active Sessions</Typography>
+                          <Typography variant="body2">{t('profile.activeSessions')}</Typography>
                           <Chip label="1" size="small" color="primary" />
                         </Box>
                       </Box>
@@ -228,10 +231,10 @@ export const Profile: React.FC<ProfilePageProps> = ({
                     <Card variant="outlined" sx={{ borderRadius: 2, textAlign: 'center', p: 3 }}>
                       <CreditCardIcon sx={{ fontSize: 40, color: '#38bdf8', mb: 1 }} />
                       <Typography variant="h3" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                        {stats.transactions.toLocaleString()}
+                        {formatNumber(stats.transactions)}
                       </Typography>
                       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        Total Transactions
+                        {t('dashboard.totalTransactions')}
                       </Typography>
                     </Card>
                   </Grid>
@@ -241,10 +244,10 @@ export const Profile: React.FC<ProfilePageProps> = ({
                     <Card variant="outlined" sx={{ borderRadius: 2, textAlign: 'center', p: 3 }}>
                       <TrendingUpIcon sx={{ fontSize: 40, color: '#22c55e', mb: 1 }} />
                       <Typography variant="h3" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                        {stats.score}
+                        {formatNumber(stats.score)}
                       </Typography>
                       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        Credit Score
+                        {t('profile.creditScore')}
                       </Typography>
                     </Card>
                   </Grid>
@@ -254,10 +257,10 @@ export const Profile: React.FC<ProfilePageProps> = ({
                     <Card variant="outlined" sx={{ borderRadius: 2, textAlign: 'center', p: 3 }}>
                       <HistoryIcon sx={{ fontSize: 40, color: '#a855f7', mb: 1 }} />
                       <Typography variant="h3" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                        {stats.activeDays}
+                        {formatNumber(stats.activeDays)}
                       </Typography>
                       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        Active Days
+                        {t('profile.activeDays')}
                       </Typography>
                     </Card>
                   </Grid>
