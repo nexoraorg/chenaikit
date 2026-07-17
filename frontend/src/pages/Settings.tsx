@@ -135,6 +135,7 @@ export const Settings: React.FC<SettingsPageProps> = ({
             onChange={(_, newValue) => setActiveTab(newValue)}
             variant="scrollable"
             scrollButtons="auto"
+            aria-label="Settings sections"
             sx={{
               borderBottom: 1,
               borderColor: 'divider',
@@ -168,22 +169,22 @@ export const Settings: React.FC<SettingsPageProps> = ({
           </Tabs>
 
           <Box sx={{ p: 3 }}>
-            <TabPanel value={activeTab} index={0}>
+            <AccessibleTabPanel value={activeTab} index={0} idPrefix="settings">
               <AccountSettings
                 user={user}
                 onUpdateAccount={onUpdateAccount}
                 onDeleteAccount={onDeleteAccount}
               />
-            </TabPanel>
+            </AccessibleTabPanel>
 
-            <TabPanel value={activeTab} index={1}>
+            <AccessibleTabPanel value={activeTab} index={1} idPrefix="settings">
               <NotificationSettings
                 preferences={notificationPreferences}
                 onUpdatePreferences={onUpdateNotificationPreferences}
               />
-            </TabPanel>
+            </AccessibleTabPanel>
 
-            <TabPanel value={activeTab} index={2}>
+            <AccessibleTabPanel value={activeTab} index={2} idPrefix="settings">
               <SecuritySettings
                 twoFactorEnabled={securitySettings.twoFactorEnabled}
                 sessions={securitySettings.sessions}
@@ -194,16 +195,16 @@ export const Settings: React.FC<SettingsPageProps> = ({
                 onRevokeSession={onRevokeSession}
                 onRevokeAllSessions={onRevokeAllSessions}
               />
-            </TabPanel>
+            </AccessibleTabPanel>
 
-            <TabPanel value={activeTab} index={3}>
+            <AccessibleTabPanel value={activeTab} index={3} idPrefix="settings">
               <ApiKeysSettings
                 apiKeys={apiKeys}
                 onCreateApiKey={onCreateApiKey}
                 onDeleteApiKey={onDeleteApiKey}
                 onRegenerateApiKey={onRegenerateApiKey}
               />
-            </TabPanel>
+            </AccessibleTabPanel>
           </Box>
         </Paper>
       </Box>

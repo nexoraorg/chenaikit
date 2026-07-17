@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -7,8 +7,9 @@ import {
   MenuItem,
   Typography,
   Tooltip,
-  Avatar,
-  Chip
+  IconButton,
+  Chip,
+  InputLabel,
 } from '@mui/material';
 import { supportedLanguages, changeLanguage, getCurrentLanguage } from '../i18n/config';
 
@@ -33,6 +34,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 }) => {
   const { i18n } = useTranslation();
   const currentLang = getCurrentLanguage();
+  const labelId = useId();
 
   const handleLanguageChange = (event: any) => {
     const newLanguage = event.target.value;
@@ -46,6 +48,8 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   const renderSelectVariant = () => (
     <FormControl size={size === 'large' ? 'medium' : size} sx={sx}>
       <Select
+        labelId={labelId}
+        label="Language"
         value={currentLang}
         onChange={handleLanguageChange}
         displayEmpty
@@ -93,7 +97,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
             label={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 {showFlag && (
-                  <Typography sx={{ fontSize: '0.9em' }}>
+                  <Typography component="span" aria-hidden="true" sx={{ fontSize: '0.9em' }}>
                     {language.flag}
                   </Typography>
                 )}
@@ -104,6 +108,8 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
             variant={language.code === currentLang ? 'filled' : 'outlined'}
             color={language.code === currentLang ? 'primary' : 'default'}
             size={size === 'large' ? 'medium' : size}
+            aria-label={`Switch language to ${language.nativeName}`}
+            aria-pressed={language.code === currentLang}
             clickable
             sx={{
               '&:hover': {
@@ -113,8 +119,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           />
         ))}
       </Box>
-    );
-  };
+  );
 
   const renderAvatarVariant = () => {
     const currentLangInfo = getCurrentLanguageInfo();
@@ -122,26 +127,26 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Tooltip title={i18n.t('settings.language')}>
-          <Avatar
-            sx={{
-              width: size === 'large' ? 48 : size === 'small' ? 32 : 40,
-              height: size === 'large' ? 48 : size === 'small' ? 32 : 40,
-              fontSize: size === 'large' ? '1.5em' : size === 'small' ? '1em' : '1.2em',
-              cursor: 'pointer',
-              backgroundColor: 'primary.main',
-              '&:hover': {
-                backgroundColor: 'primary.dark'
-              }
-            }}
+          <IconButton
+            aria-label={`Current language ${currentLangInfo.nativeName}. Activate to switch language`}
             onClick={() => {
-              // Cycle through languages
               const currentIndex = supportedLanguages.findIndex(lang => lang.code === currentLang);
               const nextIndex = (currentIndex + 1) % supportedLanguages.length;
               changeLanguage(supportedLanguages[nextIndex].code);
             }}
+            sx={{
+              width: size === 'large' ? 48 : size === 'small' ? 32 : 40,
+              height: size === 'large' ? 48 : size === 'small' ? 32 : 40,
+              fontSize: size === 'large' ? '1.5em' : size === 'small' ? '1em' : '1.2em',
+              backgroundColor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': {
+                backgroundColor: 'primary.dark',
+              },
+            }}
           >
-            {currentLangInfo.flag}
-          </Avatar>
+            <span aria-hidden="true">{currentLangInfo.flag}</span>
+          </IconButton>
         </Tooltip>
         {!compact && (
           <Box>
@@ -154,34 +159,6 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           </Box>
         )}
       </Box>
-    );
-  };
-
-  const renderCompactVariant = () => {
-    const currentLangInfo = getCurrentLanguageInfo();
-    
-    return (
-      <Tooltip title={`${currentLangInfo.nativeName} (${currentLangInfo.name})`}>
-        <Typography
-          sx={{
-            fontSize: '1.5em',
-            cursor: 'pointer',
-            userSelect: 'none',
-            '&:hover': {
-              transform: 'scale(1.1)',
-              transition: 'transform 0.2s'
-            }
-          }}
-          onClick={() => {
-            // Cycle through languages
-            const currentIndex = supportedLanguages.findIndex(lang => lang.code === currentLang);
-            const nextIndex = (currentIndex + 1) % supportedLanguages.length;
-            changeLanguage(supportedLanguages[nextIndex].code);
-          }}
-        >
-          {currentLangInfo.flag}
-        </Typography>
-      </Tooltip>
     );
   };
 
@@ -211,7 +188,11 @@ export const MobileLanguageSelector: React.FC = () => {
         {supportedLanguages.map((language) => (
           <Box
             key={language.code}
+            component="button"
+            type="button"
             onClick={() => changeLanguage(language.code)}
+            aria-label={`Switch language to ${language.nativeName}`}
+            aria-pressed={language.code === currentLang}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -219,6 +200,9 @@ export const MobileLanguageSelector: React.FC = () => {
               p: 2,
               borderRadius: 1,
               cursor: 'pointer',
+              width: '100%',
+              textAlign: 'left',
+              border: 'none',
               backgroundColor: language.code === currentLang ? 'action.selected' : 'transparent',
               '&:hover': {
                 backgroundColor: 'action.hover'

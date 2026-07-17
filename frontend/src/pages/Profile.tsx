@@ -96,6 +96,7 @@ export const Profile: React.FC<ProfilePageProps> = ({
             value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
             variant="fullWidth"
+            aria-label="Profile sections"
             sx={{
               borderBottom: 1,
               borderColor: 'divider',
@@ -111,7 +112,7 @@ export const Profile: React.FC<ProfilePageProps> = ({
           </Tabs>
 
           <Box sx={{ p: 3 }}>
-            <TabPanel value={activeTab} index={0}>
+            <AccessibleTabPanel value={activeTab} index={0} idPrefix="profile">
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
                 {t('profile.recentActivity')}
               </Typography>
@@ -156,9 +157,9 @@ export const Profile: React.FC<ProfilePageProps> = ({
                   ))}
                 </List>
               )}
-            </TabPanel>
+            </AccessibleTabPanel>
 
-            <TabPanel value={activeTab} index={1}>
+            <AccessibleTabPanel value={activeTab} index={1} idPrefix="profile">
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                   <Card variant="outlined" sx={{ borderRadius: 2 }}>
@@ -222,9 +223,9 @@ export const Profile: React.FC<ProfilePageProps> = ({
                   </Card>
                 </Grid>
               </Grid>
-            </TabPanel>
+            </AccessibleTabPanel>
 
-            <TabPanel value={activeTab} index={2}>
+            <AccessibleTabPanel value={activeTab} index={2} idPrefix="profile">
               <Grid container spacing={3}>
                 {stats.transactions !== undefined && (
                   <Grid item xs={12} sm={4}>
@@ -266,7 +267,7 @@ export const Profile: React.FC<ProfilePageProps> = ({
                   </Grid>
                 )}
               </Grid>
-            </TabPanel>
+            </AccessibleTabPanel>
           </Box>
         </Paper>
       </Box>

@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Grid,
   Box,
   Typography,
   Card,
   CardContent,
-  CircularProgress,
   Button,
   FormControl,
   InputLabel,
@@ -14,7 +13,7 @@ import {
   Alert,
   Divider,
   Paper,
-} from '@mui/material';
+} from "@mui/material";
 import {
   TrendingUp,
   Assessment,
@@ -57,9 +56,11 @@ export const AnalyticsDashboard: React.FC = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
+    null,
+  );
   const [trendData, setTrendData] = useState<TrendData | null>(null);
-  const [timeRange, setTimeRange] = useState('30');
+  const [timeRange, setTimeRange] = useState("30");
 
   useEffect(() => {
     fetchData();
@@ -70,7 +71,7 @@ export const AnalyticsDashboard: React.FC = () => {
     try {
       const [dashRes, trendRes] = await Promise.all([
         axios.get(`/api/v1/analytics/dashboard?days=${timeRange}`),
-        axios.get(`/api/v1/analytics/trends?days=${timeRange}`)
+        axios.get(`/api/v1/analytics/trends?days=${timeRange}`),
       ]);
 
       setDashboardData(dashRes.data.data);
@@ -83,8 +84,11 @@ export const AnalyticsDashboard: React.FC = () => {
     }
   };
 
-  const handleExport = async (format: 'csv' | 'pdf') => {
-    window.open(`/api/v1/analytics/export?format=${format}&days=${timeRange}`, '_blank');
+  const handleExport = async (format: "csv" | "pdf") => {
+    window.open(
+      `/api/v1/analytics/export?format=${format}&days=${timeRange}`,
+      "_blank",
+    );
   };
 
   if (loading) return (
@@ -101,8 +105,22 @@ export const AnalyticsDashboard: React.FC = () => {
   );
 
   return (
-    <Box sx={{ flexGrow: 1, p: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+    <Box
+      sx={{
+        flexGrow: 1,
+        p: 4,
+        bgcolor: "background.default",
+        minHeight: "100vh",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
+        }}
+      >
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
             {t('analytics.title')}
@@ -111,7 +129,7 @@ export const AnalyticsDashboard: React.FC = () => {
             {t('analytics.subtitle')}
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: "flex", gap: 2 }}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>{t('analytics.timeRange')}</InputLabel>
             <Select value={timeRange} label={t('analytics.timeRange')} onChange={(e) => setTimeRange(e.target.value)}>
@@ -209,38 +227,91 @@ export const AnalyticsDashboard: React.FC = () => {
   );
 };
 
-const KpiCard: React.FC<{ title: string; value: string; icon: React.ReactNode; color: string }> = ({ title, value, icon, color }) => (
+const KpiCard: React.FC<{
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  color: string;
+}> = ({ title, value, icon, color }) => (
   <Grid item xs={12} sm={6} md={3}>
-    <Card sx={{ borderRadius: 2, height: '100%', borderTop: `4px solid ${color}` }}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Box sx={{ p: 1.5, borderRadius: 1.5, backgroundColor: `${color}10`, mr: 2 }}>
+    <Card
+      sx={{ borderRadius: 2, height: "100%", borderTop: `4px solid ${color}` }}
+    >
+      <CardContent sx={{ display: "flex", alignItems: "center" }}>
+        <Box
+          sx={{
+            p: 1.5,
+            borderRadius: 1.5,
+            backgroundColor: `${color}10`,
+            mr: 2,
+          }}
+        >
           {icon}
         </Box>
         <Box>
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>{title}</Typography>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>{value}</Typography>
+          <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+            {title}
+          </Typography>
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            {value}
+          </Typography>
         </Box>
       </CardContent>
     </Card>
   </Grid>
 );
 
-const HealthStat: React.FC<{ label: string; value: string; status: 'good' | 'warning' | 'critical' | 'none' }> = ({ label, value, status }) => {
+const HealthStat: React.FC<{
+  label: string;
+  value: string;
+  status: "good" | "warning" | "critical" | "none";
+}> = ({ label, value, status }) => {
+  const statusLabels = {
+    good: "Healthy",
+    warning: "Needs attention",
+    critical: "Critical",
+    none: "Informational",
+  } as const;
+
   const getStatusColor = () => {
     switch (status) {
-      case 'good': return '#10B981';
-      case 'warning': return '#F59E0B';
-      case 'critical': return '#EF4444';
-      default: return '#6B7280';
+      case "good":
+        return "#10B981";
+      case "warning":
+        return "#F59E0B";
+      case "critical":
+        return "#EF4444";
+      default:
+        return "#6B7280";
     }
   };
 
   return (
     <Grid item xs={6} sm={3}>
-      <Typography variant="caption" color="textSecondary">{label}</Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-        <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: getStatusColor(), mr: 1 }} />
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>{value}</Typography>
+      <Typography variant="caption" color="textSecondary">
+        {label}
+      </Typography>
+      <Box
+        sx={{ display: "flex", alignItems: "center", mt: 0.5 }}
+        aria-label={`${label}: ${value}. Status: ${statusLabels[status]}`}
+      >
+        <Box
+          component="span"
+          aria-hidden="true"
+          sx={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            backgroundColor: getStatusColor(),
+            mr: 1,
+          }}
+        />
+        <Typography variant="h6" component="span" sx={{ fontWeight: 600 }}>
+          {value}
+        </Typography>
+        <Typography component="span" className="sr-only">
+          {` (${statusLabels[status]})`}
+        </Typography>
       </Box>
     </Grid>
   );
