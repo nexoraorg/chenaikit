@@ -46,11 +46,9 @@ jobs:
               run: pnpm build
 
             - name: Setup Rust
-              uses: actions-rs/toolchain@v1
+              uses: dtolnay/rust-toolchain@1.81.0
               with:
-                toolchain: stable
-                profile: minimal
-                override: true
+                targets: wasm32-unknown-unknown
 
             - name: Build Contracts
               run: |

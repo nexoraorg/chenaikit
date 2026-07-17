@@ -213,7 +213,7 @@ const DashboardShell: React.FC = () => {
           >
             📊 {t('app.sandbox')}
           </button>
-          <Link to="/profile" style={{
+          <RouterLink to="/profile" style={{
               padding: '12px 24px',
               background: 'transparent',
               color: 'white',
@@ -229,8 +229,8 @@ const DashboardShell: React.FC = () => {
               gap: '8px'
             }}>
             👤 {t('app.profile')}
-          </Link>
-          <Link to="/settings" style={{
+          </RouterLink>
+          <RouterLink to="/settings" style={{
               padding: '12px 24px',
               background: 'transparent',
               color: 'white',
@@ -246,7 +246,7 @@ const DashboardShell: React.FC = () => {
               gap: '8px'
             }}>
             ⚙️ {t('app.settings')}
-          </Link>
+          </RouterLink>
         </div>
       </Box>
       
