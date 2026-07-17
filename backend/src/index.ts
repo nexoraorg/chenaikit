@@ -17,6 +17,7 @@ import { metricsService, metricsMiddleware } from './services/metricsService';
 import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
 import { UserPayload } from './types/auth';
 import { ensureRedisConnection } from './config/redis';
+import { cache } from './services/cacheService';
 import { detectVersion, versionHeaders, createVersionRouter } from './middleware/versioning';
 import v1Router from './routes/v1';
 import v2Router from './routes/v2';
@@ -117,6 +118,7 @@ export const startServer = async (): Promise<void> => {
   const shutdown = async () => {
     try {
       healthService.stopMonitoring();
+      cache.stopMonitoring();
       await shutdownMonitoring();
       await redis.quit();
       await prisma.$disconnect();
@@ -136,6 +138,7 @@ export const startServer = async (): Promise<void> => {
 
     try {
       await ensureRedisConnection();
+      cache.startMonitoring();
       console.log('🧠 Redis cache ready');
     } catch (_err) {
       console.warn('⚠️  Redis not available. Continuing without cache.');

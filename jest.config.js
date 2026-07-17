@@ -15,4 +15,7 @@ module.exports = {
       statements: 55,
     },
   },
+  // Force exit after tests complete — needed because cacheService.ts
+  // singletons create a setInterval monitoring timer on import.
+  forceExit: true,
 };
