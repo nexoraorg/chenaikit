@@ -212,13 +212,13 @@ export class MultiLevelCacheService implements IMultiLevelCacheService {
     private memory: MemoryCacheService,
     private redis: RedisCacheService
   ) {
-    if (cacheConfig.monitoring.enabled) {
-      this.startMonitoring();
-    }
+    // Monitoring is started explicitly via startMonitoring()
+    // to avoid creating open handles on module import.
   }
 
   // ─── Monitoring ──────────────────────────
-  private startMonitoring(): void {
+  /** Start the monitoring timer. Call this during server startup. */
+  startMonitoring(): void {
     this.monitoringTimer = setInterval(() => {
       if (cacheConfig.monitoring.logStats) {
         const stats = this.getStats();

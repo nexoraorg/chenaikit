@@ -46,11 +46,7 @@ jobs:
               run: pnpm build
 
             - name: Setup Rust
-              uses: actions-rs/toolchain@v1
-              with:
-                toolchain: stable
-                profile: minimal
-                override: true
+              uses: dtolnay/rust-toolchain@stable
 
             - name: Build Contracts
               run: |
