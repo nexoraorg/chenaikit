@@ -30,4 +30,5 @@ export { default as ChatInterface } from './ChatInterface';
 export { default as WalletInterface } from './WalletInterface';
 export { AnalyticsDashboard } from './AnalyticsDashboard';
 export { LanguageSwitcher } from './LanguageSwitcher';
+export { LoadingSpinner } from './LoadingSpinner';
 
