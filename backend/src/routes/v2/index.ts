@@ -10,6 +10,7 @@ import { Router } from 'express';
 import type { Router as ExpressRouter } from 'express';
 import accountRoutes from '../accounts';
 import authRoutes from '../auth';
+import webhookRoutes from '../webhooks';
 import { createFeatureFlagRouter } from '../featureFlags';
 import { generateCreditScore, generateFraudResult, toCreditScoreV2, toFraudResultV2 } from '../shared/scoring';
 import { validate } from '../../middleware/validation';
@@ -19,6 +20,7 @@ const router: ExpressRouter = Router();
 
 router.use('/accounts', accountRoutes);
 router.use('/auth', authRoutes);
+router.use('/webhooks', webhookRoutes);
 router.use('/feature-flags', createFeatureFlagRouter());
 
 // GET /credit-score - nested v2 contract

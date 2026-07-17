@@ -17,6 +17,7 @@ model User {
   deletedAt     DateTime?
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
+  webhooks      Webhook[]
 
   @@index([createdAt])
   @@index([email])
@@ -101,5 +102,55 @@ model ApiUsage {
   @@index([responseTime])
   @@index([deletedAt])
   @@index([apiKeyId, statusCode])
+}
+
+model Webhook {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url         String
+  events      String   // JSON array of event types
+  secret      String   // HMAC secret for signature verification
+  isActive    Boolean  @default(true)
+  headers     String   @default("{}") // JSON object of custom headers
+  retryCount  Int      @default(3)
+  timeout     Int      @default(5000) // timeout in milliseconds
+  allowedIps  String   @default("") // JSON array of allowed IPs
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  deliveries  WebhookDelivery[]
+
+  @@map("webhooks")
+  @@index([userId, isActive])
+  @@index([events])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model WebhookDelivery {
+  id          String   @id @default(cuid())
+  webhookId   String
+  webhook     Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  eventType   String
+  payload     String   // JSON payload
+  statusCode  Int?
+  response    String?
+  attempt     Int      @default(1)
+  success     Boolean  @default(false)
+  error       String?
+  nextRetryAt DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("webhook_deliveries")
+  @@index([webhookId, eventType])
+  @@index([success])
+  @@index([nextRetryAt])
+  @@index([createdAt])
+  @@index([webhookId, success])
 }
 
