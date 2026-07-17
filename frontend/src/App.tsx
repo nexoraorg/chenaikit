@@ -4,7 +4,7 @@ import { Box, Button, Typography } from '@mui/material';
 import { Logout as LogoutIcon, AccountCircle } from '@mui/icons-material';
 import FormValidationExample from './components/FormValidationExample';
 import DataVisualizationExample from './components/DataVisualizationExample';
-import { AnalyticsDashboard } from './components';
+import { AnalyticsDashboard, LanguageSwitcher } from './components';
 import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -78,6 +78,27 @@ const DashboardShell: React.FC = () => {
             justifyContent: 'center',
             mb: { xs: 2, sm: 0 }
           }}>
+            <LanguageSwitcher 
+              size="small" 
+              compact 
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.3)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'white',
+                },
+                '& .MuiSelect-select': {
+                  color: 'white',
+                },
+                '& .MuiSelect-icon': {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                }
+              }}
+            />
             <ThemeToggle />
             <AccountCircle sx={{ color: '#38bdf8' }} />
             <Typography variant="body2" sx={{ fontWeight: 500, color: '#e2e8f0' }}>

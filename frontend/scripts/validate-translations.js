@@ -5,7 +5,7 @@ const path = require('path');
 
 // Configuration
 const LOCALES_DIR = path.join(__dirname, '../src/locales');
-const SUPPORTED_LANGUAGES = ['en', 'es', 'zh'];
+const SUPPORTED_LANGUAGES = ['en', 'es', 'zh', 'ar'];
 
 // Colors for console output
 const colors = {

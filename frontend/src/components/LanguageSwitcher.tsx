@@ -12,12 +12,15 @@ import {
 } from '@mui/material';
 import { supportedLanguages, changeLanguage, getCurrentLanguage } from '../i18n/config';
 
+import { SxProps, Theme } from '@mui/material';
+
 interface LanguageSwitcherProps {
   variant?: 'select' | 'chip' | 'avatar';
   size?: 'small' | 'medium' | 'large';
   showFlag?: boolean;
   showNativeName?: boolean;
   compact?: boolean;
+  sx?: SxProps<Theme>;
 }
 
 export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
@@ -25,7 +28,8 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   size = 'medium',
   showFlag = true,
   showNativeName = true,
-  compact = false
+  compact = false,
+  sx
 }) => {
   const { i18n } = useTranslation();
   const currentLang = getCurrentLanguage();
@@ -40,7 +44,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   };
 
   const renderSelectVariant = () => (
-    <FormControl size={size === 'large' ? 'medium' : size}>
+    <FormControl size={size === 'large' ? 'medium' : size} sx={sx}>
       <Select
         value={currentLang}
         onChange={handleLanguageChange}
