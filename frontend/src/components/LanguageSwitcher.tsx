@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -9,7 +9,6 @@ import {
   Tooltip,
   IconButton,
   Chip,
-  InputLabel,
 } from '@mui/material';
 import { supportedLanguages, changeLanguage, getCurrentLanguage } from '../i18n/config';
 
@@ -34,7 +33,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 }) => {
   const { i18n } = useTranslation();
   const currentLang = getCurrentLanguage();
-  const labelId = useId();
+
 
   const handleLanguageChange = (event: any) => {
     const newLanguage = event.target.value;
@@ -48,8 +47,6 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   const renderSelectVariant = () => (
     <FormControl size={size === 'large' ? 'medium' : size} sx={sx}>
       <Select
-        labelId={labelId}
-        label="Language"
         value={currentLang}
         onChange={handleLanguageChange}
         displayEmpty
