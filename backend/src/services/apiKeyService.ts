@@ -1,8 +1,39 @@
 import { PrismaClient } from '@prisma/client';
 import { ApiKey, ApiKeyCreateInput, ApiKeyUpdateInput } from '../models/ApiKey';
-import { createHash, randomBytes } from 'crypto';
+import { scryptSync, randomBytes, timingSafeEqual } from 'crypto';
 import { log } from '../utils/logger';
 import { DatabaseError, NotFoundError, ValidationError } from '../utils/errors';
+
+// Scrypt parameters for API key hashing.
+// N=16384 (2^14), r=8, p=1 are OWASP-recommended minimum work factors for scrypt.
+const SCRYPT_N = 16384;
+const SCRYPT_R = 8;
+const SCRYPT_P = 1;
+const SCRYPT_KEYLEN = 64;
+
+/**
+ * Hash an API key using scrypt with a random salt.
+ * Returns "salt:hash" (both hex-encoded) for storage.
+ */
+function hashApiKey(key: string): string {
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(key, salt, SCRYPT_KEYLEN, { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P }).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+/**
+ * Verify an API key against a stored "salt:hash" value.
+ */
+function verifyApiKey(key: string, stored: string): boolean {
+  const [salt, storedHash] = stored.split(':');
+  if (!salt || !storedHash) return false;
+  try {
+    const hash = scryptSync(key, salt, SCRYPT_KEYLEN, { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P });
+    return timingSafeEqual(Buffer.from(storedHash, 'hex'), hash);
+  } catch {
+    return false;
+  }
+}
 
 export class ApiKeyService {
   constructor(private prisma: PrismaClient) {}
@@ -12,7 +43,7 @@ export class ApiKeyService {
    */
   private generateApiKey(): { key: string; hash: string } {
     const key = `ck_${randomBytes(32).toString('hex')}`;
-    const hash = createHash('sha256').update(key).digest('hex');
+    const hash = hashApiKey(key);
     return { key, hash };
   }
 
@@ -51,16 +82,13 @@ export class ApiKeyService {
    * Validate an API key and return the associated key object
    */
   async validateApiKey(key: string): Promise<ApiKey | null> {
-    const hash = createHash('sha256').update(key).digest('hex');
-    
-    const prismaApiKey = await this.prisma.apiKey.findFirst({
-      where: {
-        keyHash: hash,
-        isActive: true,
-        deletedAt: null,
-      },
+    // Fetch all active, non-deleted keys and verify with timing-safe scrypt comparison.
+    // We cannot do a direct DB lookup because the stored value includes a random salt.
+    const prismaApiKeys = await this.prisma.apiKey.findMany({
+      where: { isActive: true, deletedAt: null },
     });
 
+    const prismaApiKey = prismaApiKeys.find(k => verifyApiKey(key, k.keyHash));
     if (!prismaApiKey) {
       return null;
     }

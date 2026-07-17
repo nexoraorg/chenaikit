@@ -1,9 +1,11 @@
 import crypto from 'crypto';
 
 /**
- * Generate HMAC signature for webhook payload verification
+ * Generate HMAC signature for webhook payload verification.
+ * sha256-HMAC is the correct algorithm for payload signing — not credential storage.
  */
 export const generateSignature = (payload: string, secret: string): string => {
+  // lgtm[js/insufficient-password-hash] -- This is HMAC for webhook signatures, not a password hash
   return crypto
     .createHmac('sha256', secret)
     .update(payload)
