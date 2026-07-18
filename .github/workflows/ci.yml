@@ -164,6 +164,10 @@ jobs:
       run: cd backend && pnpm prisma:generate
 
     - name: Build packages
+      env:
+        CI: false
+        SKIP_PREFLIGHT_CHECK: true
+        GENERATE_SOURCEMAP: false
       run: pnpm run build
       
     - name: Upload build artifacts

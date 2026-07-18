@@ -130,6 +130,20 @@ i18n
     }
   });
 
+// Update HTML document attributes when language changes
+i18n.on('languageChanged', (lng) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.dir = getLanguageDirection(lng);
+    document.documentElement.lang = lng;
+  }
+});
+
+// Set initial document attributes
+if (typeof document !== 'undefined') {
+  document.documentElement.dir = getLanguageDirection(i18n.language || defaultLanguage);
+  document.documentElement.lang = i18n.language || defaultLanguage;
+}
+
 // Export i18n instance
 export default i18n;
 

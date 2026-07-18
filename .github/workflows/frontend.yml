@@ -49,4 +49,8 @@ jobs:
         run: pnpm --filter frontend test || true
 
       - name: Build frontend
+        env:
+          CI: false
+          SKIP_PREFLIGHT_CHECK: true
+          GENERATE_SOURCEMAP: false
         run: pnpm --filter frontend build

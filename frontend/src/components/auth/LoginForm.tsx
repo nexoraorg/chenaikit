@@ -22,11 +22,13 @@ import {
   GitHub
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ValidationRules } from '@chenaikit/core';
-import { useFormValidation } from '../../hooks/useFormValidation';
 import { useAuth } from './AuthContext';
+import { useFormValidation } from '../../hooks/useFormValidation';
 
 export const LoginForm: React.FC = () => {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,8 +52,8 @@ export const LoginForm: React.FC = () => {
       password: ''
     },
     validationRules: {
-      email: ValidationRules.email(),
-      password: ValidationRules.required('Password is required')
+      email: ValidationRules.email(t('forms.invalidEmail')),
+      password: ValidationRules.required(t('forms.required'))
     },
     onSubmit: async (formValues) => {
       setSubmitError(null);
@@ -59,7 +61,7 @@ export const LoginForm: React.FC = () => {
         await login(formValues.email, formValues.password, rememberMe);
         navigate(from, { replace: true });
       } catch (err: any) {
-        setSubmitError(err.message || 'Failed to sign in. Please try again.');
+        setSubmitError(err.message || t('auth.loginError'));
       }
     },
     validateOnChange: true,
@@ -74,10 +76,10 @@ export const LoginForm: React.FC = () => {
     <Box sx={{ width: '100%' }}>
       <Box sx={{ mb: 4, textAlign: 'center' }}>
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: 'text.primary' }}>
-          Welcome back
+          {t('auth.welcomeBack')}
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Enter your details to access your dashboard
+          {t('auth.loginSubtitle')}
         </Typography>
       </Box>
 
@@ -92,7 +94,7 @@ export const LoginForm: React.FC = () => {
           <TextField
             id="field-email"
             name="email"
-            label="Email Address"
+            label={t('profile.email')}
             placeholder="name@example.com"
             value={values.email}
             onChange={(e) => handleChange('email', e.target.value)}
@@ -115,7 +117,7 @@ export const LoginForm: React.FC = () => {
           <TextField
             id="field-password"
             name="password"
-            label="Password"
+            label={t('settings.changePassword')}
             type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
             value={values.password}
@@ -158,9 +160,9 @@ export const LoginForm: React.FC = () => {
                 />
               }
               label={
-            <Typography variant="body2" sx={{ color: 'text.secondary', userSelect: 'none' }}>
-              Remember me
-            </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', userSelect: 'none' }}>
+                  {t('auth.rememberMe')}
+                </Typography>
               }
             />
             <MuiLink
@@ -174,7 +176,7 @@ export const LoginForm: React.FC = () => {
                 '&:hover': { textDecoration: 'underline' }
               }}
             >
-              Forgot password?
+              {t('auth.forgotPassword')}
             </MuiLink>
           </Box>
 
@@ -183,25 +185,25 @@ export const LoginForm: React.FC = () => {
             variant="contained"
             disabled={isSubmitting || !isValid}
             fullWidth
-              sx={{
-                py: 1.5,
-                borderRadius: '10px',
-                textTransform: 'none',
-                fontSize: '16px',
-                fontWeight: 600,
-                boxShadow: (theme) => theme.shadows[4],
-              }}
+            sx={{
+              py: 1.5,
+              borderRadius: '10px',
+              textTransform: 'none',
+              fontSize: '16px',
+              fontWeight: 600,
+              boxShadow: (theme) => theme.shadows[4],
+            }}
           >
             {isSubmitting ? (
               <CircularProgress size={24} sx={{ color: 'white' }} />
             ) : (
-              'Sign In'
+              t('auth.signIn')
             )}
           </Button>
 
           <Divider sx={{ my: 1.5, color: 'text.disabled' }}>
             <Typography variant="caption" sx={{ px: 1, color: 'text.secondary', fontWeight: 500 }}>
-              OR CONTINUE WITH
+              {t('auth.orContinueWith')}
             </Typography>
           </Divider>
 
@@ -250,7 +252,7 @@ export const LoginForm: React.FC = () => {
 
           <Box sx={{ textAlign: 'center', mt: 3 }}>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Don't have an account?{' '}
+              {t('auth.dontHaveAccount')}{' '}
               <MuiLink
                 component={Link}
                 to="/signup"
@@ -261,7 +263,7 @@ export const LoginForm: React.FC = () => {
                   '&:hover': { textDecoration: 'underline' }
                 }}
               >
-                Sign up
+                {t('auth.signUp')}
               </MuiLink>
             </Typography>
           </Box>

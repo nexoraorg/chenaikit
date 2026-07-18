@@ -15,7 +15,7 @@ module.exports = {
       supportBasicHtmlNodes: true,
       keepBasicHtmlNodesFor: ['br', 'strong', 'i', 'em', 'span']
     },
-    lngs: ['en', 'es', 'zh'],
+    lngs: ['en', 'es', 'zh', 'ar'],
     fallbackLng: 'en',
     ns: ['translation'],
     defaultNs: 'translation',

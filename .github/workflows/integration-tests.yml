@@ -54,6 +54,10 @@ jobs:
         run: pnpm install
 
       - name: Build packages
+        env:
+          CI: false
+          SKIP_PREFLIGHT_CHECK: true
+          GENERATE_SOURCEMAP: false
         run: pnpm build
 
       - name: Run integration tests

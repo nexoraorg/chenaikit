@@ -2,9 +2,10 @@ import React, { useState, Suspense, lazy, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link as RouterLink } from 'react-router-dom';
 import { Box, Button, Typography, Tabs, Tab } from '@mui/material';
 import { Logout as LogoutIcon, AccountCircle } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import FormValidationExample from './components/FormValidationExample';
 import DataVisualizationExample from './components/DataVisualizationExample';
-import { AnalyticsDashboard } from './components';
+import { AnalyticsDashboard, LanguageSwitcher } from './components';
 import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -35,24 +36,26 @@ const DEMO_TABS: Array<{ id: DemoView; label: string }> = [
 
 // Stub page components for policy/auth routes
 const ForgotPasswordPage: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', bgcolor: 'background.default' }}>
-      <Box component="main" sx={{ maxWidth: 480, width: '100%', p: 4, borderRadius: 3, boxShadow: '0 4px 32px rgba(0,0,0,0.08)', bgcolor: 'background.paper' }}>
-        <Typography variant="h5" component="h1" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>Reset your password</Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>Enter your email address and we'll send you a password reset link.</Typography>
-        <Typography variant="caption" sx={{ color: 'text.disabled' }}>Password reset functionality coming soon.</Typography>
+      <Box sx={{ maxWidth: 480, width: '100%', p: 4, borderRadius: 3, boxShadow: '0 4px 32px rgba(0,0,0,0.08)', bgcolor: 'background.paper' }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>{t('app.forgotPasswordTitle')}</Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>{t('app.forgotPasswordDesc')}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.disabled' }}>{t('app.forgotPasswordSoon')}</Typography>
       </Box>
     </Box>
   );
 };
 
 const TermsPage: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <Box component="main" sx={{ minHeight: '100vh', p: { xs: 3, md: 6 }, bgcolor: 'background.default' }}>
       <Box sx={{ maxWidth: 800, mx: 'auto' }}>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 800, mb: 3, color: 'text.primary' }}>Terms of Service</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, color: 'text.primary' }}>{t('app.termsTitle')}</Typography>
         <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8 }}>
-          These Terms of Service govern your use of ChenaiKit. By accessing or using our platform, you agree to be bound by these terms. Full terms documentation will be published here prior to production launch.
+          {t('app.termsDesc')}
         </Typography>
       </Box>
     </Box>
@@ -60,12 +63,13 @@ const TermsPage: React.FC = () => {
 };
 
 const PrivacyPage: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <Box component="main" sx={{ minHeight: '100vh', p: { xs: 3, md: 6 }, bgcolor: 'background.default' }}>
       <Box sx={{ maxWidth: 800, mx: 'auto' }}>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 800, mb: 3, color: 'text.primary' }}>Privacy Policy</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, color: 'text.primary' }}>{t('app.privacyTitle')}</Typography>
         <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8 }}>
-          Your privacy is important to us. ChenaiKit collects only the data necessary to provide our services and never sells personal information to third parties. Full privacy policy documentation will be published here prior to production launch.
+          {t('app.privacyDesc')}
         </Typography>
       </Box>
     </Box>
@@ -73,7 +77,8 @@ const PrivacyPage: React.FC = () => {
 };
 
 const DashboardShell: React.FC = () => {
-  const [activeDemo, setActiveDemo] = useState<DemoView>('analytics');
+  const { t } = useTranslation();
+  const [activeDemo, setActiveDemo] = useState<'analytics' | 'forms' | 'visualization'>('analytics');
   const { user, logout } = useAuth();
 
   return (
@@ -102,9 +107,29 @@ const DashboardShell: React.FC = () => {
             alignItems: 'center',
             gap: 1,
             justifyContent: 'center',
-            mb: { xs: 2, sm: 0 },
-          }}
-          >
+            mb: { xs: 2, sm: 0 }
+          }}>
+            <LanguageSwitcher 
+              size="small" 
+              compact 
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.3)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'white',
+                },
+                '& .MuiSelect-select': {
+                  color: 'white',
+                },
+                '& .MuiSelect-icon': {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                }
+              }}
+            />
             <ThemeToggle />
             <AccountCircle sx={{ color: '#38bdf8' }} aria-hidden="true" />
             <Typography variant="body2" component="span" sx={{ fontWeight: 500, color: '#e2e8f0' }}>
@@ -127,118 +152,110 @@ const DashboardShell: React.FC = () => {
                 },
               }}
             >
-              Sign Out
+              {t('app.signOut')}
             </Button>
           </Box>
         )}
 
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
-          ChenaiKit - BI &amp; Analytics Dashboard
-        </Typography>
-        <Typography variant="h6" component="p" sx={{ opacity: 0.9, mb: 3, fontWeight: 400 }}>
-          Advanced AI Insights &amp; Blockchain Monitoring
-        </Typography>
-
-        <Box
-          component="nav"
-          aria-label="Main navigation"
-          sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}
-        >
-          <Tabs
-            value={activeDemo}
-            onChange={(_, value: DemoView) => setActiveDemo(value)}
-            aria-label="Dashboard views"
-            textColor="inherit"
-            indicatorColor="secondary"
-            sx={{
-              '& .MuiTab-root': {
-                color: 'rgba(255,255,255,0.75)',
-                fontWeight: 600,
-                textTransform: 'none',
-                minHeight: 48,
-              },
-              '& .Mui-selected': { color: '#ffffff' },
-              '& .MuiTabs-indicator': { backgroundColor: '#38bdf8' },
+        <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>
+          {t('app.dashboardTitle')}
+        </h1>
+        <p style={{ fontSize: '18px', opacity: 0.9, marginBottom: '30px' }}>
+          {t('app.dashboardSubtitle')}
+        </p>
+        
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setActiveDemo('analytics')}
+            style={{
+              padding: '12px 24px',
+              background: activeDemo === 'analytics' ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease'
             }}
           >
-            {DEMO_TABS.map((tab, index) => (
-              <Tab
-                key={tab.id}
-                value={tab.id}
-                label={tab.label}
-                id={`dashboard-tab-${index}`}
-                aria-controls={`dashboard-panel-${tab.id}`}
-              />
-            ))}
-          </Tabs>
-
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Button
-              component={RouterLink}
-              to="/profile"
-              variant="outlined"
-              aria-label="Open profile page"
-              sx={{
-                color: 'white',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                textTransform: 'none',
-                borderRadius: '8px',
-                '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-              }}
-            >
-              Profile
-            </Button>
-            <Button
-              component={RouterLink}
-              to="/settings"
-              variant="outlined"
-              aria-label="Open settings page"
-              sx={{
-                color: 'white',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                textTransform: 'none',
-                borderRadius: '8px',
-                '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-              }}
-            >
-              Settings
-            </Button>
-          </Box>
-        </Box>
+            📈 {t('app.analyticsDashboard')}
+          </button>
+          <button
+            onClick={() => setActiveDemo('forms')}
+            style={{
+              padding: '12px 24px',
+              background: activeDemo === 'forms' ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            📝 {t('app.forms')}
+          </button>
+          <button
+            onClick={() => setActiveDemo('visualization')}
+            style={{
+              padding: '12px 24px',
+              background: activeDemo === 'visualization' ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            📊 {t('app.sandbox')}
+          </button>
+          <RouterLink to="/profile" style={{
+              padding: '12px 24px',
+              background: 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+            👤 {t('app.profile')}
+          </RouterLink>
+          <RouterLink to="/settings" style={{
+              padding: '12px 24px',
+              background: 'transparent',
+              color: 'white',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+            ⚙️ {t('app.settings')}
+          </RouterLink>
+        </div>
       </Box>
-
-      <Box
-        component="main"
-        id="main-content"
-        role="main"
-        tabIndex={-1}
-        aria-labelledby={`dashboard-tab-${DEMO_TABS.findIndex((t) => t.id === activeDemo)}`}
-        sx={{ minHeight: 'calc(100vh - 200px)' }}
-      >
-        <Suspense fallback={<LoadingSpinner fullScreen message="Loading dashboard content" />}>
-          {DEMO_TABS.map((tab, index) => (
-            <Box
-              key={tab.id}
-              id={`dashboard-panel-${tab.id}`}
-              role="tabpanel"
-              aria-labelledby={`dashboard-tab-${index}`}
-              hidden={activeDemo !== tab.id}
-            >
-              <ErrorBoundary
-                name={`${tab.label} section`}
-                compact
-                resetKeys={[activeDemo]}
-                fallbackMessage="This dashboard section failed to render. Try resetting the section or switching tabs."
-              >
-                {tab.id === 'analytics' && <AnalyticsDashboard />}
-                {tab.id === 'forms' && <FormValidationExample />}
-                {tab.id === 'visualization' && <DataVisualizationExample />}
-              </ErrorBoundary>
-            </Box>
-          ))}
-        </Suspense>
-      </Box>
-
+      
+      <main style={{ minHeight: 'calc(100vh - 200px)' }}>
+        {activeDemo === 'analytics' && <AnalyticsDashboard />}
+        {activeDemo === 'forms' && <FormValidationExample />}
+        {activeDemo === 'visualization' && <DataVisualizationExample />}
+      </main>
+      
       <Box
         component="footer"
         sx={{
@@ -251,7 +268,7 @@ const DashboardShell: React.FC = () => {
           typography: 'body2',
         }}
       >
-        Built with ChenaiKit - Advanced AI and Blockchain Solutions
+        {t('app.footer')}
       </Box>
     </div>
   );

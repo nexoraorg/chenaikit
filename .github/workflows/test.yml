@@ -71,10 +71,9 @@ jobs:
         uses: pnpm/action-setup@v4
 
       - name: Setup Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: stable
-          override: true
+          targets: wasm32-unknown-unknown
 
       - name: Run Rust tests
         run: pnpm blockchain:test

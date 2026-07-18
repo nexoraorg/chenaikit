@@ -15,8 +15,10 @@ import {
   DialogActions
 } from '@mui/material';
 import { useFormValidation } from '../../hooks/useFormValidation';
+import { useTranslation } from 'react-i18next';
 import { ValidationRules } from '@chenaikit/core';
 import { useThemeMode } from '../../contexts/ThemeContext';
+import { changeLanguage } from '../../i18n/config';
 
 interface AccountSettingsProps {
   user: {
@@ -34,6 +36,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
   onUpdateAccount,
   onDeleteAccount
 }) => {
+  const { t } = useTranslation();
   const { setTheme } = useThemeMode();
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -56,8 +59,8 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
       theme: user.theme || 'system'
     },
     validationRules: {
-      email: ValidationRules.email(),
-      name: ValidationRules.minLength(2, 'Name must be at least 2 characters')
+      email: ValidationRules.email(t('forms.invalidEmail')),
+      name: ValidationRules.minLength(2, t('forms.minLength', { count: 2 }))
     },
     onSubmit: async (formValues) => {
       setIsSaving(true);
@@ -80,6 +83,12 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
     }
   }, [values.theme, setTheme]);
 
+  useEffect(() => {
+    if (values.language) {
+      changeLanguage(values.language);
+    }
+  }, [values.language]);
+
   const handleDeleteAccount = async () => {
     if (deleteEmail !== user.email) return;
     setIsSaving(true);
@@ -95,12 +104,12 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
       <Card variant="outlined" sx={{ borderRadius: 2 }}>
         <CardContent>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
-            Profile Information
+            {t('profile.subtitle')}
           </Typography>
 
           {saveSuccess && (
             <Alert severity="success" sx={{ mb: 3 }}>
-              Profile updated successfully!
+              {t('settings.profileUpdated')}
             </Alert>
           )}
 
@@ -109,7 +118,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Display Name"
+                  label={t('profile.displayName')}
                   name="name"
                   value={values.name}
                   onChange={(e) => handleChange('name', e.target.value)}
@@ -122,7 +131,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Email Address"
+                  label={t('profile.email')}
                   name="email"
                   type="email"
                   value={values.email}
@@ -138,7 +147,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                   <TextField
                     select
                     fullWidth
-                    label="Language"
+                    label={t('settings.language')}
                     name="language"
                     value={values.language}
                     onChange={(e) => handleChange('language', e.target.value)}
@@ -153,15 +162,15 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                   <TextField
                     select
                     fullWidth
-                    label="Theme"
+                    label={t('settings.theme')}
                     name="theme"
                     value={values.theme}
                     onChange={(e) => handleChange('theme', e.target.value)}
                     SelectProps={{ native: true }}
                   >
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                    <option value="system">System</option>
+                    <option value="light">{t('settings.light', { defaultValue: 'Light' })}</option>
+                    <option value="dark">{t('settings.dark', { defaultValue: 'Dark' })}</option>
+                    <option value="system">{t('settings.system', { defaultValue: 'System' })}</option>
                   </TextField>
                 </Box>
               </Grid>
@@ -173,7 +182,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                   disabled={isSaving || !isValid}
                   startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : null}
                 >
-                  {isSaving ? 'Saving...' : 'Save Changes'}
+                  {isSaving ? t('settings.saving') : t('common.save')}
                 </Button>
               </Grid>
             </Grid>
@@ -184,10 +193,10 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
       <Card variant="outlined" sx={{ borderRadius: 2, borderColor: 'error.main' }}>
         <CardContent>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: 'error.main' }}>
-            Danger Zone
+            {t('settings.dangerZone')}
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-            Once you delete your account, there is no going back. Please be certain.
+            {t('settings.deleteAccountWarning')}
           </Typography>
 
           <Button
@@ -195,30 +204,29 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
             color="error"
             onClick={() => setDeleteConfirmOpen(true)}
           >
-            Delete Account
+            {t('settings.deleteAccount')}
           </Button>
         </CardContent>
       </Card>
 
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
         <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>
-          Delete Account
+          {t('settings.deleteAccount')}
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
-            This action cannot be undone. To confirm, please type your email address:{' '}
-            <strong>{user.email}</strong>
+            {t('settings.confirmDeleteEmail', { email: user.email })}
           </Typography>
           <TextField
             fullWidth
-            label="Confirm Email"
+            label={t('settings.confirmEmail')}
             value={deleteEmail}
             onChange={(e) => setDeleteEmail(e.target.value)}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirmOpen(false)} disabled={isSaving}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="contained"
@@ -226,7 +234,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
             disabled={deleteEmail !== user.email || isSaving}
             onClick={handleDeleteAccount}
           >
-            {isSaving ? 'Deleting...' : 'Delete Forever'}
+            {isSaving ? t('settings.deleting') : t('settings.deleteForever')}
           </Button>
         </DialogActions>
       </Dialog>

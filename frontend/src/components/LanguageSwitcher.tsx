@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -9,16 +9,18 @@ import {
   Tooltip,
   IconButton,
   Chip,
-  InputLabel,
 } from '@mui/material';
 import { supportedLanguages, changeLanguage, getCurrentLanguage } from '../i18n/config';
 
+import { SxProps, Theme } from '@mui/material';
+
 interface LanguageSwitcherProps {
-  variant?: 'select' | 'chip' | 'avatar';
+  variant?: 'select' | 'chip' | 'avatar' | 'compact';
   size?: 'small' | 'medium' | 'large';
   showFlag?: boolean;
   showNativeName?: boolean;
   compact?: boolean;
+  sx?: SxProps<Theme>;
 }
 
 export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
@@ -26,11 +28,12 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   size = 'medium',
   showFlag = true,
   showNativeName = true,
-  compact = false
+  compact = false,
+  sx
 }) => {
   const { i18n } = useTranslation();
   const currentLang = getCurrentLanguage();
-  const labelId = useId();
+
 
   const handleLanguageChange = (event: any) => {
     const newLanguage = event.target.value;
@@ -42,20 +45,18 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   };
 
   const renderSelectVariant = () => (
-    <FormControl size={size === 'large' ? 'medium' : size}>
-      <InputLabel id={labelId}>Language</InputLabel>
+    <FormControl size={size === 'large' ? 'medium' : size} sx={sx}>
       <Select
-        labelId={labelId}
-        label="Language"
         value={currentLang}
         onChange={handleLanguageChange}
-        aria-label="Select language"
+        displayEmpty
+        inputProps={{ 'aria-label': 'Select language' }}
         sx={{
-          minWidth: compact ? 120 : 200,
           '& .MuiSelect-select': {
             display: 'flex',
             alignItems: 'center',
-            gap: 1
+            gap: 1,
+            py: size === 'small' ? 0.5 : 1
           }
         }}
       >
@@ -63,20 +64,20 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           <MenuItem key={language.code} value={language.code}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {showFlag && (
-                <Typography sx={{ fontSize: '1.2em' }}>
+                <Typography component="span" sx={{ fontSize: '1.1rem' }}>
                   {language.flag}
                 </Typography>
               )}
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              {showNativeName && (
+                <Typography component="span" sx={{ fontWeight: 500 }}>
                   {language.nativeName}
                 </Typography>
-                {!compact && (
-                  <Typography variant="caption" color="text.secondary">
-                    {language.name}
-                  </Typography>
-                )}
-              </Box>
+              )}
+              {(!compact && showNativeName) && (
+                <Typography component="span" color="textSecondary" sx={{ fontSize: '0.85rem' }}>
+                  ({language.name})
+                </Typography>
+              )}
             </Box>
           </MenuItem>
         ))}
@@ -84,7 +85,8 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
     </FormControl>
   );
 
-  const renderChipVariant = () => (
+  const renderChipVariant = () => {
+    return (
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         {supportedLanguages.map((language) => (
           <Chip
@@ -115,6 +117,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
         ))}
       </Box>
   );
+  };
 
   const renderAvatarVariant = () => {
     const currentLangInfo = getCurrentLanguageInfo();
@@ -162,6 +165,8 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       return renderChipVariant();
     case 'avatar':
       return renderAvatarVariant();
+    case 'compact':
+      return renderCompactVariant();
     default:
       return renderSelectVariant();
   }

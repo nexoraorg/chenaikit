@@ -20,7 +20,19 @@ import AccountSettings from '../components/settings/AccountSettings';
 import NotificationSettings from '../components/settings/NotificationSettings';
 import SecuritySettings from '../components/settings/SecuritySettings';
 import ApiKeysSettings from '../components/settings/ApiKeysSettings';
-import AccessibleTabPanel from '../components/a11y/AccessibleTabPanel';
+import { useTranslation } from 'react-i18next';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
+  <div hidden={value !== index} style={{ paddingTop: 24 }}>
+    {value === index && children}
+  </div>
+);
 
 interface SettingsPageProps {
   user: {
@@ -97,6 +109,7 @@ export const Settings: React.FC<SettingsPageProps> = ({
   onDeleteApiKey,
   onRegenerateApiKey
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(0);
 
   return (
@@ -104,15 +117,15 @@ export const Settings: React.FC<SettingsPageProps> = ({
       <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
         <Breadcrumbs sx={{ mb: 2 }}>
           <Link component={RouterLink} to="/" underline="hover" color="inherit">
-            Dashboard
+            {t('navigation.dashboard')}
           </Link>
-          <Typography color="text.primary">Settings</Typography>
+          <Typography color="text.primary">{t('settings.title')}</Typography>
         </Breadcrumbs>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
           <SettingsIcon sx={{ fontSize: 32, color: 'text.primary' }} />
           <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
-            Settings
+            {t('settings.title')}
           </Typography>
         </Box>
 
@@ -136,30 +149,22 @@ export const Settings: React.FC<SettingsPageProps> = ({
             <Tab
               icon={<PersonIcon />}
               iconPosition="start"
-              label="Account"
-              id="settings-tab-0"
-              aria-controls="settings-panel-0"
+              label={t('profile.account')}
             />
             <Tab
               icon={<NotificationsIcon />}
               iconPosition="start"
-              label="Notifications"
-              id="settings-tab-1"
-              aria-controls="settings-panel-1"
+              label={t('settings.notifications')}
             />
             <Tab
               icon={<SecurityIcon />}
               iconPosition="start"
-              label="Security"
-              id="settings-tab-2"
-              aria-controls="settings-panel-2"
+              label={t('settings.security')}
             />
             <Tab
               icon={<VpnKeyIcon />}
               iconPosition="start"
-              label="API Keys"
-              id="settings-tab-3"
-              aria-controls="settings-panel-3"
+              label={t('settings.api')}
             />
           </Tabs>
 
