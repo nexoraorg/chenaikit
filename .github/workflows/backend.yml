@@ -43,10 +43,14 @@ jobs:
               run: pnpm test
 
             - name: Build project
+              env:
+                CI: false
+                SKIP_PREFLIGHT_CHECK: true
+                GENERATE_SOURCEMAP: false
               run: pnpm build
 
             - name: Setup Rust
-              uses: dtolnay/rust-toolchain@1.81.0
+              uses: dtolnay/rust-toolchain@nightly
               with:
                 targets: wasm32-unknown-unknown
 

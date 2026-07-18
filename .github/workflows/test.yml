@@ -71,7 +71,7 @@ jobs:
         uses: pnpm/action-setup@v4
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@1.81.0
+        uses: dtolnay/rust-toolchain@nightly
         with:
           targets: wasm32-unknown-unknown
 
