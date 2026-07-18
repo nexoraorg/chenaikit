@@ -9,7 +9,7 @@
     "tests/*"
   ],
   "scripts": {
-    "build": "pnpm -r build",
+    "build": "pnpm --filter \"./packages/**\" --filter \"./backend\" --filter \"./frontend\" run build",
     "dev": "pnpm -r dev",
     "test": "jest --coverage",
     "test:core": "cd packages/core && jest --coverage",
