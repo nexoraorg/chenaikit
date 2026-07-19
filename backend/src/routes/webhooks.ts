@@ -4,8 +4,12 @@ import { WebhookController } from '../controllers/webhookController';
 import { validate } from '../middleware/validation';
 import { asyncHandler } from '../middleware/errorHandler';
 import { authenticate } from '../middleware/auth';
+import { generalRateLimit } from '../middleware/rateLimiter';
 
 const router: ExpressRouter = Router();
+
+// Apply rate limiting to all webhook routes
+router.use(generalRateLimit.middleware());
 
 // All webhook routes require authentication
 router.use(authenticate);
