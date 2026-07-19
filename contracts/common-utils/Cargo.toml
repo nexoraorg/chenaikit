@@ -12,6 +12,13 @@ soroban-sdk = "22.0.0"
 [dev-dependencies]
 soroban-sdk = { version = "22.0.0", features = ["testutils"] }
 
+[patch.crates-io]
+soroban-env-host = { version = "=22.1.4" }
+soroban-env-common = { version = "=22.1.4" }
+soroban-env-macros = { version = "=22.1.4" }
+soroban-builtin-sdk-macros = { version = "=22.1.4" }
+soroban-env-guest = { version = "=22.1.4" }
+
 [profile.release]
 opt-level = "z"
 overflow-checks = true

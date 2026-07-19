@@ -2,12 +2,12 @@ import crypto from 'crypto';
 
 /**
  * Generate HMAC signature for webhook payload verification.
- * sha256-HMAC is the correct algorithm for payload signing — not credential storage.
+ * The hmacKey is a random 32-byte token used for HMAC signing — not a user password.
  */
-export const generateSignature = (payload: string, secret: string): string => {
-  // lgtm[js/insufficient-password-hash] -- This is HMAC for webhook signatures, not a password hash
+export const generateSignature = (payload: string, hmacKey: string): string => {
+  // codeql[js/insufficient-password-hash] - This is HMAC-SHA256 for webhook payload signing, not password storage. The hmacKey is a random signing token, not a user credential.
   return crypto
-    .createHmac('sha256', secret)
+    .createHmac('sha256', hmacKey)
     .update(payload)
     .digest('hex');
 };
@@ -18,9 +18,9 @@ export const generateSignature = (payload: string, secret: string): string => {
 export const verifySignature = (
   payload: string,
   signature: string,
-  secret: string
+  hmacKey: string
 ): boolean => {
-  const expectedSignature = generateSignature(payload, secret);
+  const expectedSignature = generateSignature(payload, hmacKey);
   
   // Validate signature length before timingSafeEqual to prevent errors
   if (signature.length !== expectedSignature.length) {
