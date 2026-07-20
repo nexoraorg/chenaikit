@@ -1,0 +1,62 @@
+# =============================================================================
+# Scaled Real-Time WebSocket Multi-Instance Setup
+# Demonstrates horizontal scaling of Socket.IO backend instances using Redis Pub/Sub adapter
+# Usage: docker compose -f backend/docker-compose.ws-scale.yml up --scale backend=3
+# =============================================================================
+
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: chenaikit-redis-scale
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - ws-net
+
+  backend-1:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile.dev
+    container_name: chenaikit-backend-ws-1
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+      REDIS_URL: redis://redis:6379
+      ACCESS_TOKEN_SECRET: dev_access_secret
+    ports:
+      - "5001:5001"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - ws-net
+
+  backend-2:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile.dev
+    container_name: chenaikit-backend-ws-2
+    environment:
+      NODE_ENV: production
+      PORT: 5002
+      REDIS_URL: redis://redis:6379
+      ACCESS_TOKEN_SECRET: dev_access_secret
+    ports:
+      - "5002:5002"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - ws-net
+
+networks:
+  ws-net:
+    driver: bridge

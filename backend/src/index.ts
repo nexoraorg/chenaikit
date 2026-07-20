@@ -33,6 +33,9 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { getDistributedRateLimiter } from './middleware/distributedRateLimiter';
 import { getHealthService } from './services/healthService';
 
+import http from 'http';
+import { initWebSocketServer, closeWebSocketServer } from './websocket';
+
 const app: express.Application = express();
 
 applySecurityMiddleware(app);
@@ -89,7 +92,7 @@ if (process.env.SENTRY_DSN) {
 // Global error handler
 app.use(errorHandler);
 
-export const startServer = async (): Promise<void> => {
+export const startServer = async (): Promise<http.Server> => {
   // Load environment variables
   dotenv.config();
 
@@ -114,8 +117,12 @@ export const startServer = async (): Promise<void> => {
 
   await initializeMonitoring();
 
+  const httpServer = http.createServer(app);
+  await initWebSocketServer(httpServer);
+
   const shutdown = async () => {
     try {
+      await closeWebSocketServer();
       healthService.stopMonitoring();
       await shutdownMonitoring();
       await redis.quit();
@@ -128,18 +135,22 @@ export const startServer = async (): Promise<void> => {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
-  const server = app.listen(PORT, async () => {
-    console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
-    console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
+  return new Promise((resolve) => {
+    httpServer.listen(PORT, async () => {
+      console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
+      console.log(`📡 WebSocket server attached to HTTP server`);
+      console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
+      console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
 
-    try {
-      await ensureRedisConnection();
-      console.log('🧠 Redis cache ready');
-    } catch (_err) {
-      console.warn('⚠️  Redis not available. Continuing without cache.');
-    }
+      try {
+        await ensureRedisConnection();
+        console.log('🧠 Redis cache ready');
+      } catch (_err) {
+        console.warn('⚠️  Redis not available. Continuing without cache.');
+      }
+      resolve(httpServer);
+    });
   });
 };
 
