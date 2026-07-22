@@ -32,10 +32,12 @@ import { loadVaultSecrets } from './config/secrets';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { getDistributedRateLimiter } from './middleware/distributedRateLimiter';
 import { getHealthService } from './services/healthService';
+import { applyCompressionMiddleware, compressionRequestErrorHandler } from './middleware/compression';
 
 const app: express.Application = express();
 
 applySecurityMiddleware(app);
+applyCompressionMiddleware(app);
 app.use(express.json({ limit: '10mb' }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
@@ -87,6 +89,7 @@ if (process.env.SENTRY_DSN) {
 }
 
 // Global error handler
+app.use(compressionRequestErrorHandler);
 app.use(errorHandler);
 
 export const startServer = async (): Promise<void> => {
