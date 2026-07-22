@@ -15,17 +15,17 @@ export const requestLoggingMiddleware = (
   res: Response,
   next: NextFunction
 ): void => {
-  req.startTime = Date.now();
+  (req as any).startTime = Date.now();
 
-  req.logger = log.child({
-    requestId: req.id,
+  (req as any).logger = log.child({
+    requestId: (req as any).id,
     method: req.method,
     path: req.path,
     ip: req.ip || req.socket?.remoteAddress,
     userAgent: req.headers['user-agent'],
   });
 
-  req.logger.info('Incoming request', {
+  (req as any).logger.info('Incoming request', {
     query: req.query,
     body: redactBody(req.body),
     headers: redactHeaders(req.headers as Record<string, unknown>),
@@ -35,7 +35,7 @@ export const requestLoggingMiddleware = (
   res.send = function (data): Response {
     res.send = originalSend;
 
-    const duration = Date.now() - req.startTime;
+    const duration = Date.now() - (req as any).startTime;
     const context: LogContext = {
       statusCode: res.statusCode,
       duration,
@@ -43,11 +43,11 @@ export const requestLoggingMiddleware = (
     };
 
     if (res.statusCode >= 500) {
-      req.logger.error('Request failed with server error', context);
+      (req as any).logger.error('Request failed with server error', context);
     } else if (res.statusCode >= 400) {
-      req.logger.warn('Request failed with client error', context);
+      (req as any).logger.warn('Request failed with client error', context);
     } else {
-      req.logger.info('Request completed', context);
+      (req as any).logger.info('Request completed', context);
     }
 
     return originalSend(data);
@@ -65,11 +65,11 @@ export const errorLoggingMiddleware = (
   res: Response,
   next: NextFunction
 ): void => {
-  const logger = req.logger || log;
+  const logger = (req as any).logger || log;
   logger.error('Unhandled error', err instanceof Error ? err : undefined, {
     statusCode: err.statusCode || 500,
     code: err.code,
-    duration: req.startTime ? Date.now() - req.startTime : undefined,
+    duration: (req as any).startTime ? Date.now() - (req as any).startTime : undefined,
   });
   next(err);
 };
@@ -82,7 +82,7 @@ export const timingMiddleware = (
   res: Response,
   next: NextFunction
 ): void => {
-  const timer = new Timer(`${req.method} ${req.path}`, req.logger);
+  const timer = new Timer(`${req.method} ${req.path}`, (req as any).logger);
   res.on('finish', () => timer.end({ statusCode: res.statusCode, success: res.statusCode < 400 }));
   next();
 };
@@ -93,8 +93,8 @@ export const timingMiddleware = (
 export const slowRequestMiddleware = (thresholdMs = 5000) =>
   (req: Request, res: Response, next: NextFunction): void => {
     const timer = setTimeout(() => {
-      req.logger?.warn('Slow request detected', {
-        duration: Date.now() - req.startTime,
+      (req as any).logger?.warn('Slow request detected', {
+        duration: Date.now() - (req as any).startTime,
         threshold: thresholdMs,
         method: req.method,
         path: req.path,
@@ -116,8 +116,8 @@ export const userContextMiddleware = (
   next: NextFunction
 ): void => {
   const user = (req as any).user;
-  if (user && req.logger) {
-    req.logger = req.logger.child({
+  if (user && (req as any).logger) {
+    (req as any).logger = (req as any).logger.child({
       userId: user.id,
       userRole: user.role,
     });
@@ -141,12 +141,12 @@ export const auditLoggingMiddleware = (
   }
 
   res.on('finish', () => {
-    (req.logger || log).audit(req.method, {
-      requestId: req.id,
+    ((req as any).logger || log).audit(req.method, {
+      requestId: (req as any).id,
       path: req.path,
       statusCode: res.statusCode,
       userId: (req as any).user?.id,
-      duration: req.startTime ? Date.now() - req.startTime : undefined,
+      duration: (req as any).startTime ? Date.now() - (req as any).startTime : undefined,
     });
   });
 
