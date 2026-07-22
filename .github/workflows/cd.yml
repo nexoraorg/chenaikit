@@ -45,7 +45,7 @@ permissions:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}-backend
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
 
 jobs:
   # ---------------------------------------------------------------------------

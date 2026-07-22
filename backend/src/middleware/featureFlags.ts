@@ -15,9 +15,9 @@ export function featureFlagMiddleware(options: FeatureFlagMiddlewareOptions = {}
         ? featureFlagService.evaluateFlagsByKeys(options.flags, context)
         : featureFlagService.evaluateFlags(context);
 
-      req.featureFlags = {};
+      (req as any).featureFlags = {};
       for (const evalResult of evaluations) {
-        req.featureFlags[evalResult.flagKey] = evalResult;
+        (req as any).featureFlags[evalResult.flagKey] = evalResult;
       }
 
       if (options.exposeHeaders) {
@@ -35,7 +35,7 @@ export function featureFlagMiddleware(options: FeatureFlagMiddlewareOptions = {}
 
 export function requireFeatureFlag(flagKey: string) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const evaluation = req.featureFlags?.[flagKey];
+    const evaluation = (req as any).featureFlags?.[flagKey];
     if (!evaluation || !evaluation.value) {
       res.status(403).json({
         success: false,

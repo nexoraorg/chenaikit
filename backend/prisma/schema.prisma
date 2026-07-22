@@ -17,6 +17,15 @@ model User {
   deletedAt     DateTime?
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
+  
+  // MFA fields
+  mfaEnabled      Boolean   @default(false)
+  mfaSecret       String?   // Encrypted TOTP secret
+  backupCodes     String?   // JSON array of hashed backup codes
+  mfaRecoveryEmail String?  // Recovery email for MFA reset
+  mfaLastVerifiedAt DateTime?
+  mfaFailedAttempts Int      @default(0)
+  mfaLockedUntil   DateTime?
 
   @@index([createdAt])
   @@index([email])

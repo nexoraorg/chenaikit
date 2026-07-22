@@ -24,9 +24,9 @@
     "test:all": "pnpm test && pnpm test:backend && pnpm test:frontend && pnpm test:integration",
     "coverage": "jest --coverage && open coverage/lcov-report/index.html",
     "coverage:report": "jest --coverage --coverageReporters=text-summary",
-    "lint": "pnpm -r lint",
-    "clean": "pnpm -r clean",
-    "type-check": "pnpm -r type-check",
+    "lint": "pnpm -r --if-present lint",
+    "clean": "pnpm -r --if-present clean",
+    "type-check": "pnpm -r --if-present type-check",
     "prepare": "husky install",
     "backend:build": "cd packages/core && pnpm build && cd ../cli && pnpm build && cd ../../backend && pnpm build",
     "blockchain:build": "cd contracts/credit-score && cargo build && cd ../fraud-detect && cargo build && cd ../common-utils && cargo build && cd ../governance && cargo build",
@@ -93,9 +93,9 @@
     "onlyBuiltDependencies": [
       "better-sqlite3",
       "bcrypt"
-    ],
-    "overrides": {
-      "react-scripts>jest-environment-jsdom": "27.5.1"
-    }
+    ]
+  },
+  "overrides": {
+    "react-scripts>jest-environment-jsdom": "27.5.1"
   }
 }

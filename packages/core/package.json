@@ -9,6 +9,7 @@
     "dev": "tsc --watch",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
+    "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "keywords": [
@@ -24,15 +25,20 @@
   "dependencies": {
     "@stellar/stellar-sdk": "^11.3.0",
     "axios": "^1.12.2",
+    "chokidar": "^5.0.0",
     "eventemitter3": "^5.0.1",
     "lodash": "^4.17.21",
     "node-cache": "^5.1.2",
-    "ws": "^8.14.2"
+    "semver": "^7.8.5",
+    "ws": "^8.14.2",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/chokidar": "^2.1.7",
     "@types/jest": "^29.0.0",
     "@types/lodash": "^4.14.199",
     "@types/node": "^20.9.5",
+    "@types/semver": "^7.7.1",
     "@types/urijs": "^1.19.25",
     "@types/ws": "^8.5.5",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
