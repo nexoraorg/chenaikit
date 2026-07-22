@@ -51,3 +51,6 @@ export { LoadingSpinner } from './LoadingSpinner';
 export { SkeletonCard } from './SkeletonCard';
 export { SkeletonTable } from './SkeletonTable';
 export { SkeletonChart } from './SkeletonChart';
+
+// ML model versioning & A/B testing
+export { default as ExperimentDashboard } from './ExperimentDashboard';
