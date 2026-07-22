@@ -52,5 +52,9 @@ export { SkeletonCard } from './SkeletonCard';
 export { SkeletonTable } from './SkeletonTable';
 export { SkeletonChart } from './SkeletonChart';
 
+// Virtualized components for performance
+export { VirtualizedList, VirtualizedTable } from './VirtualizedList';
+
 // ML model versioning & A/B testing
 export { default as ExperimentDashboard } from './ExperimentDashboard';
+
