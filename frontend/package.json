@@ -14,7 +14,10 @@
     "lint": "eslint src/**/*.{ts,tsx}",
     "i18n:scan": "i18next-scanner 'src/**/*.{js,jsx,ts,tsx}' --output 'src/locales'",
     "i18n:extract": "i18next 'src/**/*.{js,jsx,ts,tsx}' --output 'src/locales'",
-    "i18n:validate": "node scripts/validate-translations.js"
+    "i18n:validate": "node scripts/validate-translations.js",
+    "test:performance": "node tests/performance/frontend-metrics.js",
+    "analyze": "source-map-explorer 'build/static/js/*.js'",
+    "lighthouse": "lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-report.json"
   },
   "dependencies": {
     "@chenaikit/core": "workspace:*",
