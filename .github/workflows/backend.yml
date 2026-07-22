@@ -1,9 +1,9 @@
 name: Server CI Pipeline
 
 on:
-    push: 
+    push:
         branches: [main, develop]
-    pull_request: 
+    pull_request:
         branches: [main, develop]
 
 jobs:
@@ -11,24 +11,24 @@ jobs:
         strategy:
             matrix:
                 os: [ubuntu-latest]
-        
+
         runs-on: ${{matrix.os}}
 
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
             - name: Install pnpm
-              uses: pnpm/action-setup@v4
+              uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
 
             - name: Setup Node.js
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
               with:
                 node-version: 24
                 cache: 'pnpm'
 
             - name: Install dependencies
-              run: pnpm install
+              run: pnpm install --frozen-lockfile
 
             - name: Generate Prisma Client
               run: cd backend && pnpm prisma:generate
@@ -46,11 +46,7 @@ jobs:
               run: pnpm build
 
             - name: Setup Rust
-              uses: actions-rs/toolchain@v1
-              with:
-                toolchain: stable
-                profile: minimal
-                override: true
+              uses: dtolnay/rust-toolchain@stable
 
             - name: Build Contracts
               run: |
@@ -63,7 +59,7 @@ jobs:
                 cargo test --manifest-path ./contracts/fraud-detect/Cargo.toml
 
             - name: Upload Contract Artifacts
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
               with:
                 name: contracts-build
                 path: |
