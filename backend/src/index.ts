@@ -17,11 +17,19 @@ import { metricsService, metricsMiddleware } from './services/metricsService';
 import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
 import { UserPayload } from './types/auth';
 import { ensureRedisConnection } from './config/redis';
+import accountRoutes from './routes/accounts';
+import fileRoutes from './routes/files';
+
 import { detectVersion, versionHeaders, createVersionRouter } from './middleware/versioning';
 import v1Router from './routes/v1';
 import v2Router from './routes/v2';
 import { API_VERSIONS, LATEST_VERSION, DEFAULT_VERSION } from './utils/versionUtils';
+
+import accountRoutes from './routes/accounts';
+import fileRoutes from './routes/files';
+
 import { PrismaClient } from '@prisma/client';
+import { FileStorageService } from './services/fileStorageService';
 import { ApiKeyService } from './services/apiKeyService';
 import { UsageTrackingService } from './services/usageTrackingService';
 import { ApiGateway } from './middleware/apiGateway';
@@ -30,18 +38,39 @@ import Redis from 'ioredis';
 import { applySecurityMiddleware } from './middleware/security';
 import { loadVaultSecrets } from './config/secrets';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import { getDistributedRateLimiter } from './middleware/distributedRateLimiter';
-import { getHealthService } from './services/healthService';
+import { compressionMiddleware, addCompressionHeaders } from './middleware/compression';
 
 const app: express.Application = express();
 
 applySecurityMiddleware(app);
+app.use(addCompressionHeaders);
+app.use(compressionMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
 app.use('/api', getDistributedRateLimiter().middleware());
 // Health checks remain unversioned and must be matched before the version dispatcher.
 app.use('/api', healthRouter);
+// Versioning middleware and routers (from main)
+app.use(detectVersion);
+app.use(versionHeaders);
+app.use('/api', createVersionRouter({
+  [API_VERSIONS.v1]: v1Router,
+  [API_VERSIONS.v2]: v2Router,
+}, DEFAULT_VERSION, LATEST_VERSION));
+
+// Domain-specific routes (from mj1)
+app.use('/api/auth', authRoutes);
+app.use('/api/accounts', accountRoutes);
+app.use('/api/files', fileRoutes);
+
+// Optional analytics route (commented out for now)
+// app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
+app.use('/api/auth', authRoutes);
+app.use('/api/accounts', accountRoutes);
+app.use('/api/files', fileRoutes);
+// app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
+>>>>>> main
 
 // Version discovery endpoint: lists supported versions and their lifecycle.
 app.get('/api/versions', (_req: Request, res: Response) => {
@@ -105,6 +134,10 @@ export const startServer = async (): Promise<void> => {
   const usageTrackingService = new UsageTrackingService(prisma);
   const rateLimiter = createTieredRateLimiter(redis);
   const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
+  
+  // Initialize file storage service and set it on app
+  const fileStorageService = new FileStorageService(prisma);
+  app.set('fileStorageService', fileStorageService);
 
   // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
   const healthService = getHealthService(prisma);
