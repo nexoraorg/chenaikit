@@ -17,9 +17,13 @@ model User {
   deletedAt     DateTime?
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
-  files         File[]
+  webhooks      Webhook[]
 
   @@index([createdAt])
+  @@index([email])
+  @@index([role])
+  @@index([email, role])
+  @@index([deletedAt])
 }
 
 
@@ -33,6 +37,9 @@ model RefreshToken {
   expiresAt  DateTime
 
   @@index([userId, expiresAt])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([createdAt])
 }
 
 model ApiKey {
@@ -53,14 +60,19 @@ model ApiKey {
   currentUsage  Int      @default(0)
   usageResetAt  DateTime @default(now())
   deletedAt     DateTime?
-  
+
   // Relations
   usageLogs     ApiUsage[]
-  
+
   @@map("api_keys")
   @@index([userId, isActive])
   @@index([expiresAt])
   @@index([lastUsedAt])
+  @@index([tier])
+  @@index([keyHash])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([userId, tier])
 }
 
 model ApiUsage {
@@ -78,36 +90,72 @@ model ApiUsage {
   timestamp    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
-  
+
   @@map("api_usage")
   @@index([apiKeyId, timestamp])
   @@index([endpoint, timestamp])
   @@index([statusCode, timestamp])
   @@index([ip, timestamp])
   @@index([timestamp])
+  @@index([apiKeyId])
+  @@index([method])
+  @@index([responseTime])
+  @@index([deletedAt])
+  @@index([apiKeyId, statusCode])
 }
 
-model File {
-  id          String   @id @default(cuid())
-  filename    String
-  originalName String
-  mimeType    String
-  size        Int      // in bytes
-  path        String   // storage path or URL
-  storageType String   @default("local") // local, s3, etc.
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  isPublic    Boolean  @default(false)
-  checksum    String?  // MD5 or SHA256 for integrity
-  metadata    String?  // JSON string for additional metadata
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
-  
-  @@map("files")
-  @@index([userId])
-  @@index([storageType])
+
+model Webhook {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url             String
+  secret          String   // HMAC secret for signature verification
+  eventTypes      String   // JSON array of event types
+  isActive        Boolean  @default(true)
+  isPaused        Boolean  @default(false)
+  allowedIps      String   @default("") // JSON array of allowed IP addresses
+  headers         String   @default("") // JSON object of custom headers
+  retryConfig     String   @default("") // JSON object with retry configuration
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  deliveries      WebhookDelivery[]
+
+  @@map("webhooks")
+  @@index([userId, isActive])
+  @@index([eventTypes])
   @@index([createdAt])
   @@index([deletedAt])
+  @@index([userId, isPaused])
 }
 
+model WebhookDelivery {
+  id              String   @id @default(cuid())
+  webhookId       String
+  webhook         Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  eventType       String
+  payload         String   // JSON payload
+  responseStatus  Int?
+  responseBody    String?
+  attemptCount    Int      @default(0)
+  nextRetryAt     DateTime?
+  succeededAt     DateTime?
+  failedAt        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@map("webhook_deliveries")
+  @@index([webhookId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([responseStatus])
+  @@index([nextRetryAt])
+  @@index([succeededAt])
+  @@index([failedAt])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([webhookId, eventType])
+}
