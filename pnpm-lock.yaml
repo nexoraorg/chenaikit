@@ -66,6 +66,9 @@ importers:
       eslint:
         specifier: ^8.0.0
         version: 8.57.1
+      eslint-plugin-react-hooks:
+        specifier: ^7.1.1
+        version: 7.1.1(eslint@8.57.1)
       husky:
         specifier: ^8.0.3
         version: 8.0.3

@@ -6,12 +6,9 @@
  */
 import { Request, Response, NextFunction } from 'express';
 import { propagation, context, Span, trace, ROOT_CONTEXT } from '@opentelemetry/api';
-import { W3CBaggagePropagator } from '@opentelemetry/propagator-b3';
-import { B3InjectEncoding, B3Propagator } from '@opentelemetry/propagator-b3';
+import { B3Propagator } from '@opentelemetry/propagator-b3';
 
-// Register B3 propagator alongside W3C tracecontext
-const b3Propagator = new B3Propagator();
-const baggagePropagator = new W3CBaggagePropagator();
+// B3 propagator is registered in tracer.ts via instrumentations
 
 export interface BaggageContext {
   tenantId?: string;

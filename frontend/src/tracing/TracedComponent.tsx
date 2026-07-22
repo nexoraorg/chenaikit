@@ -8,7 +8,7 @@
  * Automatically creates spans for component mount, update, and unmount phases.
  */
 import React, { useEffect, useRef, useCallback } from 'react';
-import { trace, Span, SpanStatusCode, context as otelContext } from '@opentelemetry/api';
+import { trace, Span, SpanStatusCode } from '@opentelemetry/api';
 import { getWebTraceId } from './webTracer';
 
 export interface TracedComponentProps {
@@ -67,8 +67,8 @@ export const TracedComponent: React.FC<TracedComponentProps> = ({
         mountSpanRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, attributes]);
 
   return <>{children}</>;
 };
