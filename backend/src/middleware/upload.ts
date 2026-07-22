@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from 'express'
+import { NextFunction, Request, RequestHandler, Response } from 'express'
 import multer from 'multer'
 import { storageConfig } from '../config/storage'
 import { ValidationError } from '../utils/errors'
@@ -13,8 +13,8 @@ const uploader = multer({
   },
 })
 
-export const uploadSingle = (fieldName = 'file') => uploader.single(fieldName)
-export const uploadMultiple = (fieldName = 'files', maxCount = 10) => uploader.array(fieldName, maxCount)
+export const uploadSingle: RequestHandler = uploader.single('file')
+export const uploadMultiple: RequestHandler = uploader.array('files', 10)
 
 export const validateUploadedFile = (request: Request, _response: Response, next: NextFunction): void => {
   try {
