@@ -19,7 +19,7 @@
     "analyze": "source-map-explorer 'build/static/js/*.js'",
     "lighthouse": "lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-report.json"
   },
-  "dependencies": {
+"dependencies": {
     "@chenaikit/core": "workspace:*",
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
@@ -36,16 +36,18 @@
     "react-hook-form": "7.54.2",
     "react-i18next": "^13.5.0",
     "react-router-dom": "^6.8.0",
+    "react-window": "^1.8.9",
     "recharts": "^3.2.1",
     "zod": "3.24.2"
   },
-  "devDependencies": {
+"devDependencies": {
     "@testing-library/jest-dom": "^5.16.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@types/react-window": "^1.8.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
@@ -58,9 +60,9 @@
     "react-scripts": "5.0.1",
     "typescript": "^5.0.0"
   },
-  "jest": {
+"jest": {
     "transformIgnorePatterns": [
-      "node_modules/(?!(@chenaikit|axios|@stellar|d3|d3-|internmap|delaunator|robust-predicates)/)"
+      "node_modules/(?!(@chenaikit|axios|@stellar|d3|d3-|internmap|delaunator|robust-predicates|react-window)/)"
     ]
   },
   "browserslist": {
