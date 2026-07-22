@@ -3,6 +3,30 @@ import 'reflect-metadata';
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Initialize OpenTelemetry tracing FIRST (before any other imports)
+// This ensures all instrumentations can hook into modules at load time.
+import { initializeTracing, shutdownTracing } from './tracing/tracer';
+import { TracingConfig } from './tracing/tracer';
+
+const tracingEnabled = process.env.TRACING_ENABLED === 'true' || process.env.OTEL_ENABLED === 'true';
+
+if (tracingEnabled) {
+  const tracingConfig: TracingConfig = {
+    serviceName: process.env.SERVICE_NAME || 'chenaikit-backend',
+    environment: process.env.NODE_ENV || 'development',
+    version: process.env.APP_VERSION || '1.0.0',
+    jaegerEndpoint: process.env.JAEGER_ENDPOINT || 'http://localhost:14268/api/traces',
+    otlpEndpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
+    sampleRate: Number(process.env.TRACE_SAMPLE_RATE) || 0.01,
+    errorSampleRate: 1.0,
+    maxTracesPerMinute: Number(process.env.MAX_TRACES_PER_MINUTE) || 1000,
+  };
+
+  initializeTracing(tracingConfig).catch((err) => {
+    console.error('Failed to initialize OpenTelemetry tracing:', err);
+  });
+}
+
 // Initialize Sentry first
 import { initSentry, sentryErrorHandler } from './middleware/errorTracking';
 if (process.env.SENTRY_DSN) {
@@ -34,6 +58,10 @@ import { getDistributedRateLimiter } from './middleware/distributedRateLimiter';
 import { getHealthService } from './services/healthService';
 import { applyCompressionMiddleware, compressionRequestErrorHandler } from './middleware/compression';
 
+// Tracing middleware
+import { baggagePropagationMiddleware } from './tracing/baggage';
+import { tracingCorrelationMiddleware } from './tracing/correlation';
+
 const app: express.Application = express();
 
 applySecurityMiddleware(app);
@@ -41,6 +69,13 @@ applyCompressionMiddleware(app);
 app.use(express.json({ limit: '10mb' }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
+
+// Tracing middleware - add baggage propagation and trace correlation
+if (tracingEnabled) {
+  app.use(baggagePropagationMiddleware);
+  app.use(tracingCorrelationMiddleware);
+}
+
 app.use('/api', getDistributedRateLimiter().middleware());
 // Health checks remain unversioned and must be matched before the version dispatcher.
 app.use('/api', healthRouter);
@@ -121,6 +156,10 @@ export const startServer = async (): Promise<void> => {
     try {
       healthService.stopMonitoring();
       await shutdownMonitoring();
+      // Shutdown OpenTelemetry tracing
+      if (tracingEnabled) {
+        await shutdownTracing();
+      }
       await redis.quit();
       await prisma.$disconnect();
     } catch {
@@ -135,6 +174,7 @@ export const startServer = async (): Promise<void> => {
     console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
     console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
+    console.log(`🔍 Tracing:       ${tracingEnabled ? 'enabled' : 'disabled'}`);
     console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
 
     try {
