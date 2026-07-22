@@ -20,7 +20,18 @@ import AccountSettings from '../components/settings/AccountSettings';
 import NotificationSettings from '../components/settings/NotificationSettings';
 import SecuritySettings from '../components/settings/SecuritySettings';
 import ApiKeysSettings from '../components/settings/ApiKeysSettings';
-import AccessibleTabPanel from '../components/a11y/AccessibleTabPanel';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
+  <div hidden={value !== index} style={{ paddingTop: 24 }}>
+    {value === index && children}
+  </div>
+);
 
 interface SettingsPageProps {
   user: {
@@ -122,7 +133,6 @@ export const Settings: React.FC<SettingsPageProps> = ({
             onChange={(_, newValue) => setActiveTab(newValue)}
             variant="scrollable"
             scrollButtons="auto"
-            aria-label="Settings sections"
             sx={{
               borderBottom: 1,
               borderColor: 'divider',
@@ -137,49 +147,41 @@ export const Settings: React.FC<SettingsPageProps> = ({
               icon={<PersonIcon />}
               iconPosition="start"
               label="Account"
-              id="settings-tab-0"
-              aria-controls="settings-panel-0"
             />
             <Tab
               icon={<NotificationsIcon />}
               iconPosition="start"
               label="Notifications"
-              id="settings-tab-1"
-              aria-controls="settings-panel-1"
             />
             <Tab
               icon={<SecurityIcon />}
               iconPosition="start"
               label="Security"
-              id="settings-tab-2"
-              aria-controls="settings-panel-2"
             />
             <Tab
               icon={<VpnKeyIcon />}
               iconPosition="start"
               label="API Keys"
-              id="settings-tab-3"
-              aria-controls="settings-panel-3"
             />
           </Tabs>
 
           <Box sx={{ p: 3 }}>
-            <AccessibleTabPanel value={activeTab} index={0} idPrefix="settings">
+            <TabPanel value={activeTab} index={0}>
               <AccountSettings
                 user={user}
                 onUpdateAccount={onUpdateAccount}
                 onDeleteAccount={onDeleteAccount}
               />
-            </AccessibleTabPanel>
+            </TabPanel>
 
-            <AccessibleTabPanel value={activeTab} index={1} idPrefix="settings">
+            <TabPanel value={activeTab} index={1}>
               <NotificationSettings
                 preferences={notificationPreferences}
                 onUpdatePreferences={onUpdateNotificationPreferences}
               />
-            </AccessibleTabPanel>
+            </TabPanel>
 
-            <AccessibleTabPanel value={activeTab} index={2} idPrefix="settings">
+            <TabPanel value={activeTab} index={2}>
               <SecuritySettings
                 twoFactorEnabled={securitySettings.twoFactorEnabled}
                 sessions={securitySettings.sessions}
@@ -190,16 +192,16 @@ export const Settings: React.FC<SettingsPageProps> = ({
                 onRevokeSession={onRevokeSession}
                 onRevokeAllSessions={onRevokeAllSessions}
               />
-            </AccessibleTabPanel>
+            </TabPanel>
 
-            <AccessibleTabPanel value={activeTab} index={3} idPrefix="settings">
+            <TabPanel value={activeTab} index={3}>
               <ApiKeysSettings
                 apiKeys={apiKeys}
                 onCreateApiKey={onCreateApiKey}
                 onDeleteApiKey={onDeleteApiKey}
                 onRegenerateApiKey={onRegenerateApiKey}
               />
-            </AccessibleTabPanel>
+            </TabPanel>
           </Box>
         </Paper>
       </Box>

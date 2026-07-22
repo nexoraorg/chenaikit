@@ -21,7 +21,18 @@ import {
   Warning as WarningIcon
 } from '@mui/icons-material';
 import ProfileHeader from '../components/profile/ProfileHeader';
-import AccessibleTabPanel from '../components/a11y/AccessibleTabPanel';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
+  <div hidden={value !== index} style={{ paddingTop: 24 }}>
+    {value === index && children}
+  </div>
+);
 
 interface ActivityItem {
   id: string;
@@ -82,7 +93,6 @@ export const Profile: React.FC<ProfilePageProps> = ({
             value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
             variant="fullWidth"
-            aria-label="Profile sections"
             sx={{
               borderBottom: 1,
               borderColor: 'divider',
@@ -92,13 +102,13 @@ export const Profile: React.FC<ProfilePageProps> = ({
               }
             }}
           >
-            <Tab label="Activity" id="profile-tab-0" aria-controls="profile-panel-0" />
-            <Tab label="Account" id="profile-tab-1" aria-controls="profile-panel-1" />
-            <Tab label="Statistics" id="profile-tab-2" aria-controls="profile-panel-2" />
+            <Tab label="Activity" />
+            <Tab label="Account" />
+            <Tab label="Statistics" />
           </Tabs>
 
           <Box sx={{ p: 3 }}>
-            <AccessibleTabPanel value={activeTab} index={0} idPrefix="profile">
+            <TabPanel value={activeTab} index={0}>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
                 Recent Activity
               </Typography>
@@ -143,9 +153,9 @@ export const Profile: React.FC<ProfilePageProps> = ({
                   ))}
                 </List>
               )}
-            </AccessibleTabPanel>
+            </TabPanel>
 
-            <AccessibleTabPanel value={activeTab} index={1} idPrefix="profile">
+            <TabPanel value={activeTab} index={1}>
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                   <Card variant="outlined" sx={{ borderRadius: 2 }}>
@@ -209,9 +219,9 @@ export const Profile: React.FC<ProfilePageProps> = ({
                   </Card>
                 </Grid>
               </Grid>
-            </AccessibleTabPanel>
+            </TabPanel>
 
-            <AccessibleTabPanel value={activeTab} index={2} idPrefix="profile">
+            <TabPanel value={activeTab} index={2}>
               <Grid container spacing={3}>
                 {stats.transactions !== undefined && (
                   <Grid item xs={12} sm={4}>
@@ -253,7 +263,7 @@ export const Profile: React.FC<ProfilePageProps> = ({
                   </Grid>
                 )}
               </Grid>
-            </AccessibleTabPanel>
+            </TabPanel>
           </Box>
         </Paper>
       </Box>

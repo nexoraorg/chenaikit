@@ -48,7 +48,6 @@ app.use(compressionMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
-app.use('/api', getDistributedRateLimiter().middleware());
 // Health checks remain unversioned and must be matched before the version dispatcher.
 app.use('/api', healthRouter);
 // Versioning middleware and routers (from main)
@@ -140,8 +139,6 @@ export const startServer = async (): Promise<void> => {
   app.set('fileStorageService', fileStorageService);
 
   // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
-  const healthService = getHealthService(prisma);
-  healthService.startMonitoring();
 
   const PORT = process.env.PORT || 5000;
 
@@ -149,7 +146,6 @@ export const startServer = async (): Promise<void> => {
 
   const shutdown = async () => {
     try {
-      healthService.stopMonitoring();
       await shutdownMonitoring();
       await redis.quit();
       await prisma.$disconnect();

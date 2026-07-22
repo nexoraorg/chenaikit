@@ -1,12 +1,11 @@
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint', 'jsx-a11y'],
+  plugins: ['@typescript-eslint'],
   extends: [
     '../.eslintrc.js',
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
-    'plugin:jsx-a11y/recommended',
   ],
   env: {
     browser: true,
@@ -23,12 +22,12 @@ module.exports = {
     React: 'readonly',
   },
   rules: {
+    // Frontend specific rules
     '@typescript-eslint/no-unused-vars': 'warn',
     'no-console': 'warn',
     'no-case-declarations': 'off',
-    'no-undef': 'off',
-    '@typescript-eslint/no-explicit-any': 'off',
-    'jsx-a11y/anchor-is-valid': 'warn',
+    'no-undef': 'off', // Allow globals for React and Jest
+    '@typescript-eslint/no-explicit-any': 'off', // Allow any types for development
   },
   ignorePatterns: ['dist/', 'node_modules/', '*.js'],
 };

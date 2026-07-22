@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React, { useState } from 'react';
 
 type ChatRole = 'user' | 'assistant';
 
@@ -19,7 +19,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   placeholder = 'Ask about balance, payments, swaps, or transactions...',
   onSendMessage,
 }) => {
-  const inputId = useId();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -75,7 +74,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <section
-      aria-label={title}
       style={{
         border: '1px solid #d1d5db',
         borderRadius: '12px',
@@ -87,10 +85,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     >
       <h3 style={{ marginTop: 0 }}>{title}</h3>
       <div
-        role="log"
-        aria-live="polite"
-        aria-relevant="additions"
-        aria-label="Conversation history"
         style={{
           border: '1px solid #e5e7eb',
           borderRadius: '8px',
@@ -104,8 +98,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {messages.map((message) => (
           <div
             key={message.id}
-            role="article"
-            aria-label={`${message.role === 'user' ? 'You' : 'Assistant'} said`}
             style={{
               display: 'flex',
               justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
@@ -126,31 +118,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           </div>
         ))}
-        {isLoading && (
-          <div role="status" aria-live="polite" style={{ color: '#6b7280', fontSize: '14px' }}>
-            Assistant is typing...
-          </div>
-        )}
       </div>
 
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          void handleSend();
-        }}
-        style={{ display: 'flex', gap: '10px' }}
-      >
-        <label htmlFor={inputId} className="sr-only">
-          Message
-        </label>
+      <div style={{ display: 'flex', gap: '10px' }}>
         <textarea
-          id={inputId}
           rows={2}
           value={draft}
           placeholder={placeholder}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={onKeyDown}
-          disabled={isLoading}
           style={{
             flex: 1,
             resize: 'vertical',
@@ -160,10 +136,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           }}
         />
         <button
-          type="submit"
+          type='button'
+          onClick={() => {
+            void handleSend();
+          }}
           disabled={isLoading || !draft.trim()}
-          aria-label={isLoading ? 'Sending message' : 'Send message'}
-          className="a11y-focus-ring"
           style={{
             borderRadius: '8px',
             border: '1px solid #1d4ed8',
@@ -175,9 +152,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         >
           {isLoading ? 'Sending...' : 'Send'}
         </button>
-      </form>
+      </div>
     </section>
   );
 };
 
 export default ChatInterface;
+

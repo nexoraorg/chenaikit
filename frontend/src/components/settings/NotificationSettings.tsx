@@ -62,15 +62,12 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
   };
 
   const handleSave = async () => {
-    const previousPrefs = { ...localPrefs };
     setIsSaving(true);
     setSaveSuccess(false);
     try {
       await onUpdatePreferences(localPrefs);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch {
-      setLocalPrefs(previousPrefs);
     } finally {
       setIsSaving(false);
     }

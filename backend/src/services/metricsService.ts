@@ -5,7 +5,6 @@ export class MetricsService {
   private registry: Registry;
   private requestCounter: Counter;
   private requestDuration: Histogram;
-  private rateLimitCounter: Counter;
 
   constructor() {
     this.registry = new Registry();
@@ -29,13 +28,6 @@ export class MetricsService {
       buckets: [0.1, 0.5, 1, 2, 5],
       registers: [this.registry]
     });
-
-    this.rateLimitCounter = new Counter({
-      name: 'rate_limit_exceeded_total',
-      help: 'Total number of rate limit violations',
-      labelNames: ['scope'],
-      registers: [this.registry],
-    });
   }
 
   getMetrics() {
@@ -46,10 +38,6 @@ export class MetricsService {
     const labels = { method, route, status: status.toString() };
     this.requestCounter.inc(labels);
     this.requestDuration.observe(labels, duration);
-  }
-
-  recordRateLimitExceeded(scope: string) {
-    this.rateLimitCounter.inc({ scope });
   }
 }
 

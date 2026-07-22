@@ -25,9 +25,6 @@ Recommended configuration:
 
 - Rate limit sensitive endpoints (auth, account creation, API key creation).
 - Prefer centralized rate limiting for API keys (tier-based) and per-IP limiting for unauthenticated flows.
-- Configuration lives in `backend/src/config/rateLimit.ts` and is applied globally via `backend/src/middleware/distributedRateLimiter.ts`.
-- Responses include `RateLimit-*`, `X-RateLimit-*`, and `Retry-After` headers on `429` responses.
-- Trusted IPs, admin users, and an optional bypass token can skip limits for operational access.
 
 ### Security Headers
 

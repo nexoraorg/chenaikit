@@ -160,7 +160,6 @@ const DashboardShell: React.FC = () => {
               size="small"
               onClick={logout}
               startIcon={<LogoutIcon />}
-              aria-label="Sign out of your account"
               sx={{
                 color: "white",
                 borderColor: "rgba(255, 255, 255, 0.3)",
@@ -318,66 +317,7 @@ const DashboardShell: React.FC = () => {
   );
 };
 
-const AppRoutes: React.FC = () => {
-  const { user: authUser } = useAuth();
-  const { startLoading, stopLoading } = useLoading();
-  const toast = useToast();
-
-  const runSettingsRequest = useCallback(
-    async <T,>(request: () => Promise<T>, successMessage?: string): Promise<T> => {
-      startLoading();
-      try {
-        const result = await request();
-        if (successMessage) {
-          toast.success(successMessage);
-        }
-        return result;
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Request failed.';
-        toast.error(message);
-        throw error;
-      } finally {
-        stopLoading();
-      }
-    },
-    [startLoading, stopLoading, toast]
-  );
-
-  const settingsUser = authUser
-    ? {
-        id: authUser.id,
-        email: authUser.email,
-        name: authUser.email.split('@')[0],
-        role: authUser.role,
-        language: 'en',
-        theme: 'light' as const,
-      }
-    : {
-        id: 1,
-        email: 'user@example.com',
-        name: 'Demo User',
-        role: 'user',
-        language: 'en',
-        theme: 'light' as const,
-      };
-
-  const extractApiKey = (payload: unknown): string | undefined => {
-    if (!payload || typeof payload !== 'object') {
-      return undefined;
-    }
-
-    const record = payload as Record<string, unknown>;
-    if (typeof record.key === 'string') return record.key;
-    if (typeof record.plainKey === 'string') return record.plainKey;
-    if (record.data && typeof record.data === 'object') {
-      const data = record.data as Record<string, unknown>;
-      if (typeof data.key === 'string') return data.key;
-      if (typeof data.plainKey === 'string') return data.plainKey;
-    }
-
-    return undefined;
-  };
-
+const App: React.FC = () => {
   return (
     <ThemeProvider>
       <ToastProvider>

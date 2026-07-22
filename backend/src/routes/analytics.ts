@@ -3,12 +3,6 @@ import { AnalyticsController } from '../controllers/analyticsController';
 import { AnalyticsService } from '../services/analyticsService';
 import { PrismaClient } from '@prisma/client';
 import { DataSource } from 'typeorm';
-import { validate } from '../middleware/validation';
-import {
-  dashboardQuerySchema,
-  trendsQuerySchema,
-  exportQuerySchema,
-} from '../schemas';
 
 export function createAnalyticsRouter(prisma: PrismaClient, typeorm: DataSource): Router {
   const router = Router();
@@ -20,33 +14,21 @@ export function createAnalyticsRouter(prisma: PrismaClient, typeorm: DataSource)
    * @desc Get summary statistics for the dashboard
    * @access Private/Admin
    */
-  router.get(
-    '/dashboard',
-    validate({ query: dashboardQuerySchema }),
-    analyticsController.getDashboardSummary
-  );
+  router.get('/dashboard', analyticsController.getDashboardSummary);
 
   /**
    * @route GET /api/v1/analytics/trends
    * @desc Get traffic trends and forecasting
    * @access Private/Admin
    */
-  router.get(
-    '/trends',
-    validate({ query: trendsQuerySchema }),
-    analyticsController.getTrends
-  );
+  router.get('/trends', analyticsController.getTrends);
 
   /**
    * @route GET /api/v1/analytics/export
    * @desc Export analytics data as CSV or PDF
    * @access Private/Admin
    */
-  router.get(
-    '/export',
-    validate({ query: exportQuerySchema }),
-    analyticsController.exportData
-  );
+  router.get('/export', analyticsController.exportData);
 
   return router;
 }

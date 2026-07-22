@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Box, Button, Tab, Tabs } from '@mui/material';
 import { TransactionData, PerformanceMetrics, UserActivity, NetworkNode, NetworkLink } from '@chenaikit/core';
 import {
   exportVisualization,
@@ -74,17 +73,8 @@ const generateSampleData = () => {
   return { transactions, performanceData, userActivity, nodes, links };
 };
 
-type VizTab = 'flow' | 'performance' | 'heatmap' | 'network';
-
-const VIZ_TABS: Array<{ id: VizTab; label: string }> = [
-  { id: 'flow', label: 'Transaction Flow' },
-  { id: 'performance', label: 'Performance Metrics' },
-  { id: 'heatmap', label: 'User Activity' },
-  { id: 'network', label: 'Network Topology' },
-];
-
 export const DataVisualizationExample: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<VizTab>('flow');
+  const [activeTab, setActiveTab] = useState<'flow' | 'performance' | 'heatmap' | 'network'>('flow');
   const [data, setData] = useState(generateSampleData());
   const [isExporting, setIsExporting] = useState(false);
   
@@ -166,110 +156,133 @@ export const DataVisualizationExample: React.FC = () => {
           Interactive data visualization components for blockchain and AI applications
         </p>
         
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2.5 }}>
-          <Button variant="contained" onClick={handleRefreshData} aria-label="Refresh visualization data">
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+          <button
+            onClick={handleRefreshData}
+            style={{
+              padding: '8px 16px',
+              background: '#3B82F6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
             Refresh Data
-          </Button>
-
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }} role="group" aria-label="Export options">
-            {(['png', 'svg', 'csv', 'pdf'] as const).map((format) => (
-              <Button
+          </button>
+          
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {['png', 'svg', 'csv', 'pdf'].map((format) => (
+              <button
                 key={format}
-                variant="contained"
-                color="success"
-                onClick={() => handleExport(format)}
+                onClick={() => handleExport(format as any)}
                 disabled={isExporting}
-                aria-label={`Export current view as ${format.toUpperCase()}`}
+                style={{
+                  padding: '8px 16px',
+                  background: isExporting ? '#9CA3AF' : '#10B981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: isExporting ? 'not-allowed' : 'pointer',
+                  fontSize: '14px'
+                }}
               >
                 Export {format.toUpperCase()}
-              </Button>
+              </button>
             ))}
-          </Box>
-        </Box>
+          </div>
+        </div>
       </div>
 
-      <Tabs
-        value={activeTab}
-        onChange={(_, value: VizTab) => setActiveTab(value)}
-        aria-label="Visualization types"
-        sx={{ borderBottom: 1, borderColor: 'divider', mb: 2.5 }}
-      >
-        {VIZ_TABS.map((tab) => (
-          <Tab
-            key={tab.id}
-            value={tab.id}
-            label={tab.label}
-            id={`viz-tab-${tab.id}`}
-            aria-controls={`viz-panel-${tab.id}`}
-          />
+      {/* Tab Navigation */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #E5E7EB', marginBottom: '20px' }}>
+        {[
+          { key: 'flow', label: 'Transaction Flow', icon: '🔄' },
+          { key: 'performance', label: 'Performance Metrics', icon: '📊' },
+          { key: 'heatmap', label: 'User Activity', icon: '🔥' },
+          { key: 'network', label: 'Network Topology', icon: '🕸️' }
+        ].map(({ key, label, icon }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key as any)}
+            style={{
+              padding: '12px 20px',
+              background: activeTab === key ? '#3B82F6' : 'transparent',
+              color: activeTab === key ? 'white' : '#6B7280',
+              border: 'none',
+              borderBottom: activeTab === key ? '2px solid #3B82F6' : '2px solid transparent',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <span>{icon}</span>
+            {label}
+          </button>
         ))}
-      </Tabs>
+      </div>
 
-      {VIZ_TABS.map((tab) => (
-        <Box
-          key={tab.id}
-          role="tabpanel"
-          id={`viz-panel-${tab.id}`}
-          aria-labelledby={`viz-tab-${tab.id}`}
-          hidden={activeTab !== tab.id}
-          sx={{ height: 600, border: '1px solid #E5E7EB', borderRadius: 1, overflow: 'hidden' }}
-        >
-          {tab.id === 'flow' && (
-            <div ref={flowChartRef} style={{ height: '100%' }}>
-              <TransactionFlowChart
-                data={data.transactions}
-                showLabels={true}
-                showArrows={true}
-                nodeSize={10}
-                linkWidth={3}
-              />
-            </div>
-          )}
+      {/* Chart Content */}
+      <div style={{ height: '600px', border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
+        {activeTab === 'flow' && (
+          <div ref={flowChartRef} style={{ height: '100%' }}>
+            <TransactionFlowChart
+              data={data.transactions}
+              showLabels={true}
+              showArrows={true}
+              nodeSize={10}
+              linkWidth={3}
+            />
+          </div>
+        )}
 
-          {tab.id === 'performance' && (
-            <div ref={performanceChartRef} style={{ height: '100%' }}>
-              <PerformanceMetricsChart
-                data={data.performanceData}
-                chartType="line"
-                metrics={['accuracy', 'precision', 'recall', 'f1Score']}
-                showLegend={true}
-                showGrid={true}
-                animate={true}
-              />
-            </div>
-          )}
+        {activeTab === 'performance' && (
+          <div ref={performanceChartRef} style={{ height: '100%' }}>
+            <PerformanceMetricsChart
+              data={data.performanceData}
+              chartType="line"
+              metrics={['accuracy', 'precision', 'recall', 'f1Score']}
+              showLegend={true}
+              showGrid={true}
+              animate={true}
+            />
+          </div>
+        )}
 
-          {tab.id === 'heatmap' && (
-            <div ref={heatmapRef} style={{ height: '100%' }}>
-              <UserActivityHeatmap
-                data={data.userActivity}
-                timeRange="day"
-                aggregation="count"
-                colorScheme="blue"
-                showTooltip={true}
-                showLegend={true}
-              />
-            </div>
-          )}
+        {activeTab === 'heatmap' && (
+          <div ref={heatmapRef} style={{ height: '100%' }}>
+            <UserActivityHeatmap
+              data={data.userActivity}
+              timeRange="day"
+              aggregation="count"
+              colorScheme="blue"
+              showTooltip={true}
+              showLegend={true}
+            />
+          </div>
+        )}
 
-          {tab.id === 'network' && (
-            <div ref={networkRef} style={{ height: '100%' }}>
-              <NetworkTopologyView
-                nodes={data.nodes}
-                links={data.links}
-                layout="force"
-                nodeSize={12}
-                linkWidth={2}
-                showLabels={true}
-                showArrows={true}
-                showNodeValues={false}
-                enableDrag={true}
-                enableZoom={true}
-              />
-            </div>
-          )}
-        </Box>
-      ))}
+        {activeTab === 'network' && (
+          <div ref={networkRef} style={{ height: '100%' }}>
+            <NetworkTopologyView
+              nodes={data.nodes}
+              links={data.links}
+              layout="force"
+              nodeSize={12}
+              linkWidth={2}
+              showLabels={true}
+              showArrows={true}
+              showNodeValues={false}
+              enableDrag={true}
+              enableZoom={true}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Data Info */}
       <div style={{ marginTop: '20px', padding: '16px', background: '#F9FAFB', borderRadius: '8px' }}>

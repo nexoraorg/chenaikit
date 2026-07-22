@@ -227,6 +227,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <DialogTitle>Edit Profile</DialogTitle>
         <DialogContent>
           <TextField
+            autoFocus
             fullWidth
             label="Display Name"
             value={editName}

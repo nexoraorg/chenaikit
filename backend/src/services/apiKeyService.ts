@@ -251,7 +251,8 @@ export class ApiKeyService {
       `,
     ]);
 
-    const successRate = totalRequests > 0 ? (successCount / totalRequests) * 100 : 0;
+    const totalCount = await this.prisma.apiUsage.count({ where: whereClause });
+    const successRate = totalCount > 0 ? (successCount / totalCount) * 100 : 0;
 
     // Get current month usage
     const currentMonthStart = new Date();

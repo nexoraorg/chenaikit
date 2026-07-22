@@ -58,7 +58,6 @@ export const FileList: React.FC<FileListProps> = ({
                   size="small"
                   disabled={index === 0}
                   onClick={() => onReorder(index, index - 1)}
-                  aria-label={`Move ${task.file.name} up`}
                   sx={{
                     p: 0.25,
                     border: '1px solid',
@@ -78,7 +77,6 @@ export const FileList: React.FC<FileListProps> = ({
                   size="small"
                   disabled={index === tasks.length - 1}
                   onClick={() => onReorder(index, index + 1)}
-                  aria-label={`Move ${task.file.name} down`}
                   sx={{
                     p: 0.25,
                     border: '1px solid',

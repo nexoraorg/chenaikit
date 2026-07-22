@@ -10,12 +10,6 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
-    "seed": "ts-node src/scripts/seed.ts",
-    "seed:dev": "ts-node src/scripts/seed.ts seed:dev",
-    "seed:test": "ts-node src/scripts/seed.ts seed:test",
-    "seed:prod": "ts-node src/scripts/seed.ts seed:prod",
-    "seed:reset": "ts-node src/scripts/seed.ts seed:reset",
-    "seed:validate": "ts-node src/scripts/seed.ts seed:validate",
     "test": "jest",
     "test:ci": "jest --coverage --ci --watchAll=false --maxWorkers=2",
     "test:watch": "jest --watch",
@@ -46,7 +40,7 @@
     "helmet": "^7.0.0",
     "ioredis": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
-    "nodemailer": "^6.10.1",
+    "multer": "^1.4.5-lts.1",
     "prom-client": "^15.1.3",
     "reflect-metadata": "^0.2.2",
     "sql.js": "^1.14.1",
@@ -54,11 +48,11 @@
     "typeorm": "^1.0.0",
     "uuid": "^9.0.1",
     "winston": "^3.14.2",
+    "nodemailer": "^6.9.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
-    "@types/better-sqlite3": "^7.6.0",
     "@types/bull": "^4.10.0",
     "@types/cors": "^2.8.0",
     "@types/express": "^4.17.0",
@@ -67,7 +61,6 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^1.4.12",
     "@types/node": "^20.0.0",
-    "@types/nodemailer": "^6.4.24",
     "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
@@ -76,6 +69,7 @@
     "prisma": "^5.0.0",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.0",
+    "@types/nodemailer": "^6.4.0",
     "typescript": "^5.0.0"
   }
 }

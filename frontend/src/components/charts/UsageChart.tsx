@@ -9,7 +9,6 @@ import {
   Area,
 } from 'recharts';
 import { Box, Typography, Paper, useTheme } from '@mui/material';
-import ChartAccessibleSummary from '../a11y/ChartAccessibleSummary';
 
 interface UsageChartProps {
   data: Array<{ date: string; value: number }>;
@@ -22,22 +21,10 @@ export const UsageChart: React.FC<UsageChartProps> = ({ data, forecast, title })
   const combinedData = [...data, ...(forecast || []).map(f => ({ ...f, isForecast: true }))];
 
   return (
-    <Paper
-      component="section"
-      role="region"
-      aria-label={title}
-      sx={{ p: 3, borderRadius: 2, height: 400 }}
-    >
-      <Typography variant="h6" component="h3" gutterBottom color="primary" sx={{ fontWeight: 600 }}>
+    <Paper sx={{ p: 3, borderRadius: 2, height: 400 }}>
+      <Typography variant="h6" gutterBottom color="primary" sx={{ fontWeight: 600 }}>
         {title}
       </Typography>
-      <ChartAccessibleSummary
-        title={title}
-        rows={combinedData.map((point) => ({
-          label: String(point.date),
-          value: point.value,
-        }))}
-      />
       <Box sx={{ width: '100%', height: 320 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={combinedData}>

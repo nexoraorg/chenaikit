@@ -1,10 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { getRateLimitConfig, RATE_LIMIT_WINDOWS } from '../config/rateLimit';
-import {
-  RateLimitInfo,
-  sendRateLimitExceeded,
-  setRateLimitHeaders,
-} from '../utils/rateLimitUtils';
 
 interface RateLimitOptions {
   windowMs: number;
@@ -24,18 +18,17 @@ interface RateLimitStore {
 export class RateLimiter {
   private store: RateLimitStore = {};
   private options: RateLimitOptions;
-  private cleanupTimer: ReturnType<typeof setInterval>;
 
   constructor(options: RateLimitOptions) {
     this.options = {
       message: 'Too many requests from this IP, please try again later.',
       standardHeaders: true,
-      legacyHeaders: true,
-      ...options,
+      legacyHeaders: false,
+      ...options
     };
 
-    this.cleanupTimer = setInterval(() => this.cleanup(), 60000);
-    this.cleanupTimer.unref?.();
+    // Clean up expired entries every minute
+    setInterval(() => this.cleanup(), 60000);
   }
 
   private cleanup() {
@@ -48,23 +41,7 @@ export class RateLimiter {
   }
 
   private getKey(req: Request): string {
-    return req.ip || req.socket.remoteAddress || 'unknown';
-  }
-
-  private buildInfo(currentCount: number, resetTime: number): RateLimitInfo {
-    const remaining = Math.max(0, this.options.max - currentCount);
-    const retryAfter =
-      currentCount > this.options.max
-        ? Math.max(1, Math.ceil((resetTime - Date.now()) / 1000))
-        : undefined;
-
-    return {
-      limit: this.options.max,
-      remaining,
-      resetTime: new Date(resetTime),
-      retryAfter,
-      scope: 'ip',
-    };
+    return req.ip || req.connection.remoteAddress || 'unknown';
   }
 
   middleware() {
@@ -76,21 +53,40 @@ export class RateLimiter {
       if (!this.store[key] || this.store[key].resetTime <= now) {
         this.store[key] = {
           count: 1,
-          resetTime: windowEnd,
+          resetTime: windowEnd
         };
       } else {
         this.store[key].count++;
       }
 
       const current = this.store[key];
-      const info = this.buildInfo(current.count, current.resetTime);
+      const remaining = Math.max(0, this.options.max - current.count);
 
-      if (this.options.standardHeaders || this.options.legacyHeaders) {
-        setRateLimitHeaders(res, info);
+      if (this.options.standardHeaders) {
+        res.set({
+          'RateLimit-Limit': this.options.max.toString(),
+          'RateLimit-Remaining': remaining.toString(),
+          'RateLimit-Reset': new Date(current.resetTime).toISOString()
+        });
+      }
+
+      if (this.options.legacyHeaders) {
+        res.set({
+          'X-RateLimit-Limit': this.options.max.toString(),
+          'X-RateLimit-Remaining': remaining.toString(),
+          'X-RateLimit-Reset': Math.ceil(current.resetTime / 1000).toString()
+        });
       }
 
       if (current.count > this.options.max) {
-        return sendRateLimitExceeded(res, info, this.options.message);
+        return res.status(429).json({
+          success: false,
+          error: {
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: this.options.message,
+            timestamp: new Date().toISOString()
+          }
+        });
       }
 
       next();
@@ -98,18 +94,15 @@ export class RateLimiter {
   }
 }
 
-const config = getRateLimitConfig();
-
+// Pre-configured rate limiters
 export const generalRateLimit = new RateLimiter({
-  windowMs: config.defaultIpLimit.windowMs,
-  max: config.defaultIpLimit.max,
-  message: 'Too many requests from this IP, please try again later.',
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
 });
 
 export const createAccountRateLimit = new RateLimiter({
-  windowMs: RATE_LIMIT_WINDOWS.hour,
-  max: 5,
-  message: 'Too many account creation attempts from this IP, please try again later.',
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // limit each IP to 5 account creations per hour
+  message: 'Too many account creation attempts from this IP, please try again later.'
 });
-
-export { getDistributedRateLimiter, createDistributedRateLimiter } from './distributedRateLimiter';
