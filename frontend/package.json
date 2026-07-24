@@ -19,12 +19,12 @@
     "analyze": "source-map-explorer 'build/static/js/*.js'",
     "lighthouse": "lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-report.json"
   },
-"dependencies": {
+  "dependencies": {
     "@chenaikit/core": "workspace:*",
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "@hookform/resolvers": "3.10.0",
-    "@mui/icons-material": "^5.15.0",
+    "@mui/icons-material": "^5.18.0",
     "@mui/material": "^5.15.0",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/context-zone": "^1.29.0",
@@ -54,7 +54,7 @@
     "recharts": "^3.2.1",
     "zod": "3.24.2"
   },
-"devDependencies": {
+  "devDependencies": {
     "@testing-library/jest-dom": "^5.16.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^14.6.1",
@@ -75,7 +75,7 @@
     "react-scripts": "5.0.1",
     "typescript": "^5.0.0"
   },
-"jest": {
+  "jest": {
     "transformIgnorePatterns": [
       "node_modules/(?!(@chenaikit|axios|@stellar|d3|d3-|internmap|delaunator|robust-predicates|react-window)/)"
     ]
