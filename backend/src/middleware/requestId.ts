@@ -10,7 +10,7 @@ export const REQUEST_ID_HEADER = 'x-request-id';
  */
 export function requestIdMiddleware(req: Request, res: Response, next: NextFunction): void {
   const existing = req.headers[REQUEST_ID_HEADER];
-  req.id = (Array.isArray(existing) ? existing[0] : existing) || crypto.randomUUID();
-  res.setHeader('X-Request-Id', req.id);
+  (req as any).id = (Array.isArray(existing) ? existing[0] : existing) || crypto.randomUUID();
+  res.setHeader('X-Request-Id', (req as any).id);
   next();
 }

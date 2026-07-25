@@ -44,3 +44,9 @@ DATABASE_URL=postgresql://...
 REDIS_URL=redis://...
 AI_API_KEY=your_ai_api_key
 ```
+
+## HTTP Compression
+
+Responses negotiate Brotli or gzip using Accept-Encoding. Small payloads and already-compressed content types are skipped. Express ETags remain based on the original response and Vary: Accept-Encoding keeps shared caches safe.
+
+JSON requests may use Content-Encoding: gzip, deflate, or br. Invalid or unsupported bodies receive a structured 400 or 415 response. Configure behavior with COMPRESSION_ENABLED, COMPRESSION_LEVEL (-1 to 9), COMPRESSION_BROTLI_QUALITY (0 to 11), COMPRESSION_THRESHOLD (bytes, kb, or mb), and COMPRESSION_EXCLUDED_TYPES. Routes can use configureRouteCompression({ enabled, threshold }). Runtime totals and estimated byte savings are available from compressionStatistics.snapshot().

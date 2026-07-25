@@ -22,7 +22,7 @@ module.exports = {
     '!src/database/migrations/**',
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!(uuid)/)'
+    'node_modules/(?!(uuid|@opentelemetry|@prisma)/)'
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],

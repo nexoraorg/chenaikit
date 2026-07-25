@@ -30,9 +30,11 @@ registerHealthCheck('ai', async () => {
   return { status: 'up' };
 });
 
-// Your API routes here
-// app.use('/api/credit', creditRouter);
-// app.use('/api/fraud', fraudRouter);
+// MFA routes
+import mfaRouter from './routes/mfaRoutes';
+import { requireMFA } from './middleware/requireMFA';
+app.use('/api/auth/mfa', mfaRouter);
+export { requireMFA };
 
 // Error handling (must be last)
 if (process.env.SENTRY_DSN) {

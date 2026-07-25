@@ -11,15 +11,18 @@ import type { Router as ExpressRouter } from 'express';
 import accountRoutes from '../accounts';
 import authRoutes from '../auth';
 import { createFeatureFlagRouter } from '../featureFlags';
+import { createMLModelRouter } from '../mlModels';
 import { generateCreditScore, generateFraudResult, toCreditScoreV2, toFraudResultV2 } from '../shared/scoring';
 import { validate } from '../../middleware/validation';
 import { creditScoreQuerySchema, fraudDetectionQuerySchema } from '../../schemas';
+import { prisma } from '../../prisma/client';
 
 const router: ExpressRouter = Router();
 
 router.use('/accounts', accountRoutes);
 router.use('/auth', authRoutes);
 router.use('/feature-flags', createFeatureFlagRouter());
+router.use('/ml-models', createMLModelRouter(prisma));
 
 // GET /credit-score - nested v2 contract
 router.get(

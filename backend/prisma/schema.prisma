@@ -17,6 +17,15 @@ model User {
   deletedAt     DateTime?
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
+  
+  // MFA fields
+  mfaEnabled      Boolean   @default(false)
+  mfaSecret       String?   // Encrypted TOTP secret
+  backupCodes     String?   // JSON array of hashed backup codes
+  mfaRecoveryEmail String?  // Recovery email for MFA reset
+  mfaLastVerifiedAt DateTime?
+  mfaFailedAttempts Int      @default(0)
+  mfaLockedUntil   DateTime?
 
   @@index([createdAt])
   @@index([email])
@@ -101,5 +110,163 @@ model ApiUsage {
   @@index([responseTime])
   @@index([deletedAt])
   @@index([apiKeyId, statusCode])
+}
+
+// ---------------------------------------------------------------------------
+// ML Model Registry & A/B Testing (MLOps)
+// ---------------------------------------------------------------------------
+
+model MLModel {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  description String        @default("")
+  taskType    String        // e.g. "credit_scoring", "fraud_detection"
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  versions    MLModelVersion[]
+  experiments Experiment[]
+
+  @@map("ml_models")
+  @@index([taskType])
+}
+
+model MLModelVersion {
+  id                String    @id @default(cuid())
+  modelId           String
+  model             MLModel   @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  version           String    // semantic version, e.g. "2.0.0"
+  stage             String    @default("staging") // staging | production | archived
+  artifactUri       String    // path/URI to .pkl / .joblib artifact
+  contentHash       String    // SHA256 of the model artifact (content-addressable)
+  frameworkVersion  String?   // e.g. scikit-learn==1.4.2
+  accuracy          Float?
+  precision         Float?
+  recall            Float?
+  f1Score           Float?
+  auc               Float?
+  trainingDataUri   String?
+  trainingDataHash  String?
+  hyperparameters   String    @default("{}") // JSON string
+  metadata          String    @default("{}") // JSON string
+  datasetVersion    String?
+  codeCommit        String?   // git commit SHA of training code
+  trainingRunId     String?   // link to external training run (e.g. MLflow run id)
+  approvedBy        String?
+  approvedAt        DateTime?
+  promotedAt        DateTime?
+  archivedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  variants          ExperimentVariant[]
+  driftChecks       ModelDriftCheck[]
+
+  @@map("ml_model_versions")
+  @@unique([modelId, version])
+  @@index([modelId, stage])
+  @@index([contentHash])
+  @@index([stage])
+}
+
+model Experiment {
+  id                  String    @id @default(cuid())
+  key                 String    @unique
+  name                String
+  description         String    @default("")
+  modelId             String
+  model               MLModel   @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  status              String    @default("draft") // draft | running | paused | completed | rolled_back
+  hypothesis          String    @default("")
+  metric              String    // primary conversion/success metric name
+  minimumDetectableEffect Float?
+  significanceLevel   Float     @default(0.05)
+  power               Float     @default(0.8)
+  bonferroniCorrection Boolean  @default(false)
+  canaryThresholdPct  Float     @default(5.0) // auto-rollback if degradation exceeds this %
+  canaryWindowHours   Int       @default(24)
+  startedAt           DateTime?
+  endedAt             DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  variants            ExperimentVariant[]
+  assignments         ExperimentAssignment[]
+  events              ExperimentEvent[]
+
+  @@map("experiments")
+  @@index([modelId])
+  @@index([status])
+}
+
+model ExperimentVariant {
+  id            String     @id @default(cuid())
+  experimentId  String
+  experiment    Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  modelVersionId String
+  modelVersion  MLModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Cascade)
+  name          String     // e.g. "control", "treatment"
+  isControl     Boolean    @default(false)
+  trafficWeight Float      // 0-100, must sum to 100 across an experiment's variants
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  assignments   ExperimentAssignment[]
+  events        ExperimentEvent[]
+
+  @@map("experiment_variants")
+  @@unique([experimentId, name])
+  @@index([experimentId])
+}
+
+model ExperimentAssignment {
+  id            String     @id @default(cuid())
+  experimentId  String
+  experiment    Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  variantId     String
+  variant       ExperimentVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  subjectId     String     // user id, session id, or account id used for stickiness
+  assignedAt    DateTime   @default(now())
+
+  @@map("experiment_assignments")
+  @@unique([experimentId, subjectId])
+  @@index([experimentId, variantId])
+  @@index([subjectId])
+}
+
+model ExperimentEvent {
+  id            String     @id @default(cuid())
+  experimentId  String
+  experiment    Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  variantId     String
+  variant       ExperimentVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  subjectId     String
+  eventType     String     // "exposure" | "conversion" | "metric"
+  metricName    String?
+  metricValue   Float?
+  createdAt     DateTime   @default(now())
+
+  @@map("experiment_events")
+  @@index([experimentId, variantId])
+  @@index([experimentId, eventType])
+  @@index([subjectId])
+}
+
+model ModelDriftCheck {
+  id              String   @id @default(cuid())
+  modelVersionId  String
+  modelVersion    MLModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Cascade)
+  windowStart     DateTime
+  windowEnd       DateTime
+  baselineAuc     Float
+  observedAuc     Float
+  aucDrop         Float    // percentage drop relative to baseline
+  driftDetected   Boolean  @default(false)
+  alertSent       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@map("model_drift_checks")
+  @@index([modelVersionId])
+  @@index([driftDetected])
 }
 

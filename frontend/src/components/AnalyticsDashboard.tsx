@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Grid,
   Box,
@@ -60,11 +60,8 @@ export const AnalyticsDashboard: React.FC = () => {
   const [trendData, setTrendData] = useState<TrendData | null>(null);
   const [timeRange, setTimeRange] = useState("30");
 
-  useEffect(() => {
-    fetchData();
-  }, [timeRange]);
-
-  const fetchData = async () => {
+  // Memoized fetch function to prevent unnecessary re-renders
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [dashRes, trendRes] = await Promise.all([
@@ -75,21 +72,37 @@ export const AnalyticsDashboard: React.FC = () => {
       setDashboardData(dashRes.data.data);
       setTrendData(trendRes.data.data);
       setError(null);
-    } catch (err: any) {
+    } catch (err) {
       setError(
         "Failed to fetch analytics data. Please ensure the backend is running.",
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]);
 
-  const handleExport = async (format: "csv" | "pdf") => {
+  // Memoized export handler
+  const handleExport = useCallback((format: "csv" | "pdf") => {
     window.open(
       `/api/v1/analytics/export?format=${format}&days=${timeRange}`,
       "_blank",
     );
-  };
+  }, [timeRange]);
+
+  // Memoized data for charts to prevent unnecessary re-renders
+  const kpiData = useMemo(() => {
+    if (!dashboardData) return null;
+    return {
+      totalRequests: dashboardData.systemUsage.totalRequests.toLocaleString(),
+      avgLatency: dashboardData.systemUsage.avgLatency,
+      avgCreditScore: dashboardData.aiPerformance.avgCreditScore,
+      blockchainVol: dashboardData.blockchainActivity.totalVolume,
+    };
+  }, [dashboardData]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (error)
     return (

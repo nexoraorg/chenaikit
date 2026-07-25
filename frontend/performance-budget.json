@@ -1,0 +1,28 @@
+{
+  "budgets": [
+    {
+      "path": "static/js/*.js",
+      "maxSize": "1MB",
+      "maxTotalKb": 1024,
+      "maxIncrementalKb": 100
+    },
+    {
+      "path": "static/css/*.css",
+      "maxSize": "200KB",
+      "maxTotalKb": 200,
+      "maxIncrementalKb": 50
+    },
+    {
+      "path": "static/media/*",
+      "maxSize": "500KB",
+      "maxTotalKb": 500,
+      "maxIncrementalKb": 100
+    }
+  ],
+  "metrics": {
+    "fcp": 1500,
+    "lcp": 2500,
+    "cls": 0.1,
+    "fid": 100
+  }
+}

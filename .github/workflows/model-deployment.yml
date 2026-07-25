@@ -1,0 +1,150 @@
+name: Model Training, Validation & Deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ml/**'
+      - 'packages/chenai-mlflow/**'
+  workflow_dispatch:
+    inputs:
+      model_task:
+        description: 'Which model to train (credit_scoring | fraud_detection)'
+        required: true
+        default: 'credit_scoring'
+      promote:
+        description: 'Promote to production after validation passes'
+        required: false
+        default: 'false'
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.train.outputs.artifact_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: ml/requirements.txt
+
+      - name: Install ML dependencies
+        run: pip install -r ml/requirements.txt
+
+      - name: Generate synthetic training data
+        run: python ml/data/generate_synthetic_data.py
+
+      - name: Preprocess data
+        run: python ml/data/preprocessing.py
+
+      - name: Train credit scoring model
+        if: ${{ github.event.inputs.model_task == 'credit_scoring' || github.event.inputs.model_task == '' }}
+        id: train
+        run: |
+          python ml/training/train_credit_score.py
+          echo "artifact_name=credit-scoring-models" >> "$GITHUB_OUTPUT"
+
+      - name: Train fraud detection model
+        if: ${{ github.event.inputs.model_task == 'fraud_detection' }}
+        run: python ml/training/train_fraud_detector.py
+
+      - name: Upload trained model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-models
+          path: ml/models/**
+          retention-days: 30
+
+  validate:
+    needs: train
+    runs-on: ubuntu-latest
+    outputs:
+      validation-passed: ${{ steps.validate.outputs.passed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: ml/requirements.txt
+
+      - name: Install ML dependencies
+        run: pip install -r ml/requirements.txt
+
+      - name: Download trained model artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-models
+          path: ml/models
+
+      - name: Run model evaluation metrics
+        id: validate
+        run: |
+          python ml/evaluation/metrics.py
+          echo "passed=true" >> "$GITHUB_OUTPUT"
+
+  register-and-deploy:
+    needs: validate
+    if: needs.validate.outputs.validation-passed == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install chenai-mlflow SDK
+        run: pip install -e packages/chenai-mlflow
+
+      - name: Download trained model artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-models
+          path: ml/models
+
+      - name: Register model version with the registry
+        env:
+          CHENAIKIT_API_URL: ${{ secrets.CHENAIKIT_API_URL }}
+        run: |
+          python - <<'PYEOF'
+          import os
+          from pathlib import Path
+          from chenai_mlflow import ModelRegistryClient
+
+          client = ModelRegistryClient(base_url=os.environ.get("CHENAIKIT_API_URL"))
+
+          model_files = list(Path("ml/models").glob("*.pkl")) + list(Path("ml/models").glob("*.joblib"))
+          if not model_files:
+              raise SystemExit("No trained model artifacts found to register")
+
+          artifact = model_files[0]
+          model = client.get_or_create_model("credit-scoring", task_type="credit_scoring")
+
+          version = client.register_version(
+              model_id=model["id"],
+              version=os.environ.get("GITHUB_SHA", "dev")[:12],
+              artifact_path=str(artifact),
+              code_commit=os.environ.get("GITHUB_SHA"),
+              training_run_id=os.environ.get("GITHUB_RUN_ID"),
+          )
+          print(f"Registered version {version['id']} (stage={version['stage']})")
+          PYEOF
+
+      - name: Promote to production (manual approval gate)
+        if: ${{ github.event.inputs.promote == 'true' }}
+        env:
+          CHENAIKIT_API_URL: ${{ secrets.CHENAIKIT_API_URL }}
+        run: |
+          echo "Promotion requires an explicit approvedBy actor; run via the registry dashboard or API once staging validation is confirmed."
