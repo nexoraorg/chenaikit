@@ -10,6 +10,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "test:a11y": "jest --config jest.config.js --watchAll=false --testPathPattern='(a11y|accessibility)'",
+    "type-check": "tsc --noEmit",
     "eject": "react-scripts eject",
     "lint": "eslint src/**/*.{ts,tsx}",
     "i18n:scan": "i18next-scanner 'src/**/*.{js,jsx,ts,tsx}' --output 'src/locales'",

@@ -17,7 +17,8 @@
     "seed:reset": "ts-node src/scripts/seed.ts seed:reset",
     "seed:validate": "ts-node src/scripts/seed.ts seed:validate",
     "test": "jest",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint src/**/*.ts",
+    "type-check": "tsc --noEmit"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

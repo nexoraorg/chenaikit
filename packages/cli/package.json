@@ -11,6 +11,7 @@
     "dev": "tsc --watch",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
+    "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "keywords": [
