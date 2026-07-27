@@ -52,6 +52,15 @@ export { SkeletonCard } from './SkeletonCard';
 export { SkeletonTable } from './SkeletonTable';
 export { SkeletonChart } from './SkeletonChart';
 
+// Modal & Dialog System
+export { default as ModalContainer } from './Modal';
+export { ModalHeader, ModalBody, ModalFooter } from './Modal';
+export { default as ConfirmDialog } from './ConfirmDialog';
+export type { ConfirmDialogProps } from './ConfirmDialog';
+
+// Keyboard Shortcuts Help
+export { default as KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
+
 // Virtualized components for performance
 export { VirtualizedList, VirtualizedTable } from './VirtualizedList';
 

@@ -4,3 +4,6 @@ export * from './useCreditScore';
 export { default as useToast } from './useToast';
 export { default as usePerformance, useRenderPerformance, useApiPerformance, useDeepMemo, useDebounce, useThrottle } from './usePerformance';
 export type { PerformanceMetrics } from './usePerformance';
+export { default as useDialog } from './useDialog';
+export { default as useKeyboardShortcut } from './useKeyboardShortcut';
+export { formatShortcutCombo } from './useKeyboardShortcut';

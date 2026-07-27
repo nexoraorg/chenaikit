@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy, useCallback } from 'react';
+import React, { useState, Suspense, lazy, useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link as RouterLink } from 'react-router-dom';
 import { Box, Button, Typography, Tabs, Tab } from '@mui/material';
 import { Logout as LogoutIcon, AccountCircle } from '@mui/icons-material';
@@ -7,6 +7,10 @@ import DataVisualizationExample from './components/DataVisualizationExample';
 import { AnalyticsDashboard } from './components';
 import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { ModalProvider } from './contexts/ModalContext';
+import ModalContainer from './components/Modal';
+import { KeyboardShortcutProvider, useKeyboardShortcutContext } from './contexts/KeyboardShortcutContext';
+import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LoadingProvider, useLoading } from './contexts/LoadingContext';
@@ -258,6 +262,27 @@ const DashboardShell: React.FC = () => {
   );
 };
 
+// ─── Keyboard shortcuts overlay ──────────────────────────────────────────────
+
+const ShortcutsManager: React.FC = () => {
+  const [helpOpen, setHelpOpen] = useState(false);
+  const { register } = useKeyboardShortcutContext();
+
+  useEffect(() => {
+    const unreg = register({
+      combo: { key: '?' },
+      handler: () => setHelpOpen((prev) => !prev),
+      description: 'Show keyboard shortcuts help',
+      category: 'General',
+    });
+    return unreg;
+  }, [register]);
+
+  return (
+    <KeyboardShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+  );
+};
+
 const AppRoutes: React.FC = () => {
   const { user: authUser } = useAuth();
   const { startLoading, stopLoading } = useLoading();
@@ -498,10 +523,16 @@ const App: React.FC = () => {
           <ErrorProvider>
             <PerformanceProvider>
               <ErrorBoundary name="Root application" fallbackTitle="ChenaiKit could not render">
-                <AuthProvider>
-                  <AppRoutes />
-                  <ToastContainer />
-                </AuthProvider>
+                <ModalProvider>
+                  <KeyboardShortcutProvider>
+                    <AuthProvider>
+                      <AppRoutes />
+                      <ShortcutsManager />
+                      <ModalContainer />
+                      <ToastContainer />
+                    </AuthProvider>
+                  </KeyboardShortcutProvider>
+                </ModalProvider>
               </ErrorBoundary>
             </PerformanceProvider>
           </ErrorProvider>
