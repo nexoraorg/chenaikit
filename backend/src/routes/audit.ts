@@ -288,11 +288,8 @@ router.get(
 router.delete(
   "/logs/:id",
   authenticate(),
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     try {
-      const user = (req as any).user;
-      const { id } = req.params;
-
       // TODO: Implement soft-delete for specific logs
       // For now, only allow full user deletion via GDPR request
 

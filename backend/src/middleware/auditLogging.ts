@@ -89,8 +89,8 @@ export const auditLoggingMiddleware = (
     };
 
     // Log asynchronously (fire-and-forget)
-    auditLogService.createAuditLog(auditInput).catch((err) => {
-      console.error("Audit log failed:", err);
+    auditLogService.createAuditLog(auditInput).catch(() => {
+      // Silently fail - audit logging shouldn't break app
     });
 
     return originalSend(data);
