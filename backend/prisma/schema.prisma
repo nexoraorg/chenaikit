@@ -17,6 +17,7 @@ model User {
   deletedAt     DateTime?
   refreshTokens RefreshToken[]
   apiKeys       ApiKey[]
+  auditLogs     AuditLog[]
   
   // MFA fields
   mfaEnabled      Boolean   @default(false)
@@ -268,5 +269,38 @@ model ModelDriftCheck {
   @@map("model_drift_checks")
   @@index([modelVersionId])
   @@index([driftDetected])
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action        String   // e.g. "USER_LOGIN", "DATA_ACCESS", "SETTINGS_UPDATE"
+  resource      String?  // e.g. "user", "transaction", "report"
+  resourceId    String?  // ID of the affected resource
+  method        String?  // HTTP method: GET, POST, PUT, PATCH, DELETE
+  endpoint      String?  // API endpoint path
+  statusCode    Int?     // HTTP status code
+  ipAddress     String?  // Client IP for geo-distribution
+  userAgent     String?  // Client user agent
+  requestData   String?  // JSON stringified (redacted)
+  responseData  String?  // JSON stringified (redacted)
+  errorMessage  String?  // Error details if failed
+  duration      Int?     // Request duration in ms
+  metadata      String?  // JSON for additional context (e.g. filter_criteria, PII_fields_accessed)
+  piiRedacted   Boolean  @default(false) // Flag if PII was redacted
+  createdAt     DateTime @default(now())
+  archivedAt    DateTime? // When log was moved to cold storage
+  deletedAt     DateTime? // Soft delete for GDPR right-to-be-forgotten
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([action])
+  @@index([ipAddress])
+  @@index([statusCode])
+  @@index([archivedAt])
+  @@index([userId, createdAt])
+  @@index([action, statusCode])
+  @@map("audit_logs")
 }
 

@@ -28,20 +28,20 @@ router.use('/ml-models', createMLModelRouter(prisma));
 
 // GET /credit-score - nested v2 contract
 router.get(
-  '/credit-score',
+  "/credit-score",
   validate({ query: creditScoreQuerySchema }),
   (_req, res) => {
     res.json({ success: true, data: toCreditScoreV2(generateCreditScore()) });
-  }
+  },
 );
 
 // GET /fraud/detect - nested v2 contract
 router.get(
-  '/fraud/detect',
+  "/fraud/detect",
   validate({ query: fraudDetectionQuerySchema }),
   (_req, res) => {
     res.json({ success: true, data: toFraudResultV2(generateFraudResult()) });
-  }
+  },
 );
 
 export default router;
