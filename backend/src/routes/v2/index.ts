@@ -10,6 +10,7 @@ import { Router } from 'express';
 import type { Router as ExpressRouter } from 'express';
 import accountRoutes from '../accounts';
 import authRoutes from '../auth';
+import apiKeyRoutes from '../apiKeys';
 import { createFeatureFlagRouter } from '../featureFlags';
 import { createMLModelRouter } from '../mlModels';
 import { generateCreditScore, generateFraudResult, toCreditScoreV2, toFraudResultV2 } from '../shared/scoring';
@@ -21,6 +22,7 @@ const router: ExpressRouter = Router();
 
 router.use('/accounts', accountRoutes);
 router.use('/auth', authRoutes);
+router.use('/api-keys', apiKeyRoutes);
 router.use('/feature-flags', createFeatureFlagRouter());
 router.use('/ml-models', createMLModelRouter(prisma));
 
