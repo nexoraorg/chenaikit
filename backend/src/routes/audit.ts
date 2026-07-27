@@ -44,7 +44,7 @@ const gdprReportSchema = z.object({
  */
 router.get(
   "/logs",
-  authenticate(),
+  authenticate,
   validate({ query: searchSchema }),
   async (req: Request, res: Response) => {
     try {
@@ -103,8 +103,8 @@ router.get(
  */
 router.get(
   "/statistics",
-  authenticate(),
-  authorize("admin"),
+  authenticate,
+  authorize(["admin"]),
   async (req: Request, res: Response) => {
     try {
       const { startDate, endDate } = req.query as any;
@@ -138,7 +138,7 @@ router.get(
  */
 router.get(
   "/export",
-  authenticate(),
+  authenticate,
   validate({ query: exportSchema }),
   async (req: Request, res: Response) => {
     try {
@@ -191,7 +191,7 @@ router.get(
  */
 router.get(
   "/gdpr-report/:userId",
-  authenticate(),
+  authenticate,
   async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
@@ -240,8 +240,8 @@ router.get(
  */
 router.get(
   "/soc2-report",
-  authenticate(),
-  authorize("admin"),
+  authenticate,
+  authorize(["admin"]),
   validate({ query: gdprReportSchema }),
   async (req: Request, res: Response) => {
     try {
@@ -287,7 +287,7 @@ router.get(
  */
 router.delete(
   "/logs/:id",
-  authenticate(),
+  authenticate,
   async (_req: Request, res: Response) => {
     try {
       // TODO: Implement soft-delete for specific logs
