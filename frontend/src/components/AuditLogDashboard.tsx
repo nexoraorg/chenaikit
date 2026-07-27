@@ -79,15 +79,15 @@ export const AuditLogDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [expandedDetailId, setExpandedDetailId] = useState<string | null>(null);
 
-  // Filter state
-  const [filters, setFilters] = useState({
+  // Filter state - initialize with factory function to avoid impure function in render
+  const [filters, setFilters] = useState(() => ({
     startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     endDate: new Date(),
     action: "",
     ipAddress: "",
     statusCode: "",
     searchQuery: "",
-  });
+  }));
 
   const [pagination, setPagination] = useState({
     limit: 50,
