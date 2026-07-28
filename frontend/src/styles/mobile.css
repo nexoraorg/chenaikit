@@ -1,0 +1,74 @@
+/* Mobile-first layout guards and touch optimizations (issue #149) */
+
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+#root {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Minimum touch target (WCAG / Apple HIG ~44px) */
+@media (max-width: 899.95px) {
+  .touch-target,
+  button.MuiButton-root,
+  button.MuiIconButton-root,
+  .MuiTab-root,
+  a.MuiButton-root {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .MuiFab-root {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  /* Shorter transitions on mobile for snappier feel / less GPU work */
+  .MuiCollapse-root,
+  .MuiFade-root,
+  .MuiGrow-root,
+  .MuiSlide-root,
+  .MuiZoom-root,
+  .MuiSkeleton-root {
+    animation-duration: 0.2s !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Horizontally scrollable tables without expanding the page */
+.responsive-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.responsive-table-scroll table {
+  min-width: 560px;
+}
+
+/* Bottom nav spacer so content isn't hidden behind the bar */
+.mobile-bottom-nav-spacer {
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Lazy / responsive images */
+img.mobile-optimized {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}

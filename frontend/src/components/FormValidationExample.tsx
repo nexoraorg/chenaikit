@@ -120,8 +120,17 @@ export const FormValidationExample: React.FC = () => {
   });
 
   return (
-    <div className="form-validation-example" style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
-      <h2>Form Validation Example</h2>
+    <div
+      className="form-validation-example"
+      style={{
+        maxWidth: '600px',
+        margin: '0 auto',
+        padding: '16px',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}
+    >
+      <h2 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)' }}>Form Validation Example</h2>
       <p>This example demonstrates real-time validation, debouncing, and blockchain address validation.</p>
       
       <form onSubmit={handleSubmit} className="form" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -138,18 +147,29 @@ export const FormValidationExample: React.FC = () => {
           />
         ))}
         
-        <div className="form__actions" style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+        <div
+          className="form__actions"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '10px',
+            justifyContent: 'center',
+          }}
+        >
           <button 
             type="submit" 
             disabled={!isValid || isSubmitting}
-            className="form__submit-button"
+            className="form__submit-button touch-target"
             style={{
-              padding: '10px 20px',
+              padding: '12px 20px',
+              minHeight: 44,
+              minWidth: 44,
               backgroundColor: isValid && !isSubmitting ? '#007bff' : '#ccc',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: isValid && !isSubmitting ? 'pointer' : 'not-allowed'
+              cursor: isValid && !isSubmitting ? 'pointer' : 'not-allowed',
+              flex: '1 1 140px',
             }}
           >
             {isSubmitting ? 'Submitting...' : 'Submit Transaction'}
@@ -158,14 +178,17 @@ export const FormValidationExample: React.FC = () => {
           <button 
             type="button" 
             onClick={reset}
-            className="form__reset-button"
+            className="form__reset-button touch-target"
             style={{
-              padding: '10px 20px',
+              padding: '12px 20px',
+              minHeight: 44,
+              minWidth: 44,
               backgroundColor: '#6c757d',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              flex: '1 1 140px',
             }}
           >
             Reset Form

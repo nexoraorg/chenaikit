@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Box, Button, Tab, Tabs } from '@mui/material';
+import { Box, Button, Tab, Tabs, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { TransactionData, PerformanceMetrics, UserActivity, NetworkNode, NetworkLink } from '@chenaikit/core';
 import {
   exportVisualization,
@@ -12,6 +12,7 @@ import TransactionFlowChart from './TransactionFlowChart';
 import PerformanceMetricsChart from './PerformanceMetricsChart';
 import UserActivityHeatmap from './UserActivityHeatmap';
 import NetworkTopologyView from './NetworkTopologyView';
+import { CollapsiblePanel } from './mobile';
 
 // Generate sample data
 const generateSampleData = () => {
@@ -84,6 +85,9 @@ const VIZ_TABS: Array<{ id: VizTab; label: string }> = [
 ];
 
 export const DataVisualizationExample: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [activeTab, setActiveTab] = useState<VizTab>('flow');
   const [data, setData] = useState(generateSampleData());
   const [isExporting, setIsExporting] = useState(false);
@@ -157,17 +161,34 @@ export const DataVisualizationExample: React.FC = () => {
   }, []);
 
   return (
-    <div className="data-visualization-example" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '600', color: '#1F2937', marginBottom: '8px' }}>
+    <Box
+      className="data-visualization-example"
+      sx={{
+        p: { xs: 2, sm: 2.5 },
+        maxWidth: 1200,
+        mx: 'auto',
+        overflowX: 'hidden',
+        width: '100%',
+      }}
+    >
+      <Box sx={{ mb: 2.5 }}>
+        <Typography
+          component="h1"
+          sx={{
+            fontSize: { xs: '1.25rem', sm: '1.5rem' },
+            fontWeight: 600,
+            color: 'text.primary',
+            mb: 1,
+          }}
+        >
           ChenaiKit Data Visualization Examples
-        </h1>
-        <p style={{ color: '#6B7280', marginBottom: '20px' }}>
+        </Typography>
+        <Typography sx={{ color: 'text.secondary', mb: 2.5, fontSize: { xs: '0.875rem', sm: '1rem' } }}>
           Interactive data visualization components for blockchain and AI applications
-        </p>
+        </Typography>
         
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2.5 }}>
-          <Button variant="contained" onClick={handleRefreshData} aria-label="Refresh visualization data">
+          <Button variant="contained" onClick={handleRefreshData} aria-label="Refresh visualization data" sx={{ minHeight: 44 }}>
             Refresh Data
           </Button>
 
@@ -180,18 +201,22 @@ export const DataVisualizationExample: React.FC = () => {
                 onClick={() => handleExport(format)}
                 disabled={isExporting}
                 aria-label={`Export current view as ${format.toUpperCase()}`}
+                sx={{ minHeight: 44 }}
               >
                 Export {format.toUpperCase()}
               </Button>
             ))}
           </Box>
         </Box>
-      </div>
+      </Box>
 
       <Tabs
         value={activeTab}
         onChange={(_, value: VizTab) => setActiveTab(value)}
         aria-label="Visualization types"
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
         sx={{ borderBottom: 1, borderColor: 'divider', mb: 2.5 }}
       >
         {VIZ_TABS.map((tab) => (
@@ -212,16 +237,23 @@ export const DataVisualizationExample: React.FC = () => {
           id={`viz-panel-${tab.id}`}
           aria-labelledby={`viz-tab-${tab.id}`}
           hidden={activeTab !== tab.id}
-          sx={{ height: 600, border: '1px solid #E5E7EB', borderRadius: 1, overflow: 'hidden' }}
+          sx={{
+            height: { xs: 360, sm: 480, md: 600 },
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1,
+            overflow: 'hidden',
+            maxWidth: '100%',
+          }}
         >
           {tab.id === 'flow' && (
             <div ref={flowChartRef} style={{ height: '100%' }}>
               <TransactionFlowChart
                 data={data.transactions}
-                showLabels={true}
+                showLabels={!isMobile}
                 showArrows={true}
-                nodeSize={10}
-                linkWidth={3}
+                nodeSize={isMobile ? 8 : 10}
+                linkWidth={isMobile ? 2 : 3}
               />
             </div>
           )}
@@ -232,9 +264,9 @@ export const DataVisualizationExample: React.FC = () => {
                 data={data.performanceData}
                 chartType="line"
                 metrics={['accuracy', 'precision', 'recall', 'f1Score']}
-                showLegend={true}
+                showLegend={!isMobile}
                 showGrid={true}
-                animate={true}
+                animate={!reduceMotion && !isMobile}
               />
             </div>
           )}
@@ -247,7 +279,7 @@ export const DataVisualizationExample: React.FC = () => {
                 aggregation="count"
                 colorScheme="blue"
                 showTooltip={true}
-                showLegend={true}
+                showLegend={!isMobile}
               />
             </div>
           )}
@@ -258,9 +290,9 @@ export const DataVisualizationExample: React.FC = () => {
                 nodes={data.nodes}
                 links={data.links}
                 layout="force"
-                nodeSize={12}
+                nodeSize={isMobile ? 10 : 12}
                 linkWidth={2}
-                showLabels={true}
+                showLabels={!isMobile}
                 showArrows={true}
                 showNodeValues={false}
                 enableDrag={true}
@@ -271,12 +303,14 @@ export const DataVisualizationExample: React.FC = () => {
         </Box>
       ))}
 
-      {/* Data Info */}
-      <div style={{ marginTop: '20px', padding: '16px', background: '#F9FAFB', borderRadius: '8px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1F2937', marginBottom: '12px' }}>
-          Data Summary
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+      <CollapsiblePanel title="Data Summary" defaultExpanded={!isMobile} id="viz-data-summary">
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gap: 2,
+          }}
+        >
           <div>
             <strong>Transactions:</strong> {data.transactions.length}
           </div>
@@ -292,74 +326,28 @@ export const DataVisualizationExample: React.FC = () => {
           <div>
             <strong>Network Links:</strong> {data.links.length}
           </div>
-        </div>
-      </div>
+        </Box>
+      </CollapsiblePanel>
 
-      {/* Export Controls */}
-      <div style={{ marginTop: '20px', padding: '16px', background: '#F3F4F6', borderRadius: '8px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1F2937', marginBottom: '12px' }}>
-          Data Export
-        </h3>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button
-            onClick={handleExportTransactions}
-            style={{
-              padding: '8px 16px',
-              background: '#8B5CF6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            Export Transactions CSV
-          </button>
-          <button
-            onClick={handleExportPerformance}
-            style={{
-              padding: '8px 16px',
-              background: '#8B5CF6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            Export Performance CSV
-          </button>
-          <button
-            onClick={handleExportUserActivity}
-            style={{
-              padding: '8px 16px',
-              background: '#8B5CF6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            Export User Activity CSV
-          </button>
-          <button
-            onClick={handleExportNetwork}
-            style={{
-              padding: '8px 16px',
-              background: '#8B5CF6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            Export Network CSV
-          </button>
-        </div>
-      </div>
-    </div>
+      <Box sx={{ mt: 2 }}>
+        <CollapsiblePanel title="Data Export" defaultExpanded={false} id="viz-data-export">
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            <Button variant="contained" color="secondary" onClick={handleExportTransactions} sx={{ minHeight: 44 }}>
+              Export Transactions CSV
+            </Button>
+            <Button variant="contained" color="secondary" onClick={handleExportPerformance} sx={{ minHeight: 44 }}>
+              Export Performance CSV
+            </Button>
+            <Button variant="contained" color="secondary" onClick={handleExportUserActivity} sx={{ minHeight: 44 }}>
+              Export User Activity CSV
+            </Button>
+            <Button variant="contained" color="secondary" onClick={handleExportNetwork} sx={{ minHeight: 44 }}>
+              Export Network CSV
+            </Button>
+          </Box>
+        </CollapsiblePanel>
+      </Box>
+    </Box>
   );
 };
 

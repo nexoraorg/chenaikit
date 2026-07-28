@@ -1,10 +1,11 @@
-import React, { useState, Suspense, lazy, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link as RouterLink } from 'react-router-dom';
-import { Box, Button, Typography, Tabs, Tab } from '@mui/material';
-import { Logout as LogoutIcon, AccountCircle } from '@mui/icons-material';
+import React, { useState, Suspense, lazy, useCallback, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Box, Typography } from '@mui/material';
 import FormValidationExample from './components/FormValidationExample';
 import DataVisualizationExample from './components/DataVisualizationExample';
-import { AnalyticsDashboard } from './components';
+import { AnalyticsDashboard, Dashboard } from './components';
+import type { DemoView } from './components/Dashboard';
+import { PullToRefresh } from './components/mobile';
 import { AuthProvider, useAuth } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -14,18 +15,16 @@ import { ErrorProvider } from './contexts/ErrorContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import ToastContainer from './components/ToastContainer';
-import ThemeToggle from './components/ThemeToggle';
 import useToast from './hooks/useToast';
 import { requestSettingsApi } from './utils/settingsApi';
 import './components/FormValidation.css';
 import './styles/accessibility.css';
+import './styles/mobile.css';
 
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
-
-type DemoView = 'analytics' | 'forms' | 'visualization';
 
 const DEMO_TABS: Array<{ id: DemoView; label: string }> = [
   { id: 'analytics', label: 'Analytics Dashboard' },
@@ -73,148 +72,35 @@ const PrivacyPage: React.FC = () => {
 };
 
 const DashboardShell: React.FC = () => {
-  const [activeDemo, setActiveDemo] = useState<DemoView>('analytics');
+  const location = useLocation();
+  const initialDemo =
+    (location.state as { activeDemo?: DemoView } | null)?.activeDemo ?? 'analytics';
+  const [activeDemo, setActiveDemo] = useState<DemoView>(initialDemo);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { user, logout } = useAuth();
 
+  useEffect(() => {
+    const demo = (location.state as { activeDemo?: DemoView } | null)?.activeDemo;
+    if (demo && demo !== activeDemo) {
+      setActiveDemo(demo);
+    }
+  }, [location.state, activeDemo]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshKey((k) => k + 1);
+    // Brief pause so pull-to-refresh indicator is visible
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }, []);
+
   return (
-    <div className="App">
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
-
-      <Box
-        component="header"
-        sx={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)',
-          color: 'white',
-          py: 4,
-          px: 2.5,
-          textAlign: 'center',
-          position: 'relative',
-        }}
-      >
-        {user && (
-          <Box sx={{
-            position: { xs: 'relative', sm: 'absolute' },
-            top: 20,
-            right: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            justifyContent: 'center',
-            mb: { xs: 2, sm: 0 },
-          }}
-          >
-            <ThemeToggle />
-            <AccountCircle sx={{ color: '#38bdf8' }} aria-hidden="true" />
-            <Typography variant="body2" component="span" sx={{ fontWeight: 500, color: '#e2e8f0' }}>
-              {user.email}
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={logout}
-              startIcon={<LogoutIcon />}
-              aria-label="Sign out of your account"
-              sx={{
-                color: 'white',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                textTransform: 'none',
-                borderRadius: '8px',
-                '&:hover': {
-                  borderColor: 'white',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                },
-              }}
-            >
-              Sign Out
-            </Button>
-          </Box>
-        )}
-
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
-          ChenaiKit - BI &amp; Analytics Dashboard
-        </Typography>
-        <Typography variant="h6" component="p" sx={{ opacity: 0.9, mb: 3, fontWeight: 400 }}>
-          Advanced AI Insights &amp; Blockchain Monitoring
-        </Typography>
-
-        <Box
-          component="nav"
-          aria-label="Main navigation"
-          sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}
-        >
-          <Tabs
-            value={activeDemo}
-            onChange={(_, value: DemoView) => setActiveDemo(value)}
-            aria-label="Dashboard views"
-            textColor="inherit"
-            indicatorColor="secondary"
-            sx={{
-              '& .MuiTab-root': {
-                color: 'rgba(255,255,255,0.75)',
-                fontWeight: 600,
-                textTransform: 'none',
-                minHeight: 48,
-              },
-              '& .Mui-selected': { color: '#ffffff' },
-              '& .MuiTabs-indicator': { backgroundColor: '#38bdf8' },
-            }}
-          >
-            {DEMO_TABS.map((tab, index) => (
-              <Tab
-                key={tab.id}
-                value={tab.id}
-                label={tab.label}
-                id={`dashboard-tab-${index}`}
-                aria-controls={`dashboard-panel-${tab.id}`}
-              />
-            ))}
-          </Tabs>
-
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Button
-              component={RouterLink}
-              to="/profile"
-              variant="outlined"
-              aria-label="Open profile page"
-              sx={{
-                color: 'white',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                textTransform: 'none',
-                borderRadius: '8px',
-                '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-              }}
-            >
-              Profile
-            </Button>
-            <Button
-              component={RouterLink}
-              to="/settings"
-              variant="outlined"
-              aria-label="Open settings page"
-              sx={{
-                color: 'white',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                textTransform: 'none',
-                borderRadius: '8px',
-                '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-              }}
-            >
-              Settings
-            </Button>
-          </Box>
-        </Box>
-      </Box>
-
-      <Box
-        component="main"
-        id="main-content"
-        role="main"
-        tabIndex={-1}
-        aria-labelledby={`dashboard-tab-${DEMO_TABS.findIndex((t) => t.id === activeDemo)}`}
-        sx={{ minHeight: 'calc(100vh - 200px)' }}
-      >
+    <Dashboard
+      activeDemo={activeDemo}
+      onDemoChange={setActiveDemo}
+      user={user}
+      onLogout={logout}
+      onRefresh={handleRefresh}
+    >
+      <PullToRefresh onRefresh={handleRefresh}>
         <Suspense fallback={<LoadingSpinner fullScreen message="Loading dashboard content" />}>
           {DEMO_TABS.map((tab, index) => (
             <Box
@@ -227,33 +113,24 @@ const DashboardShell: React.FC = () => {
               <ErrorBoundary
                 name={`${tab.label} section`}
                 compact
-                resetKeys={[activeDemo]}
+                resetKeys={[activeDemo, refreshKey]}
                 fallbackMessage="This dashboard section failed to render. Try resetting the section or switching tabs."
               >
-                {tab.id === 'analytics' && <AnalyticsDashboard />}
-                {tab.id === 'forms' && <FormValidationExample />}
-                {tab.id === 'visualization' && <DataVisualizationExample />}
+                {tab.id === 'analytics' && activeDemo === 'analytics' && (
+                  <AnalyticsDashboard key={refreshKey} />
+                )}
+                {tab.id === 'forms' && activeDemo === 'forms' && (
+                  <FormValidationExample key={refreshKey} />
+                )}
+                {tab.id === 'visualization' && activeDemo === 'visualization' && (
+                  <DataVisualizationExample key={refreshKey} />
+                )}
               </ErrorBoundary>
             </Box>
           ))}
         </Suspense>
-      </Box>
-
-      <Box
-        component="footer"
-        sx={{
-          bgcolor: 'grey.100',
-          py: 2.5,
-          textAlign: 'center',
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          color: 'text.secondary',
-          typography: 'body2',
-        }}
-      >
-        Built with ChenaiKit - Advanced AI and Blockchain Solutions
-      </Box>
-    </div>
+      </PullToRefresh>
+    </Dashboard>
   );
 };
 

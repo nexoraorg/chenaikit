@@ -30,6 +30,23 @@ export { default as ChatInterface } from './ChatInterface';
 export { default as WalletInterface } from './WalletInterface';
 export { AnalyticsDashboard } from './AnalyticsDashboard';
 
+// Mobile responsive helpers (issue #149)
+export {
+  PullToRefresh,
+  MobileBottomNav,
+  ResponsiveTable,
+  CollapsiblePanel,
+  OptimizedImage,
+} from './mobile';
+export type {
+  PullToRefreshProps,
+  MobileBottomNavProps,
+  DemoView as MobileDemoView,
+  ResponsiveTableProps,
+  CollapsiblePanelProps,
+  OptimizedImageProps,
+} from './mobile';
+
 // Toast
 export { default as Toast } from './Toast';
 export { default as ToastContainer } from './ToastContainer';

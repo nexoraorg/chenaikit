@@ -1,7 +1,7 @@
 import React from 'react';
-import { 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
-  Paper, Skeleton 
+import {
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Paper, Skeleton
 } from '@mui/material';
 
 interface SkeletonTableProps {
@@ -11,8 +11,17 @@ interface SkeletonTableProps {
 
 export const SkeletonTable: React.FC<SkeletonTableProps> = ({ rows = 5, columns = 4 }) => {
   return (
-    <TableContainer component={Paper}>
-      <Table>
+    <TableContainer
+      component={Paper}
+      className="responsive-table-scroll"
+      sx={{
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+      }}
+    >
+      <Table sx={{ minWidth: 560 }}>
         <TableHead>
           <TableRow>
             {Array.from({ length: columns }).map((_, index) => (

@@ -105,32 +105,47 @@ export const AnalyticsDashboard: React.FC = () => {
     <Box
       sx={{
         flexGrow: 1,
-        p: 4,
+        p: { xs: 2, sm: 3, md: 4 },
         bgcolor: "background.default",
-        minHeight: "100vh",
+        minHeight: "100%",
+        overflowX: "hidden",
+        maxWidth: "100%",
       }}
     >
       <Box
         sx={{
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
-          alignItems: "center",
-          mb: 4,
+          alignItems: { xs: "stretch", sm: "center" },
+          gap: 2,
+          mb: { xs: 2, md: 4 },
         }}
       >
         <Box>
           <Typography
             variant="h4"
-            sx={{ fontWeight: 700, color: "text.primary" }}
+            sx={{
+              fontWeight: 700,
+              color: "text.primary",
+              fontSize: { xs: "1.35rem", sm: "1.75rem", md: "2.125rem" },
+            }}
           >
             Business Intelligence Dashboard
           </Typography>
-          <Typography variant="subtitle1" sx={{ color: "text.secondary" }}>
+          <Typography variant="subtitle1" sx={{ color: "text.secondary", fontSize: { xs: "0.875rem", md: "1rem" } }}>
             Real-time insights across systems, AI, and blockchain
           </Typography>
         </Box>
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 1.5,
+            width: { xs: "100%", sm: "auto" },
+          }}
+        >
+          <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 120 } }}>
             <InputLabel>Range</InputLabel>
             <Select
               value={timeRange}
@@ -146,6 +161,7 @@ export const AnalyticsDashboard: React.FC = () => {
             startIcon={<Download />}
             variant="outlined"
             onClick={() => handleExport("csv")}
+            sx={{ minHeight: 44 }}
           >
             Export CSV
           </Button>
@@ -153,6 +169,7 @@ export const AnalyticsDashboard: React.FC = () => {
             startIcon={<Download />}
             variant="contained"
             onClick={() => handleExport("pdf")}
+            sx={{ minHeight: 44 }}
           >
             Export PDF
           </Button>

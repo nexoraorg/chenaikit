@@ -8,7 +8,7 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { Box, Typography, Paper, useTheme } from '@mui/material';
+import { Box, Typography, Paper, useTheme, useMediaQuery } from '@mui/material';
 import ChartAccessibleSummary from '../a11y/ChartAccessibleSummary';
 
 interface UsageChartProps {
@@ -19,16 +19,26 @@ interface UsageChartProps {
 
 export const UsageChart: React.FC<UsageChartProps> = ({ data, forecast, title }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const combinedData = [...data, ...(forecast || []).map(f => ({ ...f, isForecast: true }))];
+  const chartHeight = isMobile ? 240 : 320;
+  const paperHeight = isMobile ? 320 : 400;
 
   return (
     <Paper
       component="section"
       role="region"
       aria-label={title}
-      sx={{ p: 3, borderRadius: 2, height: 400 }}
+      sx={{ p: { xs: 1.5, sm: 3 }, borderRadius: 2, height: { xs: 'auto', sm: paperHeight }, minHeight: paperHeight }}
     >
-      <Typography variant="h6" component="h3" gutterBottom color="primary" sx={{ fontWeight: 600 }}>
+      <Typography
+        variant="h6"
+        component="h3"
+        gutterBottom
+        color="primary"
+        sx={{ fontWeight: 600, fontSize: { xs: '1rem', sm: '1.25rem' } }}
+      >
         {title}
       </Typography>
       <ChartAccessibleSummary
@@ -38,9 +48,24 @@ export const UsageChart: React.FC<UsageChartProps> = ({ data, forecast, title })
           value: point.value,
         }))}
       />
-      <Box sx={{ width: '100%', height: 320 }}>
+      <Box
+        sx={{
+          width: '100%',
+          height: chartHeight,
+          touchAction: 'pan-y',
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={combinedData}>
+          <AreaChart
+            data={combinedData}
+            margin={{
+              top: 8,
+              right: isMobile ? 8 : 16,
+              left: isMobile ? -16 : 0,
+              bottom: 0,
+            }}
+          >
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.8}/>
@@ -52,34 +77,38 @@ export const UsageChart: React.FC<UsageChartProps> = ({ data, forecast, title })
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
-            <XAxis 
-              dataKey="date" 
+            <XAxis
+              dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+              interval={isMobile ? 'preserveStartEnd' : 0}
+              tick={{ fill: theme.palette.text.secondary, fontSize: isMobile ? 10 : 12 }}
             />
-            <YAxis 
+            <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+              width={isMobile ? 40 : 60}
+              tick={{ fill: theme.palette.text.secondary, fontSize: isMobile ? 10 : 12 }}
             />
-            <Tooltip 
-              contentStyle={{ 
-                borderRadius: '8px', 
-                border: 'none', 
+            <Tooltip
+              contentStyle={{
+                borderRadius: '8px',
+                border: 'none',
                 boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                 backgroundColor: theme.palette.background.paper,
                 color: theme.palette.text.primary,
+                fontSize: isMobile ? 12 : 14,
               }}
             />
-            <Area 
-              type="monotone" 
-              dataKey="value" 
-              stroke={theme.palette.primary.main} 
-              strokeWidth={3}
-              fillOpacity={1} 
-              fill="url(#colorValue)" 
-              activeDot={{ r: 8 }}
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={theme.palette.primary.main}
+              strokeWidth={isMobile ? 2 : 3}
+              fillOpacity={1}
+              fill="url(#colorValue)"
+              isAnimationActive={!reduceMotion && !isMobile}
+              activeDot={{ r: isMobile ? 6 : 8 }}
             />
           </AreaChart>
         </ResponsiveContainer>

@@ -22,6 +22,7 @@ import {
 } from '@mui/icons-material';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import AccessibleTabPanel from '../components/a11y/AccessibleTabPanel';
+import { MobileBottomNav } from '../components/mobile';
 
 interface ActivityItem {
   id: string;
@@ -73,7 +74,15 @@ export const Profile: React.FC<ProfilePageProps> = ({
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: { xs: 2, md: 4 } }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+        p: { xs: 2, md: 4 },
+        pb: { xs: 'calc(80px + env(safe-area-inset-bottom, 0px))', md: 4 },
+        overflowX: 'hidden',
+      }}
+    >
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
         <ProfileHeader user={user} stats={stats} onUpdateProfile={onUpdateProfile} />
 
@@ -81,14 +90,17 @@ export const Profile: React.FC<ProfilePageProps> = ({
           <Tabs
             value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
-            variant="fullWidth"
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
             aria-label="Profile sections"
             sx={{
               borderBottom: 1,
               borderColor: 'divider',
               '& .MuiTab-root': {
                 fontWeight: 600,
-                textTransform: 'none'
+                textTransform: 'none',
+                minHeight: 48,
               }
             }}
           >
@@ -257,6 +269,7 @@ export const Profile: React.FC<ProfilePageProps> = ({
           </Box>
         </Paper>
       </Box>
+      <MobileBottomNav />
     </Box>
   );
 };

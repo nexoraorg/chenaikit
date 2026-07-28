@@ -424,8 +424,17 @@ const PerformanceDashboard: React.FC = () => {
   );
 
   const renderIssuesTable = () => (
-    <TableContainer component={Paper}>
-      <Table>
+    <TableContainer
+      component={Paper}
+      className="responsive-table-scroll"
+      sx={{
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+      }}
+    >
+      <Table sx={{ minWidth: 640 }}>
         <TableHead>
           <TableRow>
             <TableCell>Severity</TableCell>

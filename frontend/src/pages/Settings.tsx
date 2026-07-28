@@ -21,6 +21,7 @@ import NotificationSettings from '../components/settings/NotificationSettings';
 import SecuritySettings from '../components/settings/SecuritySettings';
 import ApiKeysSettings from '../components/settings/ApiKeysSettings';
 import AccessibleTabPanel from '../components/a11y/AccessibleTabPanel';
+import { MobileBottomNav } from '../components/mobile';
 
 interface SettingsPageProps {
   user: {
@@ -100,7 +101,15 @@ export const Settings: React.FC<SettingsPageProps> = ({
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: { xs: 2, md: 4 } }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+        p: { xs: 2, md: 4 },
+        pb: { xs: 'calc(80px + env(safe-area-inset-bottom, 0px))', md: 4 },
+        overflowX: 'hidden',
+      }}
+    >
       <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
         <Breadcrumbs sx={{ mb: 2 }}>
           <Link component={RouterLink} to="/" underline="hover" color="inherit">
@@ -110,8 +119,15 @@ export const Settings: React.FC<SettingsPageProps> = ({
         </Breadcrumbs>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-          <SettingsIcon sx={{ fontSize: 32, color: 'text.primary' }} />
-          <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
+          <SettingsIcon sx={{ fontSize: { xs: 28, md: 32 }, color: 'text.primary' }} />
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              color: 'text.primary',
+              fontSize: { xs: '1.5rem', md: '2.125rem' },
+            }}
+          >
             Settings
           </Typography>
         </Box>
@@ -203,6 +219,7 @@ export const Settings: React.FC<SettingsPageProps> = ({
           </Box>
         </Paper>
       </Box>
+      <MobileBottomNav />
     </Box>
   );
 };
