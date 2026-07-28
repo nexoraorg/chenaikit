@@ -162,12 +162,53 @@ model MLModelVersion {
 
   variants          ExperimentVariant[]
   driftChecks       ModelDriftCheck[]
+  evaluations       ModelEvaluationReport[]
+  promotionOverrides ModelPromotionOverride[]
 
   @@map("ml_model_versions")
   @@unique([modelId, version])
   @@index([modelId, stage])
   @@index([contentHash])
   @@index([stage])
+}
+
+model ModelEvaluationReport {
+  id                String   @id @default(cuid())
+  modelVersionId    String
+  modelVersion      MLModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Cascade)
+  schemaVersion     Int      @default(1)
+  reportJson        String
+  reportHash        String
+  policyJson        String
+  policyHash        String
+  artifactHash      String
+  datasetHash       String
+  codeCommit        String
+  passed            Boolean
+  decision          String
+  failureReasons    String   @default("[]")
+  createdAt         DateTime @default(now())
+
+  overrides         ModelPromotionOverride[]
+
+  @@map("model_evaluation_reports")
+  @@index([modelVersionId, createdAt])
+  @@unique([modelVersionId, reportHash])
+}
+
+model ModelPromotionOverride {
+  id                String   @id @default(cuid())
+  modelVersionId    String
+  modelVersion      MLModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Restrict)
+  evaluationId      String
+  evaluation        ModelEvaluationReport @relation(fields: [evaluationId], references: [id], onDelete: Restrict)
+  actor             String
+  authorizedRole    String
+  reason            String
+  createdAt         DateTime @default(now())
+
+  @@map("model_promotion_overrides")
+  @@index([modelVersionId])
 }
 
 model Experiment {
