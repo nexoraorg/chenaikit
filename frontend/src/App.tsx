@@ -12,6 +12,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LoadingProvider, useLoading } from './contexts/LoadingContext';
 import { ErrorProvider } from './contexts/ErrorContext';
+import { PerformanceProvider } from './contexts/PerformanceContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import ToastContainer from './components/ToastContainer';
@@ -372,12 +373,14 @@ const App: React.FC = () => {
       <LoadingProvider>
         <ToastProvider>
           <ErrorProvider>
-            <ErrorBoundary name="Root application" fallbackTitle="ChenaiKit could not render">
-              <AuthProvider>
-                <AppRoutes />
-                <ToastContainer />
-              </AuthProvider>
-            </ErrorBoundary>
+            <PerformanceProvider>
+              <ErrorBoundary name="Root application" fallbackTitle="ChenaiKit could not render">
+                <AuthProvider>
+                  <AppRoutes />
+                  <ToastContainer />
+                </AuthProvider>
+              </ErrorBoundary>
+            </PerformanceProvider>
           </ErrorProvider>
         </ToastProvider>
       </LoadingProvider>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -97,8 +97,8 @@ const PerformanceDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  // Performance thresholds
-  const thresholds = {
+  // Performance thresholds - memoized to prevent recreation
+  const thresholds = useMemo(() => ({
     api: {
       avgResponseTime: 200,
       p95ResponseTime: 500,
@@ -124,10 +124,10 @@ const PerformanceDashboard: React.FC = () => {
       maxGasUsage: 100000,
       avgExecutionTime: 1000,
     },
-  };
+  }), []);
 
-  // Fetch performance data
-  const fetchPerformanceData = async () => {
+  // Fetch performance data - memoized to prevent unnecessary re-renders
+  const fetchPerformanceData = useCallback(async () => {
     setLoading(true);
     try {
       // Mock API call - replace with actual endpoint
@@ -173,14 +173,14 @@ const PerformanceDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchPerformanceData();
     // Refresh every 5 minutes
     const interval = setInterval(fetchPerformanceData, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchPerformanceData]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
