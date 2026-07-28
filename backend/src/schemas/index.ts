@@ -11,4 +11,5 @@ export * from './featureFlag.schema';
 export * from './analytics.schema';
 export * from './creditScore.schema';
 export * from './mlModel.schema';
+export * from './modelEvaluation.schema';
 export * from './apiKey.schema';

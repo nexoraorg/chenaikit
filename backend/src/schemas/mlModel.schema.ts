@@ -45,6 +45,10 @@ export const versionIdParamsSchema = z.object({
 
 export const promoteVersionBodySchema = z.object({
   approvedBy: z.string().min(1, 'approvedBy is required for the promotion approval gate'),
+  override: z.object({
+    authorizedRole: z.enum(['admin', 'ml_governance']),
+    reason: z.string().min(20).max(2000),
+  }).optional(),
 });
 
 export const rollbackBodySchema = z.object({

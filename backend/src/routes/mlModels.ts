@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { ModelRegistryService } from '../services/modelRegistryService';
 import { ExperimentService } from '../services/experimentService';
 import { ModelDriftDetector } from '../services/modelDriftDetector';
+import { ModelPromotionPolicyService } from '../services/modelPromotionPolicyService';
 import { validate } from '../middleware/validation';
 import { asyncHandler } from '../middleware/errorHandler';
 import {
@@ -18,6 +19,7 @@ import {
   assignVariantBodySchema,
   trackConversionBodySchema,
   recordDriftCheckBodySchema,
+  evaluationReportBodySchema,
 } from '../schemas';
 
 /**
@@ -32,6 +34,7 @@ export function createMLModelRouter(prisma: PrismaClient): Router {
   const registryService = new ModelRegistryService(prisma);
   const experimentService = new ExperimentService(prisma);
   const driftDetector = new ModelDriftDetector(prisma, registryService);
+  const promotionPolicyService = new ModelPromotionPolicyService(prisma);
 
   // -- Model registry ---------------------------------------------------
 
@@ -87,8 +90,26 @@ export function createMLModelRouter(prisma: PrismaClient): Router {
     '/versions/:versionId/promote',
     validate({ params: versionIdParamsSchema, body: promoteVersionBodySchema }),
     asyncHandler(async (req: Request, res: Response) => {
-      const version = await registryService.promote(req.params.versionId, req.body.approvedBy);
+      const version = await registryService.promote(req.params.versionId, req.body.approvedBy, req.body.override);
       res.json({ success: true, data: version });
+    })
+  );
+
+  router.post(
+    '/versions/:versionId/evaluations',
+    validate({ params: versionIdParamsSchema, body: evaluationReportBodySchema }),
+    asyncHandler(async (req: Request, res: Response) => {
+      const evaluation = await promotionPolicyService.register(req.params.versionId, req.body);
+      res.status(201).json({ success: true, data: evaluation });
+    })
+  );
+
+  router.get(
+    '/versions/:versionId/evaluations/latest',
+    validate({ params: versionIdParamsSchema }),
+    asyncHandler(async (req: Request, res: Response) => {
+      const evaluation = await promotionPolicyService.latest(req.params.versionId);
+      res.json({ success: true, data: evaluation });
     })
   );
 

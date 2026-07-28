@@ -88,8 +88,25 @@ jobs:
       - name: Run model evaluation metrics
         id: validate
         run: |
-          python ml/evaluation/metrics.py
+          pytest tests/ml/test_responsible_ml.py --cov=ml/fairness --cov=ml/explainability --cov=ml/governance --cov-fail-under=90
+          python -m ml.governance.ci_report \
+            --models ml/models \
+            --dataset ml/data/processed \
+            --policy ml/governance/default-policy.yaml \
+            --output ml/reports
+          test "$(python -c "import json; print(str(json.load(open('ml/reports/evaluation-report.json'))['passed']).lower())")" = "true"
           echo "passed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Upload immutable governance artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-${{ github.sha }}
+          path: |
+            ml/reports/evaluation-report.json
+            ml/reports/model-card.md
+            ml/reports/dataset-manifest.json
+          if-no-files-found: error
+          retention-days: 90
 
   register-and-deploy:
     needs: validate

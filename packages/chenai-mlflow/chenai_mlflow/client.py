@@ -7,6 +7,7 @@ import requests
 
 from .errors import ChenAIMLflowError, ConflictError, ModelNotFoundError, ValidationError
 from .hashing import hash_artifact
+from .governance import CounterfactualRequest, EmergencyOverride, EvaluationReport
 
 
 class ModelRegistryClient:
@@ -33,7 +34,8 @@ class ModelRegistryClient:
 
     def _request(self, method: str, path: str, **kwargs) -> Any:
         url = f"{self.base_url}{path}"
-        response = self.session.request(method, url, timeout=self.timeout, **kwargs)
+        timeout = kwargs.pop("timeout", self.timeout)
+        response = self.session.request(method, url, timeout=timeout, **kwargs)
 
         if response.status_code == 404:
             raise ModelNotFoundError(response.text)
@@ -117,14 +119,85 @@ class ModelRegistryClient:
     def get_production_version(self, model_id: str) -> Optional[Dict[str, Any]]:
         return self._request("GET", f"/ml-models/{model_id}/versions/production")
 
-    def promote_version(self, version_id: str, approved_by: str) -> Dict[str, Any]:
+    def promote_version(
+        self,
+        version_id: str,
+        approved_by: str,
+        override: Optional[EmergencyOverride] = None,
+    ) -> Dict[str, Any]:
         """Promotes a staging version to production. Requires an approval
         gate: `approved_by` must identify the approving actor."""
+        payload: Dict[str, Any] = {"approvedBy": approved_by}
+        if override is not None:
+            payload["override"] = override.to_api()
         return self._request(
             "POST",
             f"/ml-models/versions/{version_id}/promote",
-            json={"approvedBy": approved_by},
+            json=payload,
         )
+
+    def register_evaluation(
+        self,
+        version_id: str,
+        report: EvaluationReport,
+    ) -> Dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/ml-models/versions/{version_id}/evaluations",
+            json=report.to_api(),
+        )
+
+    def get_latest_evaluation(self, version_id: str) -> Optional[Dict[str, Any]]:
+        return self._request(
+            "GET",
+            f"/ml-models/versions/{version_id}/evaluations/latest",
+        )
+
+    def explain(
+        self,
+        version_id: str,
+        features: Dict[str, Any],
+        timeout_ms: int = 10_000,
+    ) -> Dict[str, Any]:
+        if not 1 <= timeout_ms <= 120_000:
+            raise ValueError("timeout_ms must be between one and 120000")
+        return self._request(
+            "POST",
+            f"/ml-models/versions/{version_id}/explain",
+            json={"features": features, "timeoutMs": timeout_ms},
+            timeout=min(self.timeout, timeout_ms / 1000),
+        )
+
+    def counterfactuals(
+        self,
+        version_id: str,
+        request: CounterfactualRequest,
+    ) -> Dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/ml-models/versions/{version_id}/counterfactuals",
+            json=request.to_api(),
+            timeout=min(self.timeout, request.timeout_ms / 1000),
+        )
+
+    def get_model_card(self, version_id: str) -> Dict[str, Any]:
+        return self._request(
+            "GET",
+            f"/ml-models/versions/{version_id}/model-card",
+        )
+
+    def download_model_card(self, version_id: str) -> str:
+        url = f"{self.base_url}/ml-models/versions/{version_id}/model-card"
+        response = self.session.get(
+            url,
+            timeout=self.timeout,
+            headers={"Accept": "text/markdown"},
+        )
+        if response.status_code >= 400:
+            raise ChenAIMLflowError(
+                f"Model-card request failed ({response.status_code}): {response.text}"
+            )
+        return response.text
 
     def rollback(self, model_id: str, target_version_id: str, actor: str) -> Dict[str, Any]:
         return self._request(

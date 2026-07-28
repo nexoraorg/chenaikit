@@ -9,6 +9,7 @@ import {
 } from '../models/MLModel';
 import { log } from '../utils/logger';
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors';
+import { ModelPromotionPolicyService } from './modelPromotionPolicyService';
 
 /**
  * Model registry: version control for ML model artifacts with
@@ -138,7 +139,11 @@ export class ModelRegistryService {
    * gate (an `approvedBy` actor identifier). Any currently-production
    * version for the same model is archived.
    */
-  async promote(versionId: string, approvedBy: string): Promise<MLModelVersion> {
+  async promote(
+    versionId: string,
+    approvedBy: string,
+    override?: { authorizedRole: 'admin' | 'ml_governance'; reason: string }
+  ): Promise<MLModelVersion> {
     if (!approvedBy) {
       throw new ValidationError('promote() requires an approvedBy actor for the approval gate');
     }
@@ -149,6 +154,29 @@ export class ModelRegistryService {
     }
 
     await this.prisma.$transaction(async (tx) => {
+      // The report is read and the stage is changed in one transaction, closing
+      // the check/use race that existed when validation lived in CI alone.
+      const evaluation = await new ModelPromotionPolicyService(this.prisma).latest(versionId, tx);
+      if (!evaluation) {
+        throw new ValidationError('Promotion blocked: no evaluation report is attached', {
+          reasons: [{ code: 'EVALUATION_REQUIRED', versionId }],
+        });
+      }
+      if (!evaluation.passed) {
+        if (!override) {
+          throw new ValidationError('Promotion blocked by responsible-model policy', {
+            reasons: JSON.parse(evaluation.failureReasons),
+            evaluationId: evaluation.id,
+          });
+        }
+        if (!['admin', 'ml_governance'].includes(override.authorizedRole) || override.reason.trim().length < 20) {
+          throw new ValidationError('Emergency override requires an authorized role and a reason of at least 20 characters');
+        }
+        await tx.modelPromotionOverride.create({ data: {
+          modelVersionId: versionId, evaluationId: evaluation.id, actor: approvedBy,
+          authorizedRole: override.authorizedRole, reason: override.reason.trim(),
+        }});
+      }
       await tx.mLModelVersion.updateMany({
         where: { modelId: version.modelId, stage: 'production' },
         data: { stage: 'archived', archivedAt: new Date() },
