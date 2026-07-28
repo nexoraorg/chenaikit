@@ -10,6 +10,7 @@ import {
   ListItemText,
   Typography,
   Divider,
+  Badge,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -23,11 +24,15 @@ import {
   ShowChart as VizIcon,
   Person as ProfileIcon,
   Settings as SettingsIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
+import UndoRedoButtons from './UndoRedoButtons';
+import ActionHistory from './ActionHistory';
 import { MobileBottomNav, type DemoView } from './mobile';
 import { useSwipeGesture } from '../hooks/useSwipeGesture';
+import { useUndoRedoContext } from '../contexts/UndoRedoContext';
 
 export type { DemoView };
 
@@ -66,6 +71,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const { undoStack } = useUndoRedoContext();
+  const toolbarButtonSx = { color: 'rgba(255,255,255,0.85)', '&:hover': { color: 'white', backgroundColor: 'rgba(255,255,255,0.1)' } };
 
   const cycleDemo = useCallback(
     (direction: 'next' | 'prev') => {
@@ -217,9 +225,20 @@ const Dashboard: React.FC<DashboardProps> = ({
               right: 20,
               display: 'flex',
               alignItems: 'center',
-              gap: 1,
+              gap: 0.5,
             }}
           >
+            <UndoRedoButtons sx={toolbarButtonSx} />
+            <IconButton
+              size="small"
+              onClick={() => setHistoryOpen(true)}
+              aria-label="Action history"
+              sx={toolbarButtonSx}
+            >
+              <Badge badgeContent={undoStack.length} color="primary" max={99}>
+                <HistoryIcon />
+              </Badge>
+            </IconButton>
             <ThemeToggle />
             <AccountCircle sx={{ color: '#38bdf8' }} aria-hidden="true" />
             <Typography variant="body2" component="span" sx={{ fontWeight: 500, color: '#e2e8f0' }}>
@@ -258,8 +277,21 @@ const Dashboard: React.FC<DashboardProps> = ({
               right: 8,
               display: 'flex',
               alignItems: 'center',
+              gap: 0.25,
             }}
           >
+            <UndoRedoButtons sx={toolbarButtonSx} />
+            <IconButton
+              size="small"
+              onClick={() => setHistoryOpen(true)}
+              aria-label="Action history"
+              className="touch-target"
+              sx={toolbarButtonSx}
+            >
+              <Badge badgeContent={undoStack.length} color="primary" max={99}>
+                <HistoryIcon />
+              </Badge>
+            </IconButton>
             <ThemeToggle />
           </Box>
         )}
@@ -400,6 +432,15 @@ const Dashboard: React.FC<DashboardProps> = ({
       </Box>
 
       <MobileBottomNav activeDemo={activeDemo} onDemoChange={onDemoChange} />
+
+      <Drawer
+        anchor="right"
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        PaperProps={{ sx: { width: 320, maxWidth: '100vw' } }}
+      >
+        <ActionHistory />
+      </Drawer>
 
       <Box
         component="footer"

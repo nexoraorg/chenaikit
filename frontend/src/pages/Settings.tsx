@@ -6,14 +6,18 @@ import {
   Tabs,
   Tab,
   Breadcrumbs,
-  Link
+  Link,
+  Drawer,
+  IconButton,
+  Badge,
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
   Person as PersonIcon,
   Notifications as NotificationsIcon,
   Security as SecurityIcon,
-  VpnKey as VpnKeyIcon
+  VpnKey as VpnKeyIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import AccountSettings from '../components/settings/AccountSettings';
@@ -22,6 +26,9 @@ import SecuritySettings from '../components/settings/SecuritySettings';
 import ApiKeysSettings from '../components/settings/ApiKeysSettings';
 import AccessibleTabPanel from '../components/a11y/AccessibleTabPanel';
 import { MobileBottomNav } from '../components/mobile';
+import UndoRedoButtons from '../components/UndoRedoButtons';
+import ActionHistory from '../components/ActionHistory';
+import { useUndoRedoContext } from '../contexts/UndoRedoContext';
 
 interface SettingsPageProps {
   user: {
@@ -99,6 +106,8 @@ export const Settings: React.FC<SettingsPageProps> = ({
   onRegenerateApiKey
 }) => {
   const [activeTab, setActiveTab] = useState(0);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const { undoStack } = useUndoRedoContext();
 
   return (
     <Box
@@ -118,18 +127,32 @@ export const Settings: React.FC<SettingsPageProps> = ({
           <Typography color="text.primary">Settings</Typography>
         </Breadcrumbs>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-          <SettingsIcon sx={{ fontSize: { xs: 28, md: 32 }, color: 'text.primary' }} />
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: 'text.primary',
-              fontSize: { xs: '1.5rem', md: '2.125rem' },
-            }}
-          >
-            Settings
-          </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <SettingsIcon sx={{ fontSize: { xs: 28, md: 32 }, color: 'text.primary' }} />
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                color: 'text.primary',
+                fontSize: { xs: '1.5rem', md: '2.125rem' },
+              }}
+            >
+              Settings
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <UndoRedoButtons />
+            <IconButton
+              size="small"
+              onClick={() => setHistoryOpen(true)}
+              aria-label="Action history"
+            >
+              <Badge badgeContent={undoStack.length} color="primary" max={99}>
+                <HistoryIcon />
+              </Badge>
+            </IconButton>
+          </Box>
         </Box>
 
         <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>
@@ -219,6 +242,14 @@ export const Settings: React.FC<SettingsPageProps> = ({
           </Box>
         </Paper>
       </Box>
+      <Drawer
+        anchor="right"
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        PaperProps={{ sx: { width: 320, maxWidth: '100vw' } }}
+      >
+        <ActionHistory />
+      </Drawer>
       <MobileBottomNav />
     </Box>
   );

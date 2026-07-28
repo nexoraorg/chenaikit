@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -17,6 +17,7 @@ import {
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { ValidationRules } from '@chenaikit/core';
 import { useThemeMode } from '../../contexts/ThemeContext';
+import useUndoRedo from '../../hooks/useUndoRedo';
 
 interface AccountSettingsProps {
   user: {
@@ -35,10 +36,17 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
   onDeleteAccount
 }) => {
   const { setTheme } = useThemeMode();
+  const { trackActionWithOptions, undoStack } = useUndoRedo();
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteEmail, setDeleteEmail] = useState('');
+  const prevValues = useRef({
+    name: user.name || '',
+    email: user.email,
+    language: user.language || 'en',
+    theme: user.theme || 'system',
+  });
 
   const {
     values,
@@ -65,6 +73,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
       try {
         await onUpdateAccount(formValues);
         setSaveSuccess(true);
+        prevValues.current = { ...formValues };
         setTimeout(() => setSaveSuccess(false), 3000);
       } finally {
         setIsSaving(false);
@@ -79,6 +88,24 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
       setTheme(values.theme);
     }
   }, [values.theme, setTheme]);
+
+  const handleFieldChange = (field: string, newValue: string) => {
+    const oldValue = values[field];
+    if (oldValue === newValue) return;
+    const group = `account-settings:${field}`;
+    const last = undoStack[undoStack.length - 1];
+    const shouldReplace =
+      !!last && last.group === group && Date.now() - last.timestamp < 500;
+
+    trackActionWithOptions({
+      type: 'settings_change',
+      description: `Changed ${field} to "${newValue}"`,
+      group,
+      replaceLast: shouldReplace,
+      execute: () => handleChange(field, newValue),
+      undo: shouldReplace ? last!.undo : () => handleChange(field, oldValue),
+    });
+  };
 
   const handleDeleteAccount = async () => {
     if (deleteEmail !== user.email) return;
@@ -112,7 +139,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                   label="Display Name"
                   name="name"
                   value={values.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
                   onBlur={() => handleBlur('name')}
                   error={touched.name && !!errors.name}
                   helperText={touched.name && errors.name}
@@ -126,7 +153,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                   name="email"
                   type="email"
                   value={values.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
+                  onChange={(e) => handleFieldChange('email', e.target.value)}
                   onBlur={() => handleBlur('email')}
                   error={touched.email && !!errors.email}
                   helperText={touched.email && errors.email}
@@ -141,7 +168,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                     label="Language"
                     name="language"
                     value={values.language}
-                    onChange={(e) => handleChange('language', e.target.value)}
+                    onChange={(e) => handleFieldChange('language', e.target.value)}
                     SelectProps={{ native: true }}
                   >
                     <option value="en">English</option>
@@ -156,7 +183,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                     label="Theme"
                     name="theme"
                     value={values.theme}
-                    onChange={(e) => handleChange('theme', e.target.value)}
+                    onChange={(e) => handleFieldChange('theme', e.target.value)}
                     SelectProps={{ native: true }}
                   >
                     <option value="light">Light</option>

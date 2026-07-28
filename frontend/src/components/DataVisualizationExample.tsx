@@ -13,6 +13,7 @@ import PerformanceMetricsChart from './PerformanceMetricsChart';
 import UserActivityHeatmap from './UserActivityHeatmap';
 import NetworkTopologyView from './NetworkTopologyView';
 import { CollapsiblePanel } from './mobile';
+import useUndoRedo from '../hooks/useUndoRedo';
 
 // Generate sample data
 const generateSampleData = () => {
@@ -91,6 +92,7 @@ export const DataVisualizationExample: React.FC = () => {
   const [activeTab, setActiveTab] = useState<VizTab>('flow');
   const [data, setData] = useState(generateSampleData());
   const [isExporting, setIsExporting] = useState(false);
+  const { trackAction } = useUndoRedo();
   
   const flowChartRef = useRef<HTMLDivElement>(null);
   const performanceChartRef = useRef<HTMLDivElement>(null);
@@ -157,8 +159,29 @@ export const DataVisualizationExample: React.FC = () => {
 
   // Refresh data
   const handleRefreshData = useCallback(() => {
-    setData(generateSampleData());
-  }, []);
+    const oldData = data;
+    trackAction(
+      'data_modification',
+      'Refreshed visualization data',
+      () => setData(generateSampleData()),
+      () => setData(oldData),
+    );
+  }, [data, trackAction]);
+
+  const handleTabChange = useCallback(
+    (nextTab: VizTab) => {
+      const prevTab = activeTab;
+      if (prevTab === nextTab) return;
+      const label = VIZ_TABS.find((t) => t.id === nextTab)?.label ?? nextTab;
+      trackAction(
+        'layout_change',
+        `Switched to ${label} view`,
+        () => setActiveTab(nextTab),
+        () => setActiveTab(prevTab),
+      );
+    },
+    [activeTab, trackAction],
+  );
 
   return (
     <Box
@@ -212,7 +235,7 @@ export const DataVisualizationExample: React.FC = () => {
 
       <Tabs
         value={activeTab}
-        onChange={(_, value: VizTab) => setActiveTab(value)}
+        onChange={(_, value: VizTab) => handleTabChange(value)}
         aria-label="Visualization types"
         variant="scrollable"
         scrollButtons="auto"

@@ -75,3 +75,7 @@ export { VirtualizedList, VirtualizedTable } from './VirtualizedList';
 // ML model versioning & A/B testing
 export { default as ExperimentDashboard } from './ExperimentDashboard';
 
+// Undo/Redo
+export { UndoRedoButtons } from './UndoRedoButtons';
+export { ActionHistory } from './ActionHistory';
+

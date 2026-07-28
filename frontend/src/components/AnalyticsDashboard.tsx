@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Grid,
   Box,
@@ -25,6 +25,7 @@ import axios from "axios";
 import { UsageChart } from "./charts/UsageChart";
 import { DistributionChart } from "./charts/DistributionChart";
 import { SkeletonCard, SkeletonChart } from "./index";
+import useUndoRedo from "../hooks/useUndoRedo";
 
 interface DashboardData {
   systemUsage: {
@@ -59,6 +60,9 @@ export const AnalyticsDashboard: React.FC = () => {
   );
   const [trendData, setTrendData] = useState<TrendData | null>(null);
   const [timeRange, setTimeRange] = useState("30");
+  const timeRangeRef = useRef(timeRange);
+  timeRangeRef.current = timeRange;
+  const { trackAction } = useUndoRedo();
 
   // Memoized fetch function to prevent unnecessary re-renders
   const fetchData = useCallback(async () => {
@@ -88,6 +92,24 @@ export const AnalyticsDashboard: React.FC = () => {
       "_blank",
     );
   }, [timeRange]);
+
+  const handleTimeRangeChange = useCallback(
+    (newRange: string) => {
+      const prevRange = timeRangeRef.current;
+      if (prevRange === newRange) return;
+      trackAction(
+        "filter_change",
+        `Changed time range to ${newRange} days`,
+        () => {
+          setTimeRange(newRange);
+        },
+        () => {
+          setTimeRange(prevRange);
+        },
+      );
+    },
+    [trackAction],
+  );
 
   // Memoized data for charts to prevent unnecessary re-renders
   const kpiData = useMemo(() => {
@@ -163,7 +185,7 @@ export const AnalyticsDashboard: React.FC = () => {
             <Select
               value={timeRange}
               label="Range"
-              onChange={(e) => setTimeRange(e.target.value)}
+              onChange={(e) => handleTimeRangeChange(e.target.value)}
             >
               <MenuItem value="7">Last 7 Days</MenuItem>
               <MenuItem value="30">Last 30 Days</MenuItem>

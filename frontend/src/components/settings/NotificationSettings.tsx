@@ -12,6 +12,7 @@ import {
   Divider
 } from '@mui/material';
 import { Notifications as NotificationsIcon } from '@mui/icons-material';
+import useUndoRedo from '../../hooks/useUndoRedo';
 
 interface NotificationSettingsProps {
   preferences: {
@@ -27,10 +28,22 @@ interface NotificationSettingsProps {
   onUpdatePreferences: (data: Record<string, boolean>) => Promise<void>;
 }
 
+const LABEL_MAP: Record<string, string> = {
+  emailNotifications: 'Email Notifications',
+  pushNotifications: 'Push Notifications',
+  transactionAlerts: 'Transaction Alerts',
+  scoreChanges: 'Score Changes',
+  marketingEmails: 'Marketing Emails',
+  securityAlerts: 'Security Alerts',
+  weeklyReport: 'Weekly Report',
+  priceAlerts: 'Price Alerts',
+};
+
 export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
   preferences = {},
   onUpdatePreferences
 }) => {
+  const { trackAction } = useUndoRedo();
   const [localPrefs, setLocalPrefs] = useState({
     emailNotifications: preferences.emailNotifications ?? true,
     pushNotifications: preferences.pushNotifications ?? true,
@@ -58,7 +71,13 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
   }, [preferences]);
 
   const handleToggle = (key: keyof typeof localPrefs) => {
-    setLocalPrefs(prev => ({ ...prev, [key]: !prev[key] }));
+    const oldValue = localPrefs[key];
+    trackAction(
+      'settings_change',
+      `${oldValue ? 'Disabled' : 'Enabled'} ${LABEL_MAP[key] || key}`,
+      () => setLocalPrefs(prev => ({ ...prev, [key]: !prev[key] })),
+      () => setLocalPrefs(prev => ({ ...prev, [key]: oldValue })),
+    );
   };
 
   const handleSave = async () => {
