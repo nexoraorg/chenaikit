@@ -12,13 +12,6 @@ import {
   Tooltip,
   Tab,
   Tabs,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -29,7 +22,7 @@ import {
   Error as ErrorIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
-import { SkeletonCard, SkeletonTable } from './index';
+import { DataTable, SkeletonCard, SkeletonTable, type DataTableColumn } from './index';
 
 // Performance data types
 interface PerformanceMetrics {
@@ -423,60 +416,94 @@ const PerformanceDashboard: React.FC = () => {
     </Grid>
   );
 
-  const renderIssuesTable = () => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Severity</TableCell>
-            <TableCell>Type</TableCell>
-            <TableCell>Description</TableCell>
-            <TableCell>Actual</TableCell>
-            <TableCell>Threshold</TableCell>
-            <TableCell>Status</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {issues.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} align="center">
-                <Box py={4}>
-                  <CheckCircleIcon color="success" sx={{ fontSize: 48, mb: 2 }} />
-                  <Typography variant="h6" color="textSecondary">
-                    No performance issues detected
-                  </Typography>
-                </Box>
-              </TableCell>
-            </TableRow>
+  const issueColumns: DataTableColumn<PerformanceIssue>[] = [
+    {
+      id: 'severity',
+      header: 'Severity',
+      accessorKey: 'severity',
+      filterType: 'select',
+      filterOptions: [
+        { label: 'High', value: 'high' },
+        { label: 'Medium', value: 'medium' },
+        { label: 'Low', value: 'low' },
+      ],
+      width: 120,
+      cell: ({ value }) => (
+        <Chip
+          label={String(value)}
+          color={
+            value === 'high' ? 'error' : value === 'medium' ? 'warning' : 'info'
+          }
+          size="small"
+        />
+      ),
+    },
+    {
+      id: 'type',
+      header: 'Type',
+      accessorKey: 'type',
+      filterType: 'text',
+      width: 160,
+    },
+    {
+      id: 'description',
+      header: 'Description',
+      accessorKey: 'description',
+      filterType: 'text',
+      width: 280,
+    },
+    {
+      id: 'actual',
+      header: 'Actual',
+      accessorKey: 'actual',
+      filterable: false,
+      align: 'right',
+      width: 120,
+      cell: ({ value }) => Number(value).toLocaleString(),
+    },
+    {
+      id: 'threshold',
+      header: 'Threshold',
+      accessorKey: 'threshold',
+      filterable: false,
+      align: 'right',
+      width: 120,
+      cell: ({ value }) => Number(value).toLocaleString(),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      accessorFn: (row) => row.actual / row.threshold,
+      filterable: false,
+      sortable: true,
+      width: 100,
+      align: 'center',
+      cell: ({ row }) => (
+        <Tooltip title={`Ratio: ${(row.actual / row.threshold).toFixed(2)}`}>
+          {row.actual > row.threshold ? (
+            <TrendingUpIcon color="error" />
           ) : (
-            issues.map((issue, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Chip
-                    label={issue.severity}
-                    color={issue.severity === 'high' ? 'error' : issue.severity === 'medium' ? 'warning' : 'info'}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>{issue.type}</TableCell>
-                <TableCell>{issue.description}</TableCell>
-                <TableCell>{issue.actual.toLocaleString()}</TableCell>
-                <TableCell>{issue.threshold.toLocaleString()}</TableCell>
-                <TableCell>
-                  <Tooltip title={`Ratio: ${(issue.actual / issue.threshold).toFixed(2)}`}>
-                    {issue.actual > issue.threshold ? (
-                      <TrendingUpIcon color="error" />
-                    ) : (
-                      <TrendingDownIcon color="success" />
-                    )}
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))
+            <TrendingDownIcon color="success" />
           )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+        </Tooltip>
+      ),
+    },
+  ];
+
+  const renderIssuesTable = () => (
+    <DataTable
+      data={issues}
+      columns={issueColumns}
+      getRowId={(row, index) => `${row.type}-${index}`}
+      enableRowSelection
+      enableColumnResizing
+      enableColumnVisibility
+      enablePagination
+      pageSize={10}
+      persistKey="performance-issues"
+      emptyMessage="No performance issues detected"
+      aria-label="Performance issues"
+    />
   );
 
   if (loading) {

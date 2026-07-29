@@ -55,6 +55,21 @@ export { SkeletonChart } from './SkeletonChart';
 // Virtualized components for performance
 export { VirtualizedList, VirtualizedTable } from './VirtualizedList';
 
+// DataTable (issue #163)
+export { DataTable } from './DataTable';
+export type { DataTableProps, DataTableColumn, SortDescriptor } from './DataTable';
+export { TableSortLabel } from './TableSortLabel';
+export type { TableSortLabelProps, SortDirection } from './TableSortLabel';
+export { TableFilter } from './TableFilter';
+export type {
+  TableFilterProps,
+  TableFilterType,
+  TableFilterValue,
+  TableFilterOption,
+} from './TableFilter';
+export { TablePagination } from './TablePagination';
+export type { TablePaginationProps } from './TablePagination';
+
 // ML model versioning & A/B testing
 export { default as ExperimentDashboard } from './ExperimentDashboard';
 

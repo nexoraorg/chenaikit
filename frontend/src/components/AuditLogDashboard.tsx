@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Card,
@@ -8,25 +8,15 @@ import {
   Button,
   CircularProgress,
   Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Typography,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
   Stack,
-  IconButton,
-  Tooltip,
 } from "@mui/material";
 import {
   Download as DownloadIcon,
-  ExpandMore as ExpandMoreIcon,
   Refresh as RefreshIcon,
   FileDownload as FileDownloadIcon,
 } from "@mui/icons-material";
@@ -35,6 +25,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFnsV3";
 import axios from "axios";
 import useToast from "../hooks/useToast";
+import { DataTable, type DataTableColumn } from "./DataTable";
 
 interface AuditLog {
   id: string;
@@ -77,7 +68,6 @@ export const AuditLogDashboard: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [stats, setStats] = useState<AuditStatistics | null>(null);
   const [loading, setLoading] = useState(false);
-  const [expandedDetailId, setExpandedDetailId] = useState<string | null>(null);
 
   // Filter state - initialize with factory function to avoid impure function in render
   const [filters, setFilters] = useState(() => ({
@@ -95,6 +85,96 @@ export const AuditLogDashboard: React.FC = () => {
     total: 0,
     hasMore: false,
   });
+
+  const auditColumns: DataTableColumn<AuditLog>[] = useMemo(
+    () => [
+      {
+        id: "createdAt",
+        header: "Timestamp",
+        accessorKey: "createdAt",
+        filterType: "dateRange",
+        width: 180,
+        cell: ({ value }) => new Date(String(value)).toLocaleString(),
+      },
+      {
+        id: "action",
+        header: "Action",
+        accessorKey: "action",
+        filterType: "text",
+        width: 140,
+        cell: ({ value }) => (
+          <Chip label={String(value)} size="small" variant="outlined" />
+        ),
+      },
+      {
+        id: "user",
+        header: "User",
+        accessorFn: (row) => row.user?.email || row.userId || "-",
+        filterType: "text",
+        width: 180,
+      },
+      {
+        id: "resource",
+        header: "Resource",
+        accessorKey: "resource",
+        filterType: "text",
+        width: 140,
+        cell: ({ value }) => (value ? String(value) : "-"),
+      },
+      {
+        id: "statusCode",
+        header: "Status",
+        accessorKey: "statusCode",
+        filterable: false,
+        width: 100,
+        cell: ({ value }) => (
+          <Chip
+            label={value != null ? String(value) : "N/A"}
+            color={getStatusColor(value as number | undefined) as "default" | "success" | "warning" | "error"}
+            size="small"
+          />
+        ),
+      },
+      {
+        id: "ipAddress",
+        header: "IP Address",
+        accessorKey: "ipAddress",
+        filterType: "text",
+        width: 140,
+        cell: ({ value }) => (value ? String(value) : "-"),
+      },
+      {
+        id: "duration",
+        header: "Duration",
+        accessorKey: "duration",
+        filterable: false,
+        width: 100,
+        cell: ({ value }) => (value != null ? `${value}ms` : "-"),
+      },
+      {
+        id: "piiRedacted",
+        header: "PII Redacted",
+        accessorKey: "piiRedacted",
+        filterType: "select",
+        filterOptions: [
+          { label: "Yes", value: "true" },
+          { label: "No", value: "false" },
+        ],
+        filterFn: (row, filterValue) => {
+          if (!filterValue) return true;
+          return String(row.piiRedacted) === String(filterValue);
+        },
+        width: 120,
+        cell: ({ value }) =>
+          value ? (
+            <Chip label="Yes" size="small" color="warning" />
+          ) : (
+            <Chip label="No" size="small" />
+          ),
+      },
+    ],
+    [],
+  );
 
   // Fetch audit logs
   const fetchLogs = useCallback(async () => {
@@ -367,127 +447,51 @@ export const AuditLogDashboard: React.FC = () => {
         </Box>
       ) : (
         <>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                  <TableCell>Timestamp</TableCell>
-                  <TableCell>Action</TableCell>
-                  <TableCell>User</TableCell>
-                  <TableCell>Resource</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>IP Address</TableCell>
-                  <TableCell>Duration</TableCell>
-                  <TableCell>PII Redacted</TableCell>
-                  <TableCell align="center">Details</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {logs.map((log) => (
-                  <React.Fragment key={log.id}>
-                    <TableRow hover>
-                      <TableCell>
-                        {new Date(log.createdAt).toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={log.action}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {log.user?.email || log.userId || "-"}
-                      </TableCell>
-                      <TableCell>{log.resource || "-"}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={log.statusCode || "N/A"}
-                          color={getStatusColor(log.statusCode) as any}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>{log.ipAddress || "-"}</TableCell>
-                      <TableCell>
-                        {log.duration ? `${log.duration}ms` : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {log.piiRedacted ? (
-                          <Chip label="Yes" size="small" color="warning" />
-                        ) : (
-                          <Chip label="No" size="small" />
-                        )}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Tooltip title="View Details">
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              setExpandedDetailId(
-                                expandedDetailId === log.id ? null : log.id,
-                              )
-                            }
-                          >
-                            <ExpandMoreIcon
-                              sx={{
-                                transform:
-                                  expandedDetailId === log.id
-                                    ? "rotate(180deg)"
-                                    : "rotate(0deg)",
-                                transition: "transform 0.3s",
-                              }}
-                            />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                    {expandedDetailId === log.id && (
-                      <TableRow>
-                        <TableCell colSpan={9}>
-                          <Box
-                            sx={{
-                              p: 2,
-                              backgroundColor: "#f9f9f9",
-                              borderRadius: 1,
-                            }}
-                          >
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ fontWeight: 600, mb: 1 }}
-                            >
-                              Request Details
-                            </Typography>
-                            <pre style={{ fontSize: "12px", overflow: "auto" }}>
-                              {log.errorMessage || "No error"}
-                            </pre>
-                            {log.endpoint && (
-                              <>
-                                <Typography
-                                  variant="subtitle2"
-                                  sx={{ fontWeight: 600, mb: 1, mt: 2 }}
-                                >
-                                  Endpoint
-                                </Typography>
-                                <Typography variant="body2">
-                                  {log.method} {log.endpoint}
-                                </Typography>
-                              </>
-                            )}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {logs.length === 0 && (
-            <Box sx={{ p: 3, textAlign: "center" }}>
-              <Typography color="textSecondary">No audit logs found</Typography>
-            </Box>
-          )}
+          <DataTable
+            data={logs}
+            columns={auditColumns}
+            getRowId={(row) => row.id}
+            enableExpanding
+            renderExpandedRow={(log) => (
+              <Box
+                sx={{
+                  p: 2,
+                  backgroundColor: "action.hover",
+                  borderRadius: 1,
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 600, mb: 1 }}
+                >
+                  Request Details
+                </Typography>
+                <pre style={{ fontSize: "12px", overflow: "auto" }}>
+                  {log.errorMessage || "No error"}
+                </pre>
+                {log.endpoint && (
+                  <>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 600, mb: 1, mt: 2 }}
+                    >
+                      Endpoint
+                    </Typography>
+                    <Typography variant="body2">
+                      {log.method} {log.endpoint}
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            )}
+            enableRowSelection
+            enableColumnResizing
+            enableColumnVisibility
+            enablePagination={false}
+            persistKey="audit-logs"
+            emptyMessage="No audit logs found"
+            aria-label="Audit logs"
+          />
 
           {/* Pagination */}
           {pagination.total > pagination.limit && (
@@ -509,7 +513,7 @@ export const AuditLogDashboard: React.FC = () => {
               </Button>
               <Typography sx={{ alignSelf: "center" }}>
                 Page {Math.floor(pagination.offset / pagination.limit) + 1} of{" "}
-                {Math.ceil(pagination.total / pagination.limit)}
+                {Math.ceil(pagination.total / pagination.limit) || 1}
               </Typography>
               <Button
                 disabled={!pagination.hasMore}
