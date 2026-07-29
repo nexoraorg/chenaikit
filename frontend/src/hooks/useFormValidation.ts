@@ -2,23 +2,6 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { UseFormValidationOptions, UseFormValidationReturn } from '@chenaikit/core';
 import { validateField as validateFieldValue, validateFields } from '@chenaikit/core';
 
-// Debounce utility
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
 export function useFormValidation({
   initialValues,
   validationRules,
@@ -36,9 +19,6 @@ export function useFormValidation({
   // Refs for debouncing
   const debounceTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
   const pendingValidations = useRef<Set<string>>(new Set());
-
-  // Debounced values for validation
-  const debouncedValues = useDebounce(values, debounceMs);
 
   // Calculate if form is valid
   const isValid = Object.keys(errors).length === 0 && 
@@ -117,6 +97,7 @@ export function useFormValidation({
       setErrors(newErrors);
       return Object.keys(newErrors).length === 0;
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Form validation error:', err);
       return false;
     }
@@ -145,6 +126,7 @@ export function useFormValidation({
         await onSubmit(values);
       }
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Form submission error:', err);
     } finally {
       setIsSubmitting(false);

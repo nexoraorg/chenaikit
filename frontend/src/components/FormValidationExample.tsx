@@ -33,6 +33,26 @@ const formConfigs: FormFieldConfig[] = [
     validation: ValidationRules.positiveNumber('Amount must be greater than 0')
   },
   {
+    name: 'scheduledDate',
+    label: 'Scheduled Date',
+    type: 'date',
+    required: true,
+    minDate: new Date(),
+    validation: ValidationRules.required('Please choose a scheduled date')
+  },
+  {
+    name: 'scheduledTime',
+    label: 'Scheduled Time',
+    type: 'time',
+    required: true,
+    minTime: '09:00',
+    maxTime: '17:00',
+    timeIntervalMinutes: 30,
+    timeFormat: '12',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    validation: ValidationRules.required('Please choose a scheduled time')
+  },
+  {
     name: 'memo',
     label: 'Memo (Optional)',
     type: 'textarea',
@@ -77,16 +97,19 @@ export const FormValidationExample: React.FC = () => {
       email: '',
       stellarAddress: '',
       amount: '',
+      scheduledDate: '',
+      scheduledTime: '',
       memo: ''
     },
     validationRules: {
       email: ValidationRules.email(),
       stellarAddress: ValidationRules.async(validateStellarAddressExists),
       amount: ValidationRules.positiveNumber(),
+      scheduledDate: ValidationRules.required('Please choose a scheduled date'),
+      scheduledTime: ValidationRules.required('Please choose a scheduled time'),
       memo: ValidationRules.maxLength(100)
     },
-    onSubmit: async (values: Record<string, any>) => {
-      console.log('Form submitted with values:', values);
+    onSubmit: async () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       alert('Form submitted successfully!');
@@ -109,7 +132,7 @@ export const FormValidationExample: React.FC = () => {
             value={values[config.name]}
             error={errors[config.name]}
             touched={touched[config.name]}
-            onChange={(value) => handleChange(config.name, value)}
+            onChange={(value: any) => handleChange(config.name, value)}
             onBlur={() => handleBlur(config.name)}
             onFocus={() => {}}
           />

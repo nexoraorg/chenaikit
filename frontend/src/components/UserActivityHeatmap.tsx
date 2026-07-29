@@ -1,16 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { UserActivity, HeatmapData, ChartProps, TooltipData } from '@chenaikit/core';
+import { UserActivity, ChartProps } from '@chenaikit/core';
 import { 
   DEFAULT_CHART_CONFIG, 
   getResponsiveConfig, 
   formatNumber, 
-  formatDateTime,
   generateTooltipContent,
   debounce,
-  getAriaLabel,
-  CHART_COLORS,
-  hexToRgba
+  getAriaLabel
 } from '@chenaikit/core';
 
 interface UserActivityHeatmapProps extends ChartProps {
@@ -360,9 +357,8 @@ export const UserActivityHeatmap: React.FC<UserActivityHeatmapProps> = ({
 
         <select
           value={aggregation}
-          onChange={(e) => {
+          onChange={() => {
             // This would need to be handled by parent component
-            console.log(`Change aggregation to ${e.target.value}`);
           }}
           style={{
             padding: '4px 8px',

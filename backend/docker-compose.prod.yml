@@ -1,0 +1,122 @@
+# =============================================================================
+# Production Compose – optimized image, resource limits, no volume source mounts
+# Usage: docker compose -f backend/docker-compose.prod.yml up -d
+# Run from the MONOREPO ROOT.
+#
+# Required environment variables (set in shell or a .env.prod file):
+#   DATABASE_URL        e.g. file:/data/app.db
+#   REDIS_URL           e.g. redis://redis:6379
+#   JWT_SECRET          strong random secret
+#   PORT                default 3000
+#   NODE_ENV            production
+#   SENTRY_DSN          (optional)
+#   AI_API_KEY          (optional)
+#   AI_ENDPOINT         (optional)
+# =============================================================================
+
+name: chenaikit-prod
+
+services:
+  # ── Backend API ─────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ..                        # monorepo root
+      dockerfile: backend/Dockerfile
+      target: production
+    image: chenaikit-backend:${IMAGE_TAG:-latest}
+    container_name: chenaikit-backend
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: ${DATABASE_URL:-file:/data/app.db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_ENDPOINT: ${AI_ENDPOINT:-}
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    volumes:
+      # SQLite database persistence
+      - backend-data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "node", "-e",
+        "const h=require('http');h.get('http://localhost:3000/api/health',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    networks:
+      - chenaikit-net
+    security_opt:
+      - no-new-privileges:true
+    read_only: false                     # SQLite needs write access to /data
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+
+  # ── Redis ────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: chenaikit-redis
+    restart: always
+    command: >
+      redis-server
+      --save 300 1
+      --save 60 100
+      --loglevel warning
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 192M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chenaikit-net
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  backend-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  chenaikit-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

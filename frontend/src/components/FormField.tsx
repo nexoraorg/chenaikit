@@ -1,6 +1,18 @@
 import React, { forwardRef } from 'react';
 import { FormFieldProps } from '@chenaikit/core';
+import { DatePicker } from './DatePicker';
+import { DateRangePicker } from './DateRangePicker';
+import { DateTimePicker, DateTimeValue } from './DateTimePicker';
 import { FormError } from './FormError';
+
+const formatDateFieldValue = (date: Date | null): string => {
+  if (!date) return '';
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, FormFieldProps>(
   ({ 
@@ -20,7 +32,15 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
       placeholder,
       required,
       options = [],
-      disabled: fieldDisabled = false
+      disabled: fieldDisabled = false,
+      minDate,
+      maxDate,
+      disabledDates,
+      minTime,
+      maxTime,
+      timeIntervalMinutes,
+      timeFormat,
+      timezone
     } = config;
 
     const isDisabled = disabled || fieldDisabled;
@@ -46,6 +66,87 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
 
     const renderInput = () => {
       switch (type) {
+        case 'date':
+          return (
+            <DatePicker
+              value={value || null}
+              onChange={(date) => onChange(formatDateFieldValue(date))}
+              label={label}
+              name={name}
+              minDate={minDate}
+              maxDate={maxDate}
+              disabledDates={disabledDates}
+              disabled={isDisabled}
+              required={required}
+              error={!!hasError}
+              helperText={hasError ? error : undefined}
+              placeholder={placeholder}
+              onBlur={onBlur}
+            />
+          );
+
+        case 'time':
+          return (
+            <DateTimePicker
+              value={{ date: null, time: value || null, timezone }}
+              onChange={(nextValue: DateTimeValue) => onChange(nextValue.time || '')}
+              mode="time"
+              label={label}
+              timezone={timezone}
+              intervalMinutes={timeIntervalMinutes}
+              minTime={minTime}
+              maxTime={maxTime}
+              timeFormat={timeFormat}
+              disabled={isDisabled}
+              required={required}
+              error={!!hasError}
+              helperText={hasError ? error : undefined}
+              onBlur={onBlur}
+            />
+          );
+
+        case 'datetime':
+        case 'datetime-local':
+          return (
+            <DateTimePicker
+              value={value || { date: null, time: null, timezone }}
+              onChange={onChange}
+              mode="datetime"
+              label={label}
+              minDate={minDate}
+              maxDate={maxDate}
+              disabledDates={disabledDates}
+              timezone={timezone}
+              intervalMinutes={timeIntervalMinutes}
+              minTime={minTime}
+              maxTime={maxTime}
+              timeFormat={timeFormat}
+              disabled={isDisabled}
+              required={required}
+              error={!!hasError}
+              helperText={hasError ? error : undefined}
+              onBlur={onBlur}
+            />
+          );
+
+        case 'date-range':
+          return (
+            <DateRangePicker
+              value={value || { start: null, end: null }}
+              onChange={onChange}
+              startLabel={`${label} start`}
+              endLabel={`${label} end`}
+              minDate={minDate}
+              maxDate={maxDate}
+              disabledDates={disabledDates}
+              disabled={isDisabled}
+              required={required}
+              error={!!hasError}
+              helperText={hasError ? error : undefined}
+              onBlur={onBlur}
+            />
+          );
+
         case 'textarea':
           return (
             <textarea
@@ -69,7 +170,7 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
                   {placeholder}
                 </option>
               )}
-              {options.map((option) => (
+              {options.map((option: { value: string; label: string }) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -90,20 +191,24 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
       }
     };
 
+    const usesPicker = type === 'date' || type === 'time' || type === 'datetime' || type === 'datetime-local' || type === 'date-range';
+
     return (
       <div className={`form-field ${hasError ? 'form-field--error' : ''} ${isDisabled ? 'form-field--disabled' : ''}`}>
-        <label 
-          htmlFor={fieldId}
-          className="form-field__label"
-          id={`${name}-label`}
-        >
-          {label}
-          {required && (
-            <span className="form-field__required" aria-label="required">
-              *
-            </span>
-          )}
-        </label>
+        {!usesPicker && (
+          <label 
+            htmlFor={fieldId}
+            className="form-field__label"
+            id={`${name}-label`}
+          >
+            {label}
+            {required && (
+              <span className="form-field__required" aria-label="required">
+                *
+              </span>
+            )}
+          </label>
+        )}
 
         <div className="form-field__input-wrapper">
           {renderInput()}
@@ -116,11 +221,13 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
           )}
         </div>
 
-        <FormError 
-          error={error}
-          field={name}
-          className="form-field__error"
-        />
+        {!usesPicker && (
+          <FormError 
+            error={error}
+            field={name}
+            className="form-field__error"
+          />
+        )}
       </div>
     );
   }

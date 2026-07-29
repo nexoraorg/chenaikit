@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -29,6 +29,7 @@ import {
   Error as ErrorIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
+import { SkeletonCard, SkeletonTable } from './index';
 
 // Performance data types
 interface PerformanceMetrics {
@@ -96,8 +97,8 @@ const PerformanceDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  // Performance thresholds
-  const thresholds = {
+  // Performance thresholds - memoized to prevent recreation
+  const thresholds = useMemo(() => ({
     api: {
       avgResponseTime: 200,
       p95ResponseTime: 500,
@@ -123,10 +124,10 @@ const PerformanceDashboard: React.FC = () => {
       maxGasUsage: 100000,
       avgExecutionTime: 1000,
     },
-  };
+  }), []);
 
-  // Fetch performance data
-  const fetchPerformanceData = async () => {
+  // Fetch performance data - memoized to prevent unnecessary re-renders
+  const fetchPerformanceData = useCallback(async () => {
     setLoading(true);
     try {
       // Mock API call - replace with actual endpoint
@@ -172,14 +173,14 @@ const PerformanceDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchPerformanceData();
     // Refresh every 5 minutes
     const interval = setInterval(fetchPerformanceData, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchPerformanceData]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -480,8 +481,28 @@ const PerformanceDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="400px">
-        <Typography variant="h6">Loading performance metrics...</Typography>
+      <Box sx={{ width: '100%' }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4" component="h1">
+            Performance Dashboard
+          </Typography>
+        </Box>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs value={0}>
+            <Tab label="API Performance" />
+            <Tab label="Frontend Performance" />
+            <Tab label="Database Performance" />
+            <Tab label="Smart Contracts" />
+            <Tab label="Issues & Alerts" />
+          </Tabs>
+        </Box>
+        <Grid container spacing={3}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <SkeletonCard lines={4} />
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   }

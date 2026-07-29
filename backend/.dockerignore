@@ -1,0 +1,59 @@
+# NOTE: This file is used when the build context is the monorepo ROOT (i.e., `docker build -f backend/Dockerfile .`)
+# BuildKit will use this file automatically when named `backend/Dockerfile.dockerignore`,
+# but for standard builds place a copy at the monorepo root as `.dockerignore`.
+
+# Version control
+.git
+.gitignore
+
+# Dependencies (reinstalled inside Docker)
+**/node_modules
+
+# Build artifacts (rebuilt inside Docker)
+**/dist
+backend/prisma/dev.db
+backend/prisma/dev.db-shm
+backend/prisma/dev.db-wal
+
+# Test & coverage
+**/coverage
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+backend/jest.config.js
+backend/jest.integration.config.js
+backend/jest.integration.setup.js
+backend/lint_results.json
+
+# Environment files (injected at runtime)
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs
+**/*.log
+**/logs
+
+# Editor & OS
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github
+.circleci
+
+# Frontend & examples (not needed for backend image)
+frontend
+examples
+
+# Rust contracts
+contracts
+
+# Docs
+docs
+*.md
+!backend/README.md

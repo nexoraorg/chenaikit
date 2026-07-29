@@ -10,12 +10,33 @@ export interface ValidationRule {
 export interface FormFieldConfig {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'textarea' | 'select';
+  type:
+    | 'text'
+    | 'email'
+    | 'password'
+    | 'number'
+    | 'tel'
+    | 'url'
+    | 'textarea'
+    | 'select'
+    | 'date'
+    | 'time'
+    | 'datetime'
+    | 'datetime-local'
+    | 'date-range';
   placeholder?: string;
   required?: boolean;
   validation?: ValidationRule;
   options?: Array<{ value: string; label: string }>; // For select fields
   disabled?: boolean;
+  minDate?: Date | string;
+  maxDate?: Date | string;
+  disabledDates?: Array<Date | string>;
+  minTime?: string;
+  maxTime?: string;
+  timeIntervalMinutes?: number;
+  timeFormat?: '12' | '24';
+  timezone?: string;
 }
 
 export interface FormError {

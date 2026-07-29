@@ -1,0 +1,48 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+  attributes:
+    actions:
+      - key: service.environment
+        value: "${ENVIRONMENT:-development}"
+        action: upsert
+      - key: service.version
+        value: "${APP_VERSION:-1.0.0}"
+        action: upsert
+  filter:
+    error_mode: ignore
+    traces:
+      span:
+        # Drop health check spans to reduce noise
+        - 'attributes["http.route"] == "/healthz" or attributes["http.route"] == "/readyz"'
+  probabilistic_sampler:
+    hash_seed: 42
+    sampling_percentage: 1
+
+exporters:
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes, filter, probabilistic_sampler, batch]
+      exporters: [jaeger, debug]

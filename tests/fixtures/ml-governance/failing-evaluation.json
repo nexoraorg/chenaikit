@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "modelArtifactHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "datasetHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "codeCommit": "fedcba0987654321",
+  "datasetRows": 8000,
+  "metrics": {
+    "auc": 0.76,
+    "accuracy": 0.82
+  },
+  "fairness": {
+    "demographicParityRatio": 0.61,
+    "equalOpportunityDifference": 0.19,
+    "suppressedCohorts": ["unknown", "cohort_c"]
+  },
+  "explainability": {
+    "additivityPassRate": 0.94,
+    "p95ExplanationMs": 311.7
+  },
+  "policy": {
+    "schemaVersion": 1,
+    "minimumDatasetRows": 10000,
+    "minimumCohortSize": 100,
+    "requiredMetrics": {
+      "auc": ">=0.80"
+    },
+    "fairness": {
+      "demographicParityRatio": ">=0.80",
+      "equalOpportunityDifference": "<=0.10"
+    },
+    "explainability": {
+      "additivityPassRate": ">=0.99",
+      "maxP95ExplanationMs": 250
+    },
+    "onFailure": "block"
+  }
+}

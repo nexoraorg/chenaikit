@@ -1,110 +1,100 @@
 // ChenAIKit Backend Server
-import 'reflect-metadata';
-import dotenv from 'dotenv';
+import "reflect-metadata";
+import dotenv from "dotenv";
 dotenv.config();
 
-// Initialize Sentry first
-import { initSentry, sentryErrorHandler } from './middleware/errorTracking';
-if (process.env.SENTRY_DSN) {
-  initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || 'development');
+// Initialize OpenTelemetry tracing FIRST (before any other imports)
+// This ensures all instrumentations can hook into modules at load time.
+import { initializeTracing, shutdownTracing } from "./tracing/tracer";
+import { TracingConfig } from "./tracing/tracer";
+
+const tracingEnabled =
+  process.env.TRACING_ENABLED === "true" || process.env.OTEL_ENABLED === "true";
+
+if (tracingEnabled) {
+  const tracingConfig: TracingConfig = {
+    serviceName: process.env.SERVICE_NAME || "chenaikit-backend",
+    environment: process.env.NODE_ENV || "development",
+    version: process.env.APP_VERSION || "1.0.0",
+    jaegerEndpoint:
+      process.env.JAEGER_ENDPOINT || "http://localhost:14268/api/traces",
+    otlpEndpoint:
+      process.env.OTEL_EXPORTER_OTLP_ENDPOINT ||
+      "http://localhost:4318/v1/traces",
+    sampleRate: Number(process.env.TRACE_SAMPLE_RATE) || 0.01,
+    errorSampleRate: 1.0,
+    maxTracesPerMinute: Number(process.env.MAX_TRACES_PER_MINUTE) || 1000,
+  };
+
+  initializeTracing(tracingConfig).catch((err) => {
+    console.error("Failed to initialize OpenTelemetry tracing:", err);
+  });
 }
 
-import express, { Request, Response } from 'express';
-import { log } from './utils/logger';
-import { requestLoggingMiddleware } from './middleware/logging';
-import healthRouter from './routes/health';
-import { metricsService, metricsMiddleware } from './services/metricsService';
-import { validateEnvironment, initializeMonitoring, shutdownMonitoring } from './config/monitoring';
-import authRoutes from './routes/auth';
-import { UserPayload } from './types/auth';
-import { ensureRedisConnection } from './config/redis';
-import accountRoutes from './routes/accounts';
-import { PrismaClient } from '@prisma/client';
-import { ApiKeyService } from './services/apiKeyService';
-import { UsageTrackingService } from './services/usageTrackingService';
-import { ApiGateway } from './middleware/apiGateway';
-import { createTieredRateLimiter } from './middleware/advancedRateLimiter';
-import Redis from 'ioredis';
-import { applySecurityMiddleware } from './middleware/security';
-import { loadVaultSecrets } from './config/secrets';
-import { FraudDetector } from '@chenaikit/core';
-import { CircuitBreakerService } from './services/circuitBreakerService';
-import { createCircuitBreakerRouter } from './routes/circuitBreaker';
-import { createCircuitBreakerMiddleware } from './middleware/circuitBreaker';
+// Initialize Sentry first
+import { initSentry, sentryErrorHandler } from "./middleware/errorTracking";
+if (process.env.SENTRY_DSN) {
+  initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || "development");
+}
+
+
 
 const app: express.Application = express();
 
 applySecurityMiddleware(app);
-app.use(express.json({ limit: '10mb' }));
+applyCompressionMiddleware(app);
+app.use(express.json({ limit: "10mb" }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
 
-// Initialize FraudDetector and CircuitBreaker
-const fraudDetector = new FraudDetector();
-const circuitBreaker = new CircuitBreakerService(fraudDetector, {
-  failureThreshold: 5,
-  successThreshold: 3,
-  timeoutMs: 60000,
-  monitoringWindowMs: 300000,
-  riskScoreThreshold: 70,
-});
 
-// Apply circuit breaker middleware
-app.use(createCircuitBreakerMiddleware(circuitBreaker));
+// Tracing middleware - add baggage propagation and trace correlation
+if (tracingEnabled) {
+  app.use(baggagePropagationMiddleware);
+  app.use(tracingCorrelationMiddleware);
+}
 
-app.use('/api', healthRouter);
-app.use('/api/auth', authRoutes);
-app.use('/api/accounts', accountRoutes);
-app.use('/api/circuit-breaker', createCircuitBreakerRouter(circuitBreaker));
-// app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
+app.use("/api", getDistributedRateLimiter().middleware());
+// Health checks remain unversioned and must be matched before the version dispatcher.
+app.use("/api", healthRouter);
 
-// Gateway-protected endpoints
-app.get('/api/v1/credit-score', (_req: Request, res: Response) => {
+// Version discovery endpoint: lists supported versions and their lifecycle.
+app.get("/api/versions", (_req: Request, res: Response) => {
   res.json({
     success: true,
     data: {
-      score: Math.floor(Math.random() * 850) + 150,
-      factors: ['payment_history', 'credit_utilization', 'account_age'],
-      timestamp: new Date().toISOString(),
+      default: DEFAULT_VERSION,
+      latest: LATEST_VERSION,
+      versions: API_VERSIONS,
     },
   });
 });
 
-app.get('/api/v1/fraud/detect', (_req: Request, res: Response) => {
-  res.json({
-    success: true,
-    data: {
-      riskScore: Math.floor(Math.random() * 100),
-      riskLevel: 'low',
-      factors: ['transaction_amount', 'location', 'device'],
-      timestamp: new Date().toISOString(),
-    },
-  });
-});
+// Versioned API surface.
+// Supports URL path (/api/v1, /api/v2), header (Accept-Version) and query
+// (?version) versioning. Unversioned requests fall back to the default version,
+// keeping existing clients working.
+app.use(
+  "/api",
+  detectVersion(),
+  versionHeaders(),
+  createVersionRouter({ v1: v1Router, v2: v2Router }),
+);
 
 // Prometheus metrics endpoint
-app.get('/metrics', async (_req: Request, res: Response) => {
+app.get("/metrics", async (_req: Request, res: Response) => {
   try {
     const metrics = await metricsService.getMetrics();
-    res.set('Content-Type', 'text/plain');
+    res.set("Content-Type", "text/plain");
     res.send(metrics);
   } catch (e: unknown) {
     const error = e as Error;
-    res.status(500).send(error?.message || 'metrics error');
+    res.status(500).send(error?.message || "metrics error");
   }
 });
 
 // 404 handler
-app.use('*', (req: Request, res: Response) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      code: 'ENDPOINT_NOT_FOUND',
-      message: `Endpoint ${req.method} ${req.originalUrl} not found`,
-      timestamp: new Date().toISOString()
-    }
-  });
-});
+app.use("*", notFoundHandler);
 
 // Sentry error handler (must be before other error handlers)
 if (process.env.SENTRY_DSN) {
@@ -112,18 +102,8 @@ if (process.env.SENTRY_DSN) {
 }
 
 // Global error handler
-app.use((error: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Unhandled error:', error);
-
-  res.status(500).json({
-    success: false,
-    error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected error occurred',
-      timestamp: new Date().toISOString()
-    }
-  });
-});
+app.use(compressionRequestErrorHandler);
+app.use(errorHandler);
 
 export const startServer = async (): Promise<void> => {
   // Load environment variables
@@ -136,13 +116,24 @@ export const startServer = async (): Promise<void> => {
   validateEnvironment();
 
   const prisma = new PrismaClient();
-  const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+  const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
   const apiKeyService = new ApiKeyService(prisma);
   const usageTrackingService = new UsageTrackingService(prisma);
   const rateLimiter = createTieredRateLimiter(redis);
-  const apiGateway = new ApiGateway(apiKeyService, usageTrackingService, rateLimiter);
+  const apiGateway = new ApiGateway(
+    apiKeyService,
+    usageTrackingService,
+    rateLimiter,
+  );
 
   // registerGatewayRoutes(apiGateway, apiKeyService, usageTrackingService);
+  const healthService = getHealthService(prisma);
+  healthService.startMonitoring();
+
+  // Initialize audit log archival job
+  const { scheduleAuditLogArchivalJob } =
+    await import("./jobs/auditLogArchival");
+  scheduleAuditLogArchivalJob();
 
   const PORT = process.env.PORT || 5000;
 
@@ -150,7 +141,12 @@ export const startServer = async (): Promise<void> => {
 
   const shutdown = async () => {
     try {
+      healthService.stopMonitoring();
       await shutdownMonitoring();
+      // Shutdown OpenTelemetry tracing
+      if (tracingEnabled) {
+        await shutdownTracing();
+      }
       await redis.quit();
       await prisma.$disconnect();
     } catch {
@@ -158,27 +154,28 @@ export const startServer = async (): Promise<void> => {
     }
   };
 
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 
   const server = app.listen(PORT, async () => {
     console.log(`🚀 ChenAIKit Backend running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
     console.log(`📈 Metrics:       http://localhost:${PORT}/metrics`);
+    console.log(`🔍 Tracing:       ${tracingEnabled ? "enabled" : "disabled"}`);
     console.log(`📋 See .github/ISSUE_TEMPLATE/ for backend development tasks`);
 
     try {
       await ensureRedisConnection();
-      console.log('🧠 Redis cache ready');
+      console.log("🧠 Redis cache ready");
     } catch (_err) {
-      console.warn('⚠️  Redis not available. Continuing without cache.');
+      console.warn("⚠️  Redis not available. Continuing without cache.");
     }
   });
 };
 
 if (require.main === module) {
   startServer().catch((error) => {
-    console.error('Failed to start server', error);
+    console.error("Failed to start server", error);
     process.exit(1);
   });
 }

@@ -1,18 +1,16 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { TransactionData, ChartProps, ZoomState, TooltipData } from '@chenaikit/core';
+import { TransactionData, ChartProps, ZoomState } from '@chenaikit/core';
 import { 
   DEFAULT_CHART_CONFIG, 
   getResponsiveConfig, 
   formatCurrency, 
   formatDateTime,
   generateTooltipContent,
-  calculateZoomBounds,
   clampZoom,
   debounce,
   getAriaLabel
 } from '@chenaikit/core';
-
 interface TransactionFlowChartProps extends ChartProps {
   data: TransactionData[];
   showLabels?: boolean;
@@ -254,7 +252,7 @@ export const TransactionFlowChart: React.FC<TransactionFlowChartProps> = ({
 
     // Add labels
     if (showLabels) {
-      const labels = g
+      g
         .append('g')
         .attr('class', 'labels')
         .selectAll('text')

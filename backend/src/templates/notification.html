@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{subject}}</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; overflow: hidden; }
+    .header { background: #1a1a2e; padding: 32px; text-align: center; }
+    .header h1 { color: #fff; margin: 0; font-size: 22px; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px;
+             font-weight: bold; text-transform: uppercase; margin-bottom: 8px; }
+    .badge-info    { background: #3498db; color: #fff; }
+    .badge-warning { background: #f39c12; color: #fff; }
+    .badge-success { background: #27ae60; color: #fff; }
+    .badge-alert   { background: #e74c3c; color: #fff; }
+    .body { padding: 32px; color: #333; line-height: 1.6; }
+    .btn { display: inline-block; padding: 12px 28px; background: #6c63ff; color: #fff;
+           text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 16px; }
+    .footer { padding: 16px 32px; background: #f9f9f9; color: #888; font-size: 12px; text-align: center; }
+    .unsubscribe { margin-top: 8px; }
+    .unsubscribe a { color: #aaa; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="badge badge-{{type}}">{{type}}</div>
+      <h1>{{subject}}</h1>
+    </div>
+    <div class="body">
+      <p>Hi {{name}},</p>
+      <p>{{message}}</p>
+      {{#if actionUrl}}
+      <a class="btn" href="{{actionUrl}}">{{actionLabel}}</a>
+      {{/if}}
+    </div>
+    <div class="footer">
+      © {{year}} ChenAIKit.
+      <div class="unsubscribe">
+        <a href="{{unsubscribeUrl}}">Unsubscribe from notifications</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
