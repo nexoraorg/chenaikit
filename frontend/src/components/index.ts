@@ -58,3 +58,10 @@ export { VirtualizedList, VirtualizedTable } from './VirtualizedList';
 // ML model versioning & A/B testing
 export { default as ExperimentDashboard } from './ExperimentDashboard';
 
+
+// Help System & Tooltips
+export { default as Tooltip } from './Tooltip';
+export type { TooltipProps } from './Tooltip';
+export { default as HelpButton } from './HelpButton';
+export { default as HelpPanel } from './HelpPanel';
+export { default as FeatureTour } from './FeatureTour';
