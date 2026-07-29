@@ -345,3 +345,71 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+// ---------------------------------------------------------------------------
+// Attestation models (verifiable inference receipts)
+// ---------------------------------------------------------------------------
+
+model AttestationSigner {
+  id         String   @id @default(cuid())
+  keyId      String   @unique
+  publicKey  String   // hex-encoded Ed25519 public key
+  validFrom  DateTime
+  validUntil DateTime?
+  revokedAt  DateTime?
+  status     String   @default("active")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("attestation_signers")
+  @@index([keyId])
+}
+
+model InferenceReceipt {
+  id                    String   @id @default(cuid())
+  receiptId             String   @unique
+  nonce                 String
+  issuedAt              DateTime
+  expiresAt             DateTime?
+  requestId             String?
+  correlationId         String?
+  subjectCommitment     String
+  modelId               String
+  modelVersionId        String
+  modelSemanticVersion  String?
+  artifactHash          String
+  featureSchemaHash     String
+  featureCommitment     String
+  featureMerkleRoot     String?
+  outputCommitment      String
+  publicResultSummary   String?
+  keyId                 String
+  network               String
+  ledgerMin             Int?
+  ledgerMax             Int?
+  batchId               String?
+  signature             String
+  signatureScheme       String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("inference_receipts")
+  @@index([modelVersionId])
+  @@index([keyId])
+  @@index([batchId])
+}
+
+model ReceiptBatch {
+  id           String   @id @default(cuid())
+  batchId      String   @unique
+  root         String
+  count        Int
+  ledger       Int?
+  timestamp    DateTime?
+  schemaVersion Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("receipt_batches")
+  @@index([batchId])
+}
+

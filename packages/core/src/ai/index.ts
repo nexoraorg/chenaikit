@@ -6,6 +6,7 @@ export * from './nlp';
 export * from './base-model';
 export * from './providers';
 export * from './governance';
+export * from './attestation';
 
 // Re-export types with explicit names to avoid conflicts
 export type {
