@@ -1,0 +1,196 @@
+version: '3.8'
+
+services:
+  # Oracle Node 1
+  oracle-node-1:
+    build:
+      context: ./packages/oracle-node
+      dockerfile: Dockerfile
+    container_name: oracle-node-1
+    environment:
+      - NODE_ID=node_1
+      - STELLAR_RPC_URL=http://stellar:8000
+      - ORACLE_CONTRACT_ADDRESS=${ORACLE_CONTRACT_ADDRESS}
+      - NODE_KEYPAIR_SECRET=${NODE_1_SECRET}
+      - MODEL_PATH=/models/credit-scorer.pkl
+      - DRIFT_THRESHOLD=0.15
+    volumes:
+      - ./models:/models
+      - ./logs:/logs
+    networks:
+      - oracle-test-net
+    depends_on:
+      - stellar
+      - postgres
+
+  # Oracle Node 2
+  oracle-node-2:
+    build:
+      context: ./packages/oracle-node
+      dockerfile: Dockerfile
+    container_name: oracle-node-2
+    environment:
+      - NODE_ID=node_2
+      - STELLAR_RPC_URL=http://stellar:8000
+      - ORACLE_CONTRACT_ADDRESS=${ORACLE_CONTRACT_ADDRESS}
+      - NODE_KEYPAIR_SECRET=${NODE_2_SECRET}
+      - MODEL_PATH=/models/credit-scorer.pkl
+      - DRIFT_THRESHOLD=0.15
+    volumes:
+      - ./models:/models
+      - ./logs:/logs
+    networks:
+      - oracle-test-net
+    depends_on:
+      - stellar
+      - postgres
+
+  # Oracle Node 3
+  oracle-node-3:
+    build:
+      context: ./packages/oracle-node
+      dockerfile: Dockerfile
+    container_name: oracle-node-3
+    environment:
+      - NODE_ID=node_3
+      - STELLAR_RPC_URL=http://stellar:8000
+      - ORACLE_CONTRACT_ADDRESS=${ORACLE_CONTRACT_ADDRESS}
+      - NODE_KEYPAIR_SECRET=${NODE_3_SECRET}
+      - MODEL_PATH=/models/credit-scorer.pkl
+      - DRIFT_THRESHOLD=0.15
+    volumes:
+      - ./models:/models
+      - ./logs:/logs
+    networks:
+      - oracle-test-net
+    depends_on:
+      - stellar
+      - postgres
+
+  # Oracle Node 4 (Dishonest for testing)
+  oracle-node-4:
+    build:
+      context: ./packages/oracle-node
+      dockerfile: Dockerfile
+    container_name: oracle-node-4
+    environment:
+      - NODE_ID=node_4
+      - STELLAR_RPC_URL=http://stellar:8000
+      - ORACLE_CONTRACT_ADDRESS=${ORACLE_CONTRACT_ADDRESS}
+      - NODE_KEYPAIR_SECRET=${NODE_4_SECRET}
+      - MODEL_PATH=/models/credit-scorer.pkl
+      - DRIFT_THRESHOLD=0.15
+      - DISHONEST_MODE=true
+      - BIAS=0.3
+    volumes:
+      - ./models:/models
+      - ./logs:/logs
+    networks:
+      - oracle-test-net
+    depends_on:
+      - stellar
+      - postgres
+
+  # Oracle Node 5 (Unreliable for testing)
+  oracle-node-5:
+    build:
+      context: ./packages/oracle-node
+      dockerfile: Dockerfile
+    container_name: oracle-node-5
+    environment:
+      - NODE_ID=node_5
+      - STELLAR_RPC_URL=http://stellar:8000
+      - ORACLE_CONTRACT_ADDRESS=${ORACLE_CONTRACT_ADDRESS}
+      - NODE_KEYPAIR_SECRET=${NODE_5_SECRET}
+      - MODEL_PATH=/models/credit-scorer.pkl
+      - DRIFT_THRESHOLD=0.15
+      - FAILURE_RATE=0.3
+    volumes:
+      - ./models:/models
+      - ./logs:/logs
+    networks:
+      - oracle-test-net
+    depends_on:
+      - stellar
+      - postgres
+
+  # Stellar Standalone (Testnet)
+  stellar:
+    image: stellar/quickstart:latest
+    container_name: stellar-testnet
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    environment:
+      - NETWORK=testnet
+      - ENABLE_CAPTIVE_CORE=true
+    networks:
+      - oracle-test-net
+
+  # PostgreSQL for Backend
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-test
+    environment:
+      - POSTGRES_USER=chenai
+      - POSTGRES_PASSWORD=chenai_password
+      - POSTGRES_DB=chenai_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - oracle-test-net
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-test
+    environment:
+      - DATABASE_URL=postgresql://chenai:chenai_password@postgres:5432/chenai_test
+      - STELLAR_RPC_URL=http://stellar:8000
+      - ORACLE_CONTRACT_ADDRESS=${ORACLE_CONTRACT_ADDRESS}
+      - JWT_SECRET=test_jwt_secret
+      - NODE_ENV=test
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - oracle-test-net
+    depends_on:
+      - postgres
+      - stellar
+
+  # Test Runner
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: test-runner
+    environment:
+      - STELLAR_RPC_URL=http://stellar:8000
+      - ORACLE_CONTRACT_ADDRESS=${ORACLE_CONTRACT_ADDRESS}
+      - BACKEND_URL=http://backend:3000
+    volumes:
+      - ./tests:/tests
+      - ./logs:/logs
+    networks:
+      - oracle-test-net
+    depends_on:
+      - oracle-node-1
+      - oracle-node-2
+      - oracle-node-3
+      - oracle-node-4
+      - oracle-node-5
+      - backend
+
+networks:
+  oracle-test-net:
+    driver: bridge
+
+volumes:
+  postgres-data:

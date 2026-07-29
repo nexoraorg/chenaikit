@@ -232,6 +232,108 @@
     "noDataAvailable": "No credit data available",
     "lastUpdated": "Last Updated"
   },
+  "oracleNetwork": {
+    "title": "Oracle Network",
+    "subtitle": "Decentralized model oracle network",
+    "liveFeed": "Live Feed",
+    "nodes": "Nodes",
+    "disputes": "Disputes",
+    "analytics": "Analytics",
+    "networkStats": {
+      "title": "Network Statistics",
+      "totalNodes": "Total Nodes",
+      "activeNodes": "Active Nodes",
+      "totalStake": "Total Stake",
+      "averageReputation": "Average Reputation",
+      "totalSubmissions": "Total Submissions",
+      "disputeRate": "Dispute Rate",
+      "loading": "Loading network statistics...",
+      "error": "Failed to load network statistics"
+    },
+    "liveSubmissionFeed": {
+      "title": "Live Submission Feed",
+      "autoRefresh": "Auto Refresh",
+      "refreshing": "Refreshing...",
+      "lastUpdated": "Last Updated",
+      "noSubmissions": "No submissions available",
+      "requestId": "Request ID",
+      "node": "Node",
+      "phase": "Phase",
+      "status": "Status",
+      "timestamp": "Timestamp",
+      "phases": {
+        "commit": "Commit",
+        "reveal": "Reveal",
+        "aggregation": "Aggregation"
+      },
+      "statuses": {
+        "pending": "Pending",
+        "finalized": "Finalized",
+        "disputed": "Disputed"
+      }
+    },
+    "nodeReputationTable": {
+      "title": "Node Reputation",
+      "address": "Address",
+      "reputation": "Reputation",
+      "stake": "Stake",
+      "status": "Status",
+      "lastSeen": "Last Seen",
+      "active": "Active",
+      "inactive": "Inactive",
+      "noNodes": "No nodes available",
+      "sortBy": "Sort by",
+      "filterBy": "Filter by",
+      "searchPlaceholder": "Search nodes...",
+      "page": "Page {{page}} of {{total}}"
+    },
+    "disputeFiling": {
+      "title": "File Dispute",
+      "requestId": "Request ID",
+      "evidence": "Evidence",
+      "reason": "Reason",
+      "submitDispute": "Submit Dispute",
+      "cancel": "Cancel",
+      "disputeSubmitted": "Dispute submitted successfully",
+      "disputeFailed": "Failed to submit dispute",
+      "reasons": {
+        "highVariance": "High Variance",
+        "incorrectValue": "Incorrect Value",
+        "modelMismatch": "Model Mismatch",
+        "other": "Other"
+      },
+      "instructions": "Provide the request ID and evidence for the dispute. The dispute will be reviewed by other oracle nodes."
+    },
+    "varianceCharts": {
+      "title": "Analytics",
+      "submissionVariance": "Submission Variance by Node",
+      "disputeStatus": "Dispute Status Distribution",
+      "slashReasons": "Slash Event Reasons",
+      "reputationTrend": "Reputation Trend",
+      "loading": "Loading analytics...",
+      "error": "Failed to load analytics",
+      "noData": "No data available",
+      "disputeStatuses": {
+        "pending": "Pending",
+        "resolved": "Resolved",
+        "rejected": "Rejected"
+      },
+      "slashReasonOptions": {
+        "noReveal": "No Reveal",
+        "dishonestSubmission": "Dishonest Submission",
+        "frivolousDispute": "Frivolous Dispute",
+        "collusion": "Collusion",
+        "other": "Other"
+      }
+    },
+    "errors": {
+      "loadFailed": "Failed to load oracle network data",
+      "submitFailed": "Failed to submit",
+      "updateFailed": "Failed to update",
+      "networkError": "Network error occurred",
+      "invalidRequest": "Invalid request"
+    }
+  },
   "errors": {
     "networkError": "Network error occurred",
     "serverError": "Server error occurred",

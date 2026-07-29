@@ -6,10 +6,12 @@ mod access_control;
 mod events;
 mod storage;
 mod upgrade;
+mod oracle_integration;
 
 use crate::storage::{get_score, set_score, has_score};
 use crate::events::emit_score_updated;
 use crate::upgrade::{init_admin, upgrade as perform_upgrade};
+use crate::oracle_integration::{require_oracle_caller, set_oracle_contract as set_oracle_addr, get_oracle_contract, is_oracle_gated_enabled, set_oracle_gated_enabled};
 
 #[contract]
 pub struct CreditScoreContract;
@@ -24,6 +26,29 @@ impl CreditScoreContract {
         let factors_key = symbol_short!("def_fact");
         let default_factors = String::from_str(&env, "base:100,adjustment:0");
         env.storage().instance().set(&factors_key, &default_factors);
+        // Initialize oracle integration (oracle contract set later via admin)
+        set_oracle_gated_enabled(&env, false);
+    }
+
+    /// Set the oracle contract address (admin only)
+    pub fn set_oracle_contract(env: Env, admin: Address, oracle_contract: Address) {
+        admin.require_auth();
+        crate::access_control::require_admin(&env, &admin);
+        set_oracle_addr(&env, &oracle_contract);
+    }
+
+    /// Enable or disable oracle-gated mode (admin only)
+    pub fn set_oracle_gated(env: Env, admin: Address, enabled: bool) {
+        admin.require_auth();
+        crate::access_control::require_admin(&env, &admin);
+        set_oracle_gated_enabled(&env, enabled);
+    }
+
+    /// Update score from oracle (only callable by oracle contract when gated)
+    pub fn update_score_from_oracle(env: Env, caller: Address, account: Address, score: i128, model_hash: BytesN<32>) {
+        caller.require_auth();
+        require_oracle_caller(&env, &caller);
+        oracle_integration::update_score_from_oracle(&env, &account, score, model_hash);
     }
 
     /// Calculate credit score for an account, potentially using cross-contract oracle
@@ -55,9 +80,14 @@ impl CreditScoreContract {
         if score < 0 { 0u32 } else { score.min(i128::from(u32::MAX)) as u32 }
     }
 
-    /// Update credit score factors
+    /// Update credit score factors (deprecated when oracle-gated mode is enabled)
     pub fn update_factors(env: Env, account: Address, factors_str: String) {
         account.require_auth();  // Auth as account owner
+        
+        // Check if oracle-gated mode is enabled
+        if is_oracle_gated_enabled(&env) {
+            panic!("direct score updates are disabled when oracle-gated mode is enabled; use oracle network");
+        }
 
         let mut score = get_score(&env, &account);
         // Simplified: Direct string equality
@@ -118,6 +148,16 @@ impl CreditScoreContract {
     /// Check if account has a score
     pub fn has_score(env: Env, account: Address) -> bool {
         has_score(&env, &account)
+    }
+
+    /// Get oracle contract address
+    pub fn get_oracle_contract(env: Env) -> Option<Address> {
+        get_oracle_contract(&env)
+    }
+
+    /// Check if oracle-gated mode is enabled
+    pub fn is_oracle_gated(env: Env) -> bool {
+        is_oracle_gated_enabled(&env)
     }
 }
 

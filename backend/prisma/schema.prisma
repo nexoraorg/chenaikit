@@ -346,70 +346,104 @@ model AuditLog {
 }
 
 // ---------------------------------------------------------------------------
-// Attestation models (verifiable inference receipts)
+// Oracle Network Models
 // ---------------------------------------------------------------------------
 
-model AttestationSigner {
-  id         String   @id @default(cuid())
-  keyId      String   @unique
-  publicKey  String   // hex-encoded Ed25519 public key
-  validFrom  DateTime
-  validUntil DateTime?
-  revokedAt  DateTime?
-  status     String   @default("active")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+model OracleNode {
+  id            String   @id @default(cuid())
+  address       String   @unique // Stellar address
+  publicKey     String   @unique // Stellar public key
+  stake         BigInt   // Stake amount in stroops
+  reputation    Int      @default(1000) // Starting reputation
+  isActive      Boolean  @default(true)
+  registeredAt  DateTime @default(now())
+  unregisteredAt DateTime?
+  metadata      String   @default("{}") // JSON for additional node info
 
-  @@map("attestation_signers")
-  @@index([keyId])
+  submissions   OracleSubmission[]
+  slashEvents   SlashEvent[]
+  reputationSnapshots ReputationSnapshot[]
+
+  @@map("oracle_nodes")
+  @@index([isActive])
+  @@index([reputation])
+  @@index([registeredAt])
 }
 
-model InferenceReceipt {
-  id                    String   @id @default(cuid())
-  receiptId             String   @unique
-  nonce                 String
-  issuedAt              DateTime
-  expiresAt             DateTime?
-  requestId             String?
-  correlationId         String?
-  subjectCommitment     String
-  modelId               String
-  modelVersionId        String
-  modelSemanticVersion  String?
-  artifactHash          String
-  featureSchemaHash     String
-  featureCommitment     String
-  featureMerkleRoot     String?
-  outputCommitment      String
-  publicResultSummary   String?
-  keyId                 String
-  network               String
-  ledgerMin             Int?
-  ledgerMax             Int?
-  batchId               String?
-  signature             String
-  signatureScheme       String
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+model OracleSubmission {
+  id            String   @id @default(cuid())
+  requestId     String   // Unique request identifier from chain
+  nodeId        String
+  node          OracleNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  modelHash     String   // Hash of the model used
+  commitHash    String   // Hash of (score, salt) for commit phase
+  score         Int?     // Revealed score (null until reveal phase)
+  salt          String?  // Salt for commit-reveal (null until reveal phase)
+  phase         String   @default("commit") // commit, reveal, finalized
+  committedAt   DateTime @default(now())
+  revealedAt    DateTime?
+  finalizedAt   DateTime?
+  status        String   @default("pending") // pending, committed, revealed, finalized, slashed
 
-  @@map("inference_receipts")
-  @@index([modelVersionId])
-  @@index([keyId])
-  @@index([batchId])
+  @@map("oracle_submissions")
+  @@index([requestId])
+  @@index([nodeId])
+  @@index([phase])
+  @@index([status])
+  @@index([committedAt])
+  @@unique([requestId, nodeId])
 }
 
-model ReceiptBatch {
-  id           String   @id @default(cuid())
-  batchId      String   @unique
-  root         String
-  count        Int
-  ledger       Int?
-  timestamp    DateTime?
-  schemaVersion Int
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+model Dispute {
+  id            String   @id @default(cuid())
+  requestId     String   // Request ID being disputed
+  disputerAddress String  // Address of the disputer
+  evidence      String   // JSON string of evidence
+  status        String   @default("pending") // pending, accepted, rejected
+  filedAt       DateTime @default(now())
+  resolvedAt    DateTime?
+  resolvedBy    String?  // Address that resolved the dispute
+  resolutionNotes String?
+  metadata      String   @default("{}") // JSON for additional dispute info
 
-  @@map("receipt_batches")
-  @@index([batchId])
+  @@map("disputes")
+  @@index([requestId])
+  @@index([disputerAddress])
+  @@index([status])
+  @@index([filedAt])
+}
+
+model SlashEvent {
+  id            String   @id @default(cuid())
+  nodeId        String
+  node          OracleNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  requestId     String?  // Associated request ID (if applicable)
+  slashAmount   BigInt   // Amount slashed in stroops
+  reason        String   // Reason for slashing (e.g., "deviation", "no_reveal", "frivolous_dispute")
+  slashedAt     DateTime @default(now())
+  treasuryShare  BigInt   // Portion sent to treasury
+  disputerShare String?  // Address of disputer (if applicable)
+  disputerReward BigInt? // Portion sent to disputer
+
+  @@map("slash_events")
+  @@index([nodeId])
+  @@index([requestId])
+  @@index([slashedAt])
+  @@index([reason])
+}
+
+model ReputationSnapshot {
+  id            String   @id @default(cuid())
+  nodeId        String
+  node          OracleNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  reputation    Int
+  delta         Int      // Change from previous snapshot
+  reason        String?  // Reason for reputation change
+  snapshotAt    DateTime @default(now())
+
+  @@map("reputation_snapshots")
+  @@index([nodeId])
+  @@index([snapshotAt])
+  @@unique([nodeId, snapshotAt])
 }
 

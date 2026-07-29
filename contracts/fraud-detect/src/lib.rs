@@ -6,6 +6,7 @@ mod patterns;
 mod risk_scorer;
 mod storage;
 mod upgrade;
+mod oracle_integration;
 
 use crate::events::{
     create_fraud_alert, emit_anomaly_detected, emit_blacklist_updated, emit_config_updated,
@@ -19,6 +20,7 @@ use crate::storage::{
     get_transaction_history, is_blacklisted, is_whitelisted, remove_from_blacklist,
     remove_from_whitelist, set_config, store_transaction, FraudConfig, TransactionRecord,
 };
+use crate::oracle_integration::{require_oracle_caller, set_oracle_contract as set_oracle_addr, get_oracle_contract, is_oracle_gated_enabled, set_oracle_gated_enabled};
 
 #[contract]
 pub struct FraudDetectContract;
@@ -46,6 +48,9 @@ impl FraudDetectContract {
         // Initialize upgrade system
         upgrade::init_upgrade_system(&env);
 
+        // Initialize oracle integration (oracle contract set later via admin)
+        set_oracle_gated_enabled(&env, false);
+
         let default_config = FraudConfig::default();
         set_config(&env, &default_config);
 
@@ -60,6 +65,32 @@ impl FraudDetectContract {
         );
     }
 
+    /// Set the oracle contract address (admin only)
+    pub fn set_oracle_contract(env: Env, admin: Address, oracle_contract: Address) {
+        Self::require_admin(&env, &admin);
+        set_oracle_addr(&env, &oracle_contract);
+    }
+
+    /// Enable or disable oracle-gated mode (admin only)
+    pub fn set_oracle_gated(env: Env, admin: Address, enabled: bool) {
+        Self::require_admin(&env, &admin);
+        set_oracle_gated_enabled(&env, enabled);
+    }
+
+    /// Update fraud detection result from oracle (only callable by oracle contract when gated)
+    pub fn update_fraud_result_from_oracle(
+        env: Env, 
+        caller: Address, 
+        account: Address, 
+        risk_score: u32, 
+        model_hash: BytesN<32>,
+        is_fraudulent: bool
+    ) {
+        caller.require_auth();
+        require_oracle_caller(&env, &caller);
+        oracle_integration::update_fraud_result_from_oracle(&env, &account, risk_score, model_hash, is_fraudulent);
+    }
+
     pub fn analyze_transaction(
         env: Env,
         user: Address,
@@ -69,6 +100,11 @@ impl FraudDetectContract {
         transaction_type: String,
     ) -> u32 {
         user.require_auth();
+        
+        // Check if oracle-gated mode is enabled
+        if is_oracle_gated_enabled(&env) {
+            panic!("direct fraud analysis is disabled when oracle-gated mode is enabled; use oracle network");
+        }
 
         if is_blacklisted(&env, &user) {
             return 100;
@@ -361,6 +397,22 @@ impl FraudDetectContract {
 
     pub fn get_upgrade_history(env: Env) -> Vec<upgrade::UpgradeRecord> {
         upgrade::get_upgrade_history(&env)
+    }
+
+    /// Get oracle contract address
+    pub fn get_oracle_contract(env: Env) -> Option<Address> {
+        get_oracle_contract(&env)
+    }
+
+    /// Check if oracle-gated mode is enabled
+    pub fn is_oracle_gated(env: Env) -> bool {
+        is_oracle_gated_enabled(&env)
+    }
+
+    /// Get fraud result from oracle
+    pub fn get_fraud_result(env: Env, account: Address) -> Option<(u32, bool, BytesN<32>)> {
+        let result_key = soroban_sdk::Symbol::short("fraud_res");
+        env.storage().persistent().get(&(result_key, account))
     }
 
     fn require_admin(env: &Env, admin: &Address) {

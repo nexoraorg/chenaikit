@@ -11,6 +11,7 @@ const TOPIC_WHITELIST_UPDATE: Symbol = symbol_short!("wht_upd");
 const TOPIC_CONFIG_UPDATE: Symbol = symbol_short!("cfg_upd");
 const TOPIC_ANOMALY_DETECTED: Symbol = symbol_short!("anomaly");
 const TOPIC_TRANSACTION_ANALYZED: Symbol = symbol_short!("tx_anlz");
+const TOPIC_FRAUD_RESULT_UPDATED: Symbol = symbol_short!("fraud_res");
 
 #[derive(Clone)]
 pub struct FraudAlertData {
@@ -335,5 +336,18 @@ pub fn log_analysis_metrics(
             risk_calculations,
             storage_operations,
         ),
+    );
+}
+
+pub fn emit_fraud_result_updated(
+    env: &Env,
+    account: &Address,
+    risk_score: u32,
+    model_hash: &soroban_sdk::BytesN<32>,
+    is_fraudulent: bool,
+) {
+    env.events().publish(
+        (TOPIC_FRAUD_RESULT_UPDATED,),
+        (account.clone(), risk_score, model_hash, is_fraudulent),
     );
 }
