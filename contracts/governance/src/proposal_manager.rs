@@ -42,6 +42,8 @@ impl ProposalManager {
     /// @param values: Amounts to send with each call (usually 0)
     /// @param calldatas: Calldata for each target
     /// @param description: Human-readable description
+    /// @param proposal_type: Type of proposal (Standard, ApproveModelVersion, etc.)
+    /// @param model_data: Optional model version data for model-related proposals
     /// @return proposal_id: Unique ID for the created proposal
     pub fn propose(
         env: Env,
@@ -50,17 +52,21 @@ impl ProposalManager {
         values: Vec<u128>,
         calldatas: Vec<Bytes>,
         description: String,
+        proposal_type: crate::types::ProposalType,
+        model_data: Option<crate::types::ModelVersionProposal>,
     ) -> u64 {
         proposer.require_auth();
 
-        // Validate arrays have same length
-        if targets.len() != values.len() || targets.len() != calldatas.len() {
-            panic_with_error!(&env, GovernanceError::ArrayLengthMismatch);
-        }
+        // Validate arrays have same length (for standard proposals)
+        if proposal_type == crate::types::ProposalType::Standard {
+            if targets.len() != values.len() || targets.len() != calldatas.len() {
+                panic_with_error!(&env, GovernanceError::ArrayLengthMismatch);
+            }
 
-        // Validate not empty
-        if targets.len() == 0 {
-            panic_with_error!(&env, GovernanceError::InvalidProposal);
+            // Validate not empty for standard proposals
+            if targets.len() == 0 {
+                panic_with_error!(&env, GovernanceError::InvalidProposal);
+            }
         }
 
         let config = Self::_config(&env);
@@ -95,6 +101,8 @@ impl ProposalManager {
             canceled: false,
             executed: false,
             eta: 0,
+            proposal_type,
+            model_data,
         };
 
         env.storage().persistent().set(&(symbol_short!("PROP"), proposal_id), &proposal);
@@ -106,6 +114,41 @@ impl ProposalManager {
         );
 
         proposal_id
+    }
+
+    /// Create a model version approval proposal (convenience function)
+    /// @notice Simplified interface for model version proposals
+    pub fn propose_model_version(
+        env: Env,
+        proposer: Address,
+        oracle_contract: Address,
+        model_hash: soroban_sdk::BytesN<32>,
+        metadata: String,
+        description: String,
+    ) -> u64 {
+        proposer.require_auth();
+
+        let model_data = crate::types::ModelVersionProposal {
+            model_hash,
+            metadata: metadata.clone(),
+            proposal_type: crate::types::ProposalType::ApproveModelVersion,
+        };
+
+        // For model proposals, targets contains the oracle contract to call
+        let targets = Vec::from_array(&env, [oracle_contract]);
+        let values = Vec::from_array(&env, [0u128]);
+        let calldatas = Vec::from_array(&env, [Bytes::new(&env)]); // Will be filled during execution
+
+        Self::propose(
+            env,
+            proposer,
+            targets,
+            values,
+            calldatas,
+            description,
+            crate::types::ProposalType::ApproveModelVersion,
+            Some(model_data),
+        )
     }
 
     /// Get proposal state
@@ -211,17 +254,35 @@ impl ProposalManager {
             panic_with_error!(&env, GovernanceError::TimelockNotExpired);
         }
 
-        let timelock = Self::_timelock(&env);
-        let timelock_client = TimelockClient::new(&env, &timelock);
+        // Handle different proposal types
+        match proposal.proposal_type {
+            crate::types::ProposalType::ApproveModelVersion => {
+                // Execute model version approval directly
+                if let Some(model_data) = proposal.model_data {
+                    let oracle_contract = proposal.targets.get(0).unwrap();
+                    Self::_execute_model_approval(&env, &oracle_contract, &model_data);
+                }
+            }
+            crate::types::ProposalType::RevokeModelVersion => {
+                // Execute model version revocation directly
+                if let Some(model_data) = proposal.model_data {
+                    let oracle_contract = proposal.targets.get(0).unwrap();
+                    Self::_execute_model_revocation(&env, &oracle_contract, &model_data);
+                }
+            }
+            _ => {
+                // Standard proposals go through timelock
+                let timelock = Self::_timelock(&env);
+                let timelock_client = TimelockClient::new(&env, &timelock);
 
-        // Execute all transactions
-        for i in 0..proposal.targets.len() {
-            let target = proposal.targets.get(i).unwrap();
-            let value = proposal.values.get(i).unwrap();
-            let data = proposal.calldatas.get(i).unwrap();
-            
-            // Execute through timelock
-            timelock_client.execute_transaction(&target, &value, &data, &proposal.eta);
+                for i in 0..proposal.targets.len() {
+                    let target = proposal.targets.get(i).unwrap();
+                    let value = proposal.values.get(i).unwrap();
+                    let data = proposal.calldatas.get(i).unwrap();
+                    
+                    timelock_client.execute_transaction(&target, &value, &data, &proposal.eta);
+                }
+            }
         }
 
         proposal.executed = true;
@@ -229,6 +290,25 @@ impl ProposalManager {
 
         // Emit ProposalExecuted event
         env.events().publish((symbol_short!("PropExec"), proposal_id), env.ledger().timestamp());
+    }
+
+    /// Execute model version approval on oracle contract
+    fn _execute_model_approval(env: &Env, oracle_contract: &Address, model_data: &crate::types::ModelVersionProposal) {
+        // Import oracle contract interface
+        // Note: In production, this would use proper contractimport
+        // For now, we'll emit an event that the oracle contract can subscribe to
+        env.events().publish(
+            (symbol_short!("ModelApp"),),
+            (oracle_contract, model_data.model_hash, model_data.metadata.clone())
+        );
+    }
+
+    /// Execute model version revocation on oracle contract
+    fn _execute_model_revocation(env: &Env, oracle_contract: &Address, model_data: &crate::types::ModelVersionProposal) {
+        env.events().publish(
+            (symbol_short!("ModelRev"),),
+            (oracle_contract, model_data.model_hash)
+        );
     }
 
     /// Cancel a proposal
@@ -457,7 +537,15 @@ mod tests {
         let calldatas = Vec::from_array(&env, [Bytes::new(&env)]);
         let description = String::from_str(&env, "Test Proposal");
 
-        let prop_id = proposal_client.propose(&proposer, &targets, &values, &calldatas, &description);
+        let prop_id = proposal_client.propose(
+            &proposer,
+            &targets,
+            &values,
+            &calldatas,
+            &description,
+            crate::types::ProposalType::Standard,
+            None,
+        );
         assert_eq!(prop_id, 1);
 
         // Check state is Pending
@@ -538,7 +626,15 @@ mod tests {
         let calldatas = Vec::from_array(&env, [Bytes::new(&env)]);
 
         // This should panic
-        proposal_client.propose(&poor_proposer, &targets, &values, &calldatas, &String::from_str(&env, "Test"));
+        proposal_client.propose(
+            &poor_proposer,
+            &targets,
+            &values,
+            &calldatas,
+            &String::from_str(&env, "Test"),
+            crate::types::ProposalType::Standard,
+            None,
+        );
     }
 }
 

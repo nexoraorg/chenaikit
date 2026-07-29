@@ -225,3 +225,136 @@ pub fn compound_interest(
 
     Ok(amount)
 }
+
+/// Calculate median of N values using fixed-point arithmetic
+///
+/// # Arguments
+/// * `values` - Slice of fixed-point values
+///
+/// # Returns
+/// The median value as a fixed-point number
+///
+/// # Example
+/// ```rust
+/// let values = vec![100_00000, 200_00000, 300_00000]; // 1.0, 2.0, 3.0 in fixed-point
+/// let median = median_of_n(&values)?; // Returns 200_00000 (2.0)
+/// ```
+pub fn median_of_n(values: &[i128]) -> core::result::Result<i128, CommonError> {
+    if values.is_empty() {
+        return Err(CommonError::InvalidInput);
+    }
+
+    let mut sorted = values.to_vec();
+    sorted.sort();
+
+    let len = sorted.len();
+    let mid = len / 2;
+
+    if len % 2 == 0 {
+        // Even number of values: average the two middle values
+        let a = sorted[mid - 1];
+        let b = sorted[mid];
+        let sum = SafeMath::add(a, b)?;
+        FixedPoint::div(sum, 2)
+    } else {
+        // Odd number of values: return the middle value
+        Ok(sorted[mid])
+    }
+}
+
+/// Calculate trimmed mean of N values using fixed-point arithmetic
+///
+/// # Arguments
+/// * `values` - Slice of fixed-point values
+/// * `trim_percent` - Percentage to trim from each end (in basis points, 100 = 1%)
+///
+/// # Returns
+/// The trimmed mean value as a fixed-point number
+///
+/// # Example
+/// ```rust
+/// let values = vec![100_00000, 200_00000, 300_00000, 400_00000, 500_00000];
+/// let trimmed = trimmed_mean(&values, 200)?; // Trim 2% from each end
+/// ```
+pub fn trimmed_mean(values: &[i128], trim_percent: i128) -> core::result::Result<i128, CommonError> {
+    if values.is_empty() {
+        return Err(CommonError::InvalidInput);
+    }
+
+    let mut sorted = values.to_vec();
+    sorted.sort();
+
+    let len = sorted.len();
+    let trim_count = Percentage::of(len as i128, trim_percent)? as usize;
+    let trim_count = SafeMath::min(trim_count as i128, (len / 2) as i128) as usize;
+
+    if trim_count * 2 >= len {
+        return Err(CommonError::InvalidInput);
+    }
+
+    let start = trim_count;
+    let end = len - trim_count;
+    let trimmed = &sorted[start..end];
+
+    let mut sum = 0i128;
+    for &value in trimmed {
+        sum = SafeMath::add(sum, value)?;
+    }
+
+    let count = trimmed.len() as i128;
+    FixedPoint::div(sum, count)
+}
+
+/// Calculate variance of values using fixed-point arithmetic
+///
+/// # Arguments
+/// * `values` - Slice of fixed-point values
+/// * `mean` - The mean of the values as a fixed-point number
+///
+/// # Returns
+/// The variance as a fixed-point number
+pub fn variance(values: &[i128], mean: i128) -> core::result::Result<i128, CommonError> {
+    if values.is_empty() {
+        return Err(CommonError::InvalidInput);
+    }
+
+    let mut sum_squared_diff = 0i128;
+    for &value in values {
+        let diff = SafeMath::sub(value, mean)?;
+        let squared = FixedPoint::mul(diff, diff)?;
+        sum_squared_diff = SafeMath::add(sum_squared_diff, squared)?;
+    }
+
+    let count = values.len() as i128;
+    FixedPoint::div(sum_squared_diff, count)
+}
+
+/// Calculate standard deviation of values using fixed-point arithmetic
+///
+/// # Arguments
+/// * `values` - Slice of fixed-point values
+/// * `mean` - The mean of the values as a fixed-point number
+///
+/// # Returns
+/// The standard deviation as a fixed-point number
+pub fn standard_deviation(values: &[i128], mean: i128) -> core::result::Result<i128, CommonError> {
+    let var = variance(values, mean)?;
+    
+    // Square root approximation using Newton's method
+    let mut x = var;
+    let mut prev = 0i128;
+    const ITERATIONS: u32 = 10;
+    
+    for _ in 0..ITERATIONS {
+        prev = x;
+        let div = FixedPoint::div(var, x)?;
+        let sum = SafeMath::add(x, div)?;
+        x = FixedPoint::div(sum, 2)?;
+        
+        if SafeMath::abs(SafeMath::sub(x, prev)?)? < 100 {
+            break;
+        }
+    }
+    
+    Ok(x)
+}

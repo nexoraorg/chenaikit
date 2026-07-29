@@ -1,5 +1,5 @@
 #![allow(unused)]
-use soroban_sdk::{contracttype, Address, Bytes, Env, String, Vec};
+use soroban_sdk::{contracttype, Address, Bytes, BytesN, Env, String, Vec};
 
 /// Proposal states
 #[contracttype]
@@ -34,6 +34,26 @@ pub struct Checkpoint {
     pub votes: u128,
 }
 
+/// Proposal types
+#[contracttype]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum ProposalType {
+    Standard = 0,
+    ApproveModelVersion = 1,
+    RevokeModelVersion = 2,
+    UpdateOracleConfig = 3,
+}
+
+/// Model version proposal data
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct ModelVersionProposal {
+    pub model_hash: BytesN<32>,
+    pub metadata: String,
+    pub proposal_type: ProposalType,
+}
+
 /// Proposal structure
 #[contracttype]
 #[derive(Clone, Debug)]
@@ -52,6 +72,8 @@ pub struct Proposal {
     pub canceled: bool,
     pub executed: bool,
     pub eta: u64, // execution time after timelock
+    pub proposal_type: ProposalType,
+    pub model_data: Option<ModelVersionProposal>,
 }
 
 /// Vote record for a proposal

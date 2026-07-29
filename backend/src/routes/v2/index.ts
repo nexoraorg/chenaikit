@@ -14,6 +14,7 @@ import apiKeyRoutes from '../apiKeys';
 import { createFeatureFlagRouter } from '../featureFlags';
 import { createMLModelRouter } from '../mlModels';
 import { createAttestationRouter } from './attestations';
+import oracleRoutes from './oracle';
 import { generateCreditScore, generateFraudResult, toCreditScoreV2, toFraudResultV2 } from '../shared/scoring';
 import { validate } from '../../middleware/validation';
 import { creditScoreQuerySchema, fraudDetectionQuerySchema } from '../../schemas';
@@ -27,6 +28,7 @@ router.use('/api-keys', apiKeyRoutes);
 router.use('/feature-flags', createFeatureFlagRouter());
 router.use('/ml-models', createMLModelRouter(prisma));
 router.use('/attestations', createAttestationRouter(prisma));
+router.use('/oracle', oracleRoutes);
 
 // GET /credit-score - nested v2 contract
 router.get(
