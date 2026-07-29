@@ -27,6 +27,10 @@ import { createTieredRateLimiter } from './middleware/advancedRateLimiter';
 import Redis from 'ioredis';
 import { applySecurityMiddleware } from './middleware/security';
 import { loadVaultSecrets } from './config/secrets';
+import { FraudDetector } from '@chenaikit/core';
+import { CircuitBreakerService } from './services/circuitBreakerService';
+import { createCircuitBreakerRouter } from './routes/circuitBreaker';
+import { createCircuitBreakerMiddleware } from './middleware/circuitBreaker';
 
 const app: express.Application = express();
 
@@ -34,9 +38,24 @@ applySecurityMiddleware(app);
 app.use(express.json({ limit: '10mb' }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
+
+// Initialize FraudDetector and CircuitBreaker
+const fraudDetector = new FraudDetector();
+const circuitBreaker = new CircuitBreakerService(fraudDetector, {
+  failureThreshold: 5,
+  successThreshold: 3,
+  timeoutMs: 60000,
+  monitoringWindowMs: 300000,
+  riskScoreThreshold: 70,
+});
+
+// Apply circuit breaker middleware
+app.use(createCircuitBreakerMiddleware(circuitBreaker));
+
 app.use('/api', healthRouter);
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', accountRoutes);
+app.use('/api/circuit-breaker', createCircuitBreakerRouter(circuitBreaker));
 // app.use('/api/v1/analytics', createAnalyticsRouter(prisma, typeorm));
 
 // Gateway-protected endpoints
