@@ -37,50 +37,7 @@ if (process.env.SENTRY_DSN) {
   initSentry(process.env.SENTRY_DSN, process.env.NODE_ENV || "development");
 }
 
-import express, { Request, Response } from "express";
-import { log } from "./utils/logger";
-import { requestLoggingMiddleware } from "./middleware/logging";
-import healthRouter from "./routes/health";
-import { metricsService, metricsMiddleware } from "./services/metricsService";
-import {
-  validateEnvironment,
-  initializeMonitoring,
-  shutdownMonitoring,
-} from "./config/monitoring";
-import { UserPayload } from "./types/auth";
-import { ensureRedisConnection } from "./config/redis";
-import {
-  detectVersion,
-  versionHeaders,
-  createVersionRouter,
-} from "./middleware/versioning";
-import { auditLoggingMiddleware } from "./middleware/auditLogging";
-import v1Router from "./routes/v1";
-import v2Router from "./routes/v2";
-import {
-  API_VERSIONS,
-  LATEST_VERSION,
-  DEFAULT_VERSION,
-} from "./utils/versionUtils";
-import { PrismaClient } from "@prisma/client";
-import { ApiKeyService } from "./services/apiKeyService";
-import { UsageTrackingService } from "./services/usageTrackingService";
-import { ApiGateway } from "./middleware/apiGateway";
-import { createTieredRateLimiter } from "./middleware/advancedRateLimiter";
-import Redis from "ioredis";
-import { applySecurityMiddleware } from "./middleware/security";
-import { loadVaultSecrets } from "./config/secrets";
-import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
-import { getDistributedRateLimiter } from "./middleware/distributedRateLimiter";
-import { getHealthService } from "./services/healthService";
-import {
-  applyCompressionMiddleware,
-  compressionRequestErrorHandler,
-} from "./middleware/compression";
 
-// Tracing middleware
-import { baggagePropagationMiddleware } from "./tracing/baggage";
-import { tracingCorrelationMiddleware } from "./tracing/correlation";
 
 const app: express.Application = express();
 
@@ -89,7 +46,7 @@ applyCompressionMiddleware(app);
 app.use(express.json({ limit: "10mb" }));
 app.use(metricsMiddleware);
 app.use(requestLoggingMiddleware);
-app.use(auditLoggingMiddleware);
+
 
 // Tracing middleware - add baggage propagation and trace correlation
 if (tracingEnabled) {
