@@ -648,6 +648,9 @@ importers:
       node-cache:
         specifier: ^5.1.2
         version: 5.1.2
+      tweetnacl:
+        specifier: ^1.0.0
+        version: 1.0.3
       ws:
         specifier: ^8.14.2
         version: 8.21.1
