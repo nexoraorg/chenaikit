@@ -1,0 +1,78 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/frontend/**"
+      - ".github/workflows/frontend.yml"
+  pull_request:
+    paths:
+      - "apps/frontend/**"
+      - ".github/workflows/frontend.yml"
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref so PR pushes don't queue up.
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: apps/frontend
+
+jobs:
+  frontend:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # npm (not pnpm) so CI matches how Vercel installs this app.
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+
+      # Each step below is skipped (not failed) when the script isn't defined
+      # yet, so this workflow is functional now and grows with the app.
+      - name: Lint
+        run: |
+          if npm run | grep -qE '^  lint$'; then
+            npm run lint
+          else
+            echo "::notice::No \"lint\" script in apps/frontend — skipping."
+          fi
+
+      - name: Typecheck
+        run: |
+          if [ -f tsconfig.json ]; then
+            npx --no-install tsc --noEmit
+          else
+            echo "::notice::No tsconfig.json in apps/frontend — skipping typecheck."
+          fi
+
+      - name: Test
+        run: |
+          if npm run | grep -qE '^  test$'; then
+            npm run test -- --passWithNoTests 2>/dev/null \
+              || npm run test
+          else
+            echo "::notice::No \"test\" script in apps/frontend — skipping."
+          fi
+
+      - name: Build
+        run: npx --no-install vite build
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: apps/frontend/dist
+          if-no-files-found: error
+          retention-days: 7

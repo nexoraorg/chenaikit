@@ -3,5 +3,11 @@
   "framework": "vite",
   "installCommand": "npm install --prefix apps/frontend --no-audit --no-fund --legacy-peer-deps",
   "buildCommand": "cd apps/frontend && npx --no-install vite build",
-  "outputDirectory": "apps/frontend/dist"
+  "outputDirectory": "apps/frontend/dist",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "ignoreCommand": "bash scripts/vercel-should-deploy.sh"
 }

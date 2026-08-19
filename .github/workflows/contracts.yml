@@ -1,0 +1,92 @@
+name: Contracts CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contracts.yml"
+  pull_request:
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contracts.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: contracts-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+defaults:
+  run:
+    working-directory: contracts
+
+jobs:
+  contracts:
+    name: Format, clippy, test, wasm build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Soroban contracts compile to wasm32-unknown-unknown.
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo registry and target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            contracts/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('contracts/**/Cargo.toml') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
+
+      # Guard: the workspace lists members that may not have sources yet.
+      # If no crate has a src/lib.rs, report and exit successfully so this
+      # pipeline is green now and becomes meaningful as contracts land.
+      - name: Detect buildable crates
+        id: detect
+        run: |
+          if ls */src/lib.rs >/dev/null 2>&1; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Found crates:"
+            ls -d */src/lib.rs | cut -d/ -f1
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No contract crates with src/lib.rs yet — skipping Rust checks."
+          fi
+
+      - name: Check formatting
+        if: steps.detect.outputs.ready == 'true'
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        if: steps.detect.outputs.ready == 'true'
+        run: cargo clippy --workspace --all-targets
+
+      - name: Test
+        if: steps.detect.outputs.ready == 'true'
+        run: cargo test --workspace
+
+      - name: Build wasm release
+        if: steps.detect.outputs.ready == 'true'
+        run: cargo build --workspace --release --target wasm32-unknown-unknown
+
+      - name: Upload wasm artifacts
+        if: steps.detect.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-wasm
+          path: contracts/target/wasm32-unknown-unknown/release/*.wasm
+          if-no-files-found: warn
+          retention-days: 7
