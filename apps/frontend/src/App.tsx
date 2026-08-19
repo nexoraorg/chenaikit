@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { TopNav, View } from "./components/TopNav";
 import { Landing } from "./pages/Landing";
 import { Dashboard } from "./pages/Dashboard";
