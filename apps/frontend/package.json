@@ -9,7 +9,6 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@chenaikit/core": "workspace:*",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "d3": "^7.9.0",

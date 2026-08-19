@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd apps/frontend && pnpm build",
-  "outputDirectory": "apps/frontend/dist",
-  "installCommand": "pnpm install",
-  "framework": "vite"
+  "framework": "vite",
+  "installCommand": "npm install --prefix apps/frontend --no-audit --no-fund --legacy-peer-deps",
+  "buildCommand": "cd apps/frontend && npx --no-install vite build",
+  "outputDirectory": "apps/frontend/dist"
 }
