@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "chenaikit monorepo — contracts / backend / frontend / shared packages",
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
     "build": "pnpm -r --filter=./apps/* --filter=./packages/* run build",
     "backend:build": "pnpm --filter ./apps/backend run build",
