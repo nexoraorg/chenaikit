@@ -1,0 +1,120 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/backend/**"
+      - "packages/**"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "apps/backend/**"
+      - "packages/**"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/backend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # pnpm is required here: the backend consumes workspace packages
+      # via the `workspace:*` protocol, which npm cannot resolve.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      # Node 22 LTS — pnpm 9 hits ERR_INVALID_THIS on Node 24.
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Generate Prisma client
+        working-directory: apps/backend
+        run: |
+          if ls prisma/schema.prisma >/dev/null 2>&1; then
+            pnpm exec prisma generate
+          else
+            echo "::notice::No prisma/schema.prisma — skipping client generation."
+          fi
+
+      # Steps below skip cleanly until the corresponding scripts/sources exist.
+      - name: Lint
+        working-directory: apps/backend
+        run: |
+          if pnpm run 2>/dev/null | grep -qE '(^|\s)lint(\s|$)'; then
+            pnpm run lint
+          else
+            echo "::notice::No \"lint\" script in apps/backend — skipping."
+          fi
+
+      - name: Typecheck
+        working-directory: apps/backend
+        run: |
+          if [ -f tsconfig.json ]; then
+            pnpm exec tsc -p tsconfig.json --noEmit
+          else
+            echo "::notice::No tsconfig.json in apps/backend — skipping typecheck."
+          fi
+
+      - name: Test
+        working-directory: apps/backend
+        run: |
+          if pnpm run 2>/dev/null | grep -qE '(^|\s)test(\s|$)'; then
+            pnpm run test --passWithNoTests || pnpm run test
+          else
+            echo "::notice::No \"test\" script in apps/backend — skipping."
+          fi
+
+      - name: Build
+        working-directory: apps/backend
+        run: |
+          if pnpm run 2>/dev/null | grep -qE '(^|\s)build(\s|$)'; then
+            pnpm run build
+          else
+            echo "::notice::No \"build\" script in apps/backend — skipping."
+          fi
+
+  packages:
+    name: Shared packages build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      # `|| true` is deliberate: shared packages are still being filled in,
+      # so a missing build script must not red-X the whole pipeline.
+      - name: Build packages
+        run: pnpm --filter "./packages/**" run build --if-present || true

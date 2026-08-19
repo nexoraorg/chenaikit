@@ -1,4 +1,3 @@
-import React from "react";
 import { Stamp } from "../components/Stamp";
 import { LedgerRow } from "../components/LedgerRow";
 
