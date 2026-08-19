@@ -1,7 +1,0 @@
-packages:
-  - 'packages/*'
-  - 'examples/*'
-  - 'tests/*'
-  - 'tests/integration'
-  - 'backend'
-  - 'frontend'
