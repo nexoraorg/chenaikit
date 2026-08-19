@@ -1,0 +1,16 @@
+{
+  "name": "@chenaikit/core",
+  "version": "0.1.0",
+  "description": "Shared types + client used by apps and examples",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

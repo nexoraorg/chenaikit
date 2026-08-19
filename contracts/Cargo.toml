@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = [
+  "credit-score",
+  "fraud-detect",
+  "governance",
+  "oracle-network",
+  "model-attestation",
+  "common-utils",
+]
+
+[workspace.dependencies]
+soroban-sdk = "21.0.0"
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+lto = true
+codegen-units = 1
+panic = "abort"
