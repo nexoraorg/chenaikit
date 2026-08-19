@@ -1,32 +1,29 @@
 #![no_std]
+//! common-utils — placeholder Soroban contract.
+//! Scaffolded fresh per issue #286; port real logic in from the old contracts/ tree.
 
-//! Common Utilities Library for Soroban Smart Contracts
-//!
-//! This library provides reusable utilities for building robust Soroban contracts:
-//! - Math: Safe arithmetic operations and financial calculations
-//! - Time: Date/time helper functions
-//! - Access: Access control patterns (Ownable, Pausable)
-//! - Storage: Storage key management helpers
-//! - Events: Event emission utilities
-//! - Errors: Common error types and handling
+use soroban_sdk::{contract, contractimpl, Env};
 
-pub mod access;
-pub mod errors;
-pub mod events;
-pub mod math;
-pub mod storage;
-pub mod time;
+#[contract]
+pub struct Contract;
 
-// Re-export commonly used items
-pub use access::{AccessControl, Ownable, Pausable};
-pub use errors::CommonError;
-pub use events::EventHelpers;
-pub use math::{FixedPoint, Percentage, SafeMath};
-pub use storage::{StorageHelpers, StorageType};
-pub use time::{TimeHelpers, SECONDS_PER_DAY, SECONDS_PER_HOUR};
+#[contractimpl]
+impl Contract {
+    pub fn ping(_env: Env) -> bool {
+        true
+    }
+}
 
 #[cfg(test)]
-mod test;
+mod test {
+    use super::*;
+    use soroban_sdk::Env;
 
-#[cfg(test)]
-mod lib_contract;
+    #[test]
+    fn test_ping() {
+        let env = Env::default();
+        let contract_id = env.register(Contract, ());
+        let client = ContractClient::new(&env, &contract_id);
+        assert!(client.ping());
+    }
+}

@@ -1,25 +1,14 @@
 [package]
 name = "credit-score"
 version = "0.1.0"
-description = "Credit scoring smart contract for ChenAIKit"
-authors = ["ChenAIKit Team"]
 edition = "2021"
+publish = false
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-soroban-sdk = "21.0.0"
+soroban-sdk = { workspace = true }
 
 [dev-dependencies]
-soroban-sdk = { version = "21.0.0", features = ["testutils"] }
-
-[profile.release]
-opt-level = "z"
-overflow-checks = true
-debug = 0
-strip = "symbols"
-debug-assertions = false
-panic = "abort"
-codegen-units = 1
-lto = true
+soroban-sdk = { workspace = true, features = ["testutils"] }

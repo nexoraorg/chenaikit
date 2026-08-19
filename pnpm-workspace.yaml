@@ -1,7 +1,5 @@
 packages:
-  - 'packages/*'
-  - 'examples/*'
-  - 'tests/*'
-  - 'tests/integration'
-  - 'backend'
-  - 'frontend'
+  - "apps/*"
+  - "packages/*"
+  - "examples/*"
+  - "tests/*"

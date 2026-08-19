@@ -1,33 +1,29 @@
 #![no_std]
+//! governance — placeholder Soroban contract.
+//! Scaffolded fresh per issue #286; port real logic in from the old contracts/ tree.
 
-pub mod types;
+use soroban_sdk::{contract, contractimpl, Env};
 
-// Build one contract at a time using features
-#[cfg(any(test, feature = "token"))]
-pub mod governance_token;
-#[cfg(any(test, feature = "token"))]
-pub use governance_token::GovernanceToken;
+#[contract]
+pub struct Contract;
 
-#[cfg(any(test, feature = "voting"))]
-pub mod voting_system;
-#[cfg(any(test, feature = "voting"))]
-pub use voting_system::VotingSystem;
-
-#[cfg(any(test, feature = "proposals"))]
-pub mod proposal_manager;
-#[cfg(any(test, feature = "proposals"))]
-pub use proposal_manager::ProposalManager;
-
-#[cfg(any(test, feature = "timelock"))]
-pub mod timelock;
-#[cfg(any(test, feature = "timelock"))]
-pub use timelock::Timelock;
-
-#[cfg(any(test, feature = "upgrades"))]
-pub mod upgrade_proposal;
-#[cfg(any(test, feature = "upgrades"))]
-pub use upgrade_proposal::UpgradeManager;
+#[contractimpl]
+impl Contract {
+    pub fn ping(_env: Env) -> bool {
+        true
+    }
+}
 
 #[cfg(test)]
-mod integration_tests;
+mod test {
+    use super::*;
+    use soroban_sdk::Env;
 
+    #[test]
+    fn test_ping() {
+        let env = Env::default();
+        let contract_id = env.register(Contract, ());
+        let client = ContractClient::new(&env, &contract_id);
+        assert!(client.ping());
+    }
+}
