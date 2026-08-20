@@ -13,8 +13,10 @@ export function LedgerRow({
 }) {
   return (
     <div className="ledger-row">
-      <div className="glyph">{glyph}</div>
-      <div>
+      <div className="glyph" aria-hidden="true">
+        {glyph}
+      </div>
+      <div className="ledger-row-body">
         <p className="feat-name">{name}</p>
         <p className="feat-desc">{description}</p>
       </div>
