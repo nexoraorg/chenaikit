@@ -263,3 +263,53 @@
   .pill.pending{color:var(--ink-faint);}
 
   .panel-title{font-family:var(--mono-display); font-weight:700; font-size:15px; margin:0 0 14px;}
+
+  /* ============ DASHBOARD STATES (loading / error / empty) ============ */
+  .skeleton-line{
+    height:14px; border-radius:2px;
+    background:linear-gradient(90deg, var(--rule) 25%, var(--paper-deep) 50%, var(--rule) 75%);
+    background-size:200% 100%;
+    animation:sk-shimmer 1.4s ease-in-out infinite;
+    margin:8px 0;
+  }
+  .skeleton-line.thick{height:24px;}
+  .skeleton-line.w-16{width:64px;}
+  .skeleton-line.w-20{width:80px;}
+  .skeleton-line.w-24{width:96px;}
+  .skeleton-line.w-32{width:128px;}
+  .skeleton-line.w-40{width:160px;}
+  .skeleton-line.w-56{width:224px;}
+
+  @keyframes sk-shimmer{
+    0%{background-position:200% 0;}
+    100%{background-position:-200% 0;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .skeleton-line{animation:none;}
+  }
+
+  table.ledger-table .skeleton-line{margin:6px 0;}
+
+  .dashboard-state{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+    min-height:340px;
+    background:var(--card);
+    border:1px dashed var(--rule-strong);
+    border-radius:3px;
+    padding:48px 24px;
+  }
+  .dashboard-state .state-icon{
+    font-size:38px; line-height:1; margin-bottom:14px;
+  }
+  .dashboard-state .state-title{
+    font-family:var(--mono-display); font-weight:700; font-size:18px; margin:0 0 8px;
+  }
+  .dashboard-state .state-desc{
+    color:var(--ink-soft); font-size:14px; line-height:1.55; margin:0 0 22px; max-width:420px;
+  }
+  .dashboard-state.error{
+    border-color:var(--stamp-red);
+  }
+  .dashboard-state.error .state-title{color:var(--stamp-red);}
+  .dashboard-state .btn{margin-top:4px;}

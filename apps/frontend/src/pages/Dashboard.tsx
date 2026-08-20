@@ -1,5 +1,6 @@
 import React from "react";
 import { Stamp } from "../components/Stamp";
+import { useDashboard, type Stat, type LedgerEntry } from "../hooks/useDashboard";
 
 const NAV_GROUPS = [
   {
@@ -24,22 +25,93 @@ const NAV_GROUPS = [
   },
 ];
 
-const STATS = [
-  { label: "Decisions today", value: "1,204", delta: "▲ 8.2% vs yesterday", dir: "up" },
-  { label: "Avg. credit score", value: "693", delta: "▲ 1.1%", dir: "up" },
-  { label: "Fraud flags", value: "17", delta: "▲ 3 vs yesterday", dir: "down" },
-  { label: "Oracle uptime", value: "99.97%", delta: "30-day avg", dir: "up" },
-] as const;
+function StatCards({ stats }: { stats: Stat[] }) {
+  return (
+    <div className="stat-grid">
+      {stats.map((s) => (
+        <div className="stat-card" key={s.label}>
+          <div className="label">{s.label}</div>
+          <div className="value">{s.value}</div>
+          <div className={`delta ${s.dir}`}>{s.delta}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-const ENTRIES = [
-  { account: "GC3F...K91X", model: "credit-score", score: "742", status: "approved", time: "0:02 ago" },
-  { account: "GA7B...M2QZ", model: "fraud-detect", score: "—", status: "flagged", time: "0:41 ago" },
-  { account: "GD9K...T4LP", model: "credit-score", score: "681", status: "approved", time: "1:15 ago" },
-  { account: "GE2N...W8YV", model: "fraud-detect", score: "—", status: "pending", time: "2:03 ago" },
-  { account: "GF5H...R3UB", model: "credit-score", score: "598", status: "flagged", time: "3:47 ago" },
-] as const;
+function StatSkeleton() {
+  return (
+    <div className="stat-grid" aria-hidden="true">
+      {[0, 1, 2, 3].map((i) => (
+        <div className="stat-card" key={i}>
+          <div className="skeleton-line w-40" />
+          <div className="skeleton-line w-24 thick" />
+          <div className="skeleton-line w-56" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LedgerTable({ entries }: { entries: LedgerEntry[] }) {
+  return (
+    <table className="ledger-table">
+      <thead>
+        <tr>
+          <th>Account</th>
+          <th>Model</th>
+          <th>Score</th>
+          <th>Status</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {entries.map((e) => (
+          <tr key={e.account + e.time}>
+            <td>{e.account}</td>
+            <td>{e.model}</td>
+            <td>{e.score}</td>
+            <td>
+              <span className={`pill ${e.status}`}>{e.status}</span>
+            </td>
+            <td>{e.time}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <table className="ledger-table" aria-hidden="true">
+      <thead>
+        <tr>
+          <th>Account</th>
+          <th>Model</th>
+          <th>Score</th>
+          <th>Status</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <tr key={i}>
+            <td><div className="skeleton-line w-24" /></td>
+            <td><div className="skeleton-line w-32" /></td>
+            <td><div className="skeleton-line w-16" /></td>
+            <td><div className="skeleton-line w-20" /></td>
+            <td><div className="skeleton-line w-24" /></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 export function Dashboard() {
+  const { state, retry } = useDashboard();
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -68,41 +140,45 @@ export function Dashboard() {
           <Stamp color="blue">Testnet</Stamp>
         </div>
 
-        <div className="stat-grid">
-          {STATS.map((s) => (
-            <div className="stat-card" key={s.label}>
-              <div className="label">{s.label}</div>
-              <div className="value">{s.value}</div>
-              <div className={`delta ${s.dir}`}>{s.delta}</div>
-            </div>
-          ))}
-        </div>
+        {state.status === "loading" && (
+          <>
+            <StatSkeleton />
+            <p className="panel-title">Recent ledger entries</p>
+            <TableSkeleton />
+          </>
+        )}
 
-        <p className="panel-title">Recent ledger entries</p>
-        <table className="ledger-table">
-          <thead>
-            <tr>
-              <th>Account</th>
-              <th>Model</th>
-              <th>Score</th>
-              <th>Status</th>
-              <th>Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ENTRIES.map((e) => (
-              <tr key={e.account + e.time}>
-                <td>{e.account}</td>
-                <td>{e.model}</td>
-                <td>{e.score}</td>
-                <td>
-                  <span className={`pill ${e.status}`}>{e.status}</span>
-                </td>
-                <td>{e.time}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {state.status === "error" && (
+          <div className="dashboard-state error" role="alert">
+            <div className="state-icon">⚠️</div>
+            <p className="state-title">Couldn't load dashboard</p>
+            <p className="state-desc">{state.message}</p>
+            <button className="btn ghost" onClick={retry}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {state.status === "empty" && (
+          <div className="dashboard-state empty">
+            <div className="state-icon">🗂️</div>
+            <p className="state-title">No ledger entries yet</p>
+            <p className="state-desc">
+              Once the oracle network reports activity, decisions appear here.
+            </p>
+            <button className="btn ghost" onClick={retry}>
+              Refresh
+            </button>
+          </div>
+        )}
+
+        {state.status === "success" && (
+          <>
+            <StatCards stats={state.stats} />
+            <p className="panel-title">Recent ledger entries</p>
+            <LedgerTable entries={state.entries} />
+          </>
+        )}
       </main>
     </div>
   );
