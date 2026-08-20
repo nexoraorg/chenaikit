@@ -8,12 +8,12 @@ This API implements rate limiting to protect public routes from request bursts a
 
 ### Route Classification & Limits
 
-| Route Class | Limit | Window | Purpose |
-|-----------|-------|--------|---------|
-| Public API | 100 requests | 15 minutes | Standard API endpoints |
-| Authentication | 5 attempts | 15 minutes | Login, register, password reset |
-| Health checks | Unlimited | N/A | `/health` endpoint (monitoring) |
-| Internal routes | Unlimited | N/A | `/_internal/*` endpoints (admin/ops) |
+| Route Class     | Limit        | Window     | Purpose                              |
+| --------------- | ------------ | ---------- | ------------------------------------ |
+| Public API      | 100 requests | 15 minutes | Standard API endpoints               |
+| Authentication  | 5 attempts   | 15 minutes | Login, register, password reset      |
+| Health checks   | Unlimited    | N/A        | `/health` endpoint (monitoring)      |
+| Internal routes | Unlimited    | N/A        | `/_internal/*` endpoints (admin/ops) |
 
 ### Rate Limit Responses
 
@@ -33,7 +33,9 @@ The API includes standard rate limit headers in every response:
 
 - `RateLimit-Limit`: Total requests allowed in the window
 - `RateLimit-Remaining`: Requests remaining in the current window
-- `RateLimit-Reset`: Unix timestamp when the limit window resets
+- `RateLimit-Reset`: Seconds until the current window resets (relative delay)
+
+The JSON response includes `retryAfter` as an epoch-millisecond timestamp for when the client should retry.
 
 Clients should respect `RateLimit-Remaining` and implement exponential backoff when receiving `429` responses.
 

@@ -21,7 +21,7 @@ export const apiLimiter = rateLimit({
     res.status(429).json({
       error: "Rate limit exceeded",
       message: "Too many requests. Please retry after some time.",
-      retryAfter: Date.now() + 15 * 60 * 1000,
+      retryAfter: req.rateLimit?.resetTime?.getTime(),
     });
   },
 });
@@ -37,7 +37,7 @@ export const authLimiter = rateLimit({
     res.status(429).json({
       error: "Rate limit exceeded",
       message: "Too many authentication attempts. Please try again later.",
-      retryAfter: Date.now() + 15 * 60 * 1000,
+      retryAfter: req.rateLimit?.resetTime?.getTime(),
     });
   },
 });
