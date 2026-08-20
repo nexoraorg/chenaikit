@@ -8,9 +8,14 @@ export function App() {
 
   return (
     <>
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
       <div className="ledger-margin" />
       <TopNav view={view} onChange={setView} />
-      {view === "landing" ? <Landing /> : <Dashboard />}
+      <div id="main-content">
+        {view === "landing" ? <Landing /> : <Dashboard />}
+      </div>
     </>
   );
 }
