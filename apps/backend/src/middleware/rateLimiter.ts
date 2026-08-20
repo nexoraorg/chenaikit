@@ -15,7 +15,7 @@ export const apiLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skip: (req) => {
     // Exempt health checks and internal routes
-    return req.path === "/health" || req.path.startsWith("/_internal");
+    return req.path === "/health" || req.path.startsWith("/_internal/");
   },
   handler: (req: Request, res: Response) => {
     res.status(429).json({
