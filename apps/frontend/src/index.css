@@ -263,3 +263,66 @@
   .pill.pending{color:var(--ink-faint);}
 
   .panel-title{font-family:var(--mono-display); font-weight:700; font-size:15px; margin:0 0 14px;}
+  /* ============ RESPONSIVE: LEDGER ============ */
+  @media (max-width: 720px){
+    .ledger-row{
+      grid-template-columns:28px 1fr;
+      gap:4px 14px;
+      padding:18px 0;
+    }
+    .ledger-row .glyph{grid-column:1; grid-row:1/3;}
+    .ledger-row .ledger-row-body{grid-column:2; grid-row:1;}
+    .ledger-row .status{grid-column:2; grid-row:2;}
+    .ledger-row .feat-desc{
+      max-width:none;
+      overflow-wrap:break-word;
+      word-break:break-word;
+      hyphens:auto;
+    }
+    .ledger-row .feat-name{overflow-wrap:break-word;}
+  }
+
+  @media (max-width: 720px){
+    .app-shell{grid-template-columns:1fr;}
+    .main{padding:20px 16px 44px;}
+    table.ledger-table{
+      display:block;
+      border:1px solid var(--rule-strong);
+      border-radius:3px;
+      overflow:hidden;
+    }
+    table.ledger-table thead{display:none;}
+    table.ledger-table tbody{display:block;}
+    table.ledger-table tr{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:2px 14px;
+      padding:12px 14px;
+      border-bottom:1px solid var(--rule);
+    }
+    table.ledger-table tr:last-child{border-bottom:0;}
+    table.ledger-table td{
+      display:block;
+      padding:1px 0;
+      border:0;
+      text-align:left;
+      white-space:normal;
+      overflow-wrap:break-word;
+      word-break:break-word;
+    }
+    table.ledger-table td::before{
+      content:attr(data-label);
+      display:block;
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+      color:var(--ink-faint);
+      margin-bottom:1px;
+    }
+    /* 长标识符溢出：Account/Model 列填满剩余宽度并省略 */
+    table.ledger-table td[data-label="Account"]{grid-column:1; max-width:100%;}
+    table.ledger-table td[data-label="Model"]{grid-column:1; color:var(--ink-soft);}
+    table.ledger-table td[data-label="Score"]{grid-column:2; grid-row:1; text-align:right;}
+    table.ledger-table td[data-label="Status"]{grid-column:2; grid-row:2; justify-self:end;}
+    table.ledger-table td[data-label="Time"]{grid-column:1; color:var(--ink-faint);}
+  }

@@ -92,13 +92,13 @@ export function Dashboard() {
           <tbody>
             {ENTRIES.map((e) => (
               <tr key={e.account + e.time}>
-                <td>{e.account}</td>
-                <td>{e.model}</td>
-                <td>{e.score}</td>
-                <td>
+                <td data-label="Account">{e.account}</td>
+                <td data-label="Model">{e.model}</td>
+                <td data-label="Score">{e.score}</td>
+                <td data-label="Status">
                   <span className={`pill ${e.status}`}>{e.status}</span>
                 </td>
-                <td>{e.time}</td>
+                <td data-label="Time">{e.time}</td>
               </tr>
             ))}
           </tbody>
