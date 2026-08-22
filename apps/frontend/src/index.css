@@ -13,6 +13,21 @@
     --mono-display: 'JetBrains Mono', monospace;
     --mono-data: 'IBM Plex Mono', monospace;
     --sans: 'Inter', system-ui, sans-serif;
+
+    /* radius */
+    --radius-xs: 2px;
+    --radius-sm: 3px;
+    --radius-md: 4px;
+    --radius-lg: 8px;
+    --radius-full: 50%;
+
+    /* motion */
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 400ms;
+    --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
@@ -80,16 +95,17 @@
     display:inline-flex; align-items:center; gap:6px;
     font-family:var(--mono-display); font-weight:800; font-size:11px;
     letter-spacing:0.14em; text-transform:uppercase;
-    border:2px solid currentColor; border-radius:3px;
+    border:2px solid currentColor; border-radius:var(--radius-sm);
     padding:5px 10px;
     transform:rotate(-3deg);
     position:relative;
+    transition: opacity var(--duration-fast) var(--ease-out);
   }
   .stamp::after{
     content:"";
     position:absolute; inset:2px;
     border:1px solid currentColor;
-    border-radius:2px;
+    border-radius:var(--radius-xs);
     opacity:0.5;
   }
   .stamp.red{color:var(--stamp-red);}
