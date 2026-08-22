@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Stamp } from "../components/Stamp";
 
 const NAV_GROUPS = [
@@ -39,7 +39,49 @@ const ENTRIES = [
   { account: "GF5H...R3UB", model: "credit-score", score: "598", status: "flagged", time: "3:47 ago" },
 ] as const;
 
+type EntryStatus = (typeof ENTRIES)[number]["status"];
+type SortKey = "time" | "account" | "model" | "score";
+
+const STATUS_OPTIONS: EntryStatus[] = ["approved", "flagged", "pending"];
+
 export function Dashboard() {
+  const [statusFilter, setStatusFilter] = useState<EntryStatus | "all">("all");
+  const [sortBy, setSortBy] = useState<SortKey>("time");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const filtered = ENTRIES.filter(
+    (e) => statusFilter === "all" || e.status === statusFilter
+  );
+
+  const sorted = [...filtered].sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    const cmp = a[sortBy].localeCompare(b[sortBy]);
+    // 对于 score 列，数值比较
+    if (sortBy === "score") {
+      const nA = parseInt(a.score, 10);
+      const nB = parseInt(b.score, 10);
+      if (isNaN(nA) && isNaN(nB)) return dir * cmp;
+      if (isNaN(nA)) return 1;
+      if (isNaN(nB)) return -1;
+      return dir * (nA - nB);
+    }
+    return dir * cmp;
+  });
+
+  const toggleSort = (key: SortKey) => {
+    if (sortBy === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(key);
+      setSortDir("asc");
+    }
+  };
+
+  const sortArrow = (key: SortKey) => {
+    if (sortBy !== key) return "";
+    return sortDir === "asc" ? " ▲" : " ▼";
+  };
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -78,31 +120,91 @@ export function Dashboard() {
           ))}
         </div>
 
-        <p className="panel-title">Recent ledger entries</p>
-        <table className="ledger-table">
-          <thead>
-            <tr>
-              <th>Account</th>
-              <th>Model</th>
-              <th>Score</th>
-              <th>Status</th>
-              <th>Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ENTRIES.map((e) => (
-              <tr key={e.account + e.time}>
-                <td>{e.account}</td>
-                <td>{e.model}</td>
-                <td>{e.score}</td>
-                <td>
-                  <span className={`pill ${e.status}`}>{e.status}</span>
-                </td>
-                <td>{e.time}</td>
-              </tr>
+        <div className="filter-bar">
+          <div className="filter-group">
+            <span className="filter-label">Status</span>
+            <button
+              className={`filter-chip ${statusFilter === "all" ? "active" : ""}`}
+              onClick={() => setStatusFilter("all")}
+            >
+              All
+            </button>
+            {STATUS_OPTIONS.map((s) => (
+              <button
+                key={s}
+                className={`filter-chip ${statusFilter === s ? "active" : ""}`}
+                onClick={() => setStatusFilter(s)}
+              >
+                {s}
+              </button>
             ))}
-          </tbody>
-        </table>
+          </div>
+          <div className="filter-group">
+            <span className="filter-label">Sort</span>
+            <button
+              className={`filter-chip ${sortBy === "time" ? "active" : ""}`}
+              onClick={() => toggleSort("time")}
+            >
+              Time{sortArrow("time")}
+            </button>
+            <button
+              className={`filter-chip ${sortBy === "account" ? "active" : ""}`}
+              onClick={() => toggleSort("account")}
+            >
+              Account{sortArrow("account")}
+            </button>
+            <button
+              className={`filter-chip ${sortBy === "model" ? "active" : ""}`}
+              onClick={() => toggleSort("model")}
+            >
+              Model{sortArrow("model")}
+            </button>
+            <button
+              className={`filter-chip ${sortBy === "score" ? "active" : ""}`}
+              onClick={() => toggleSort("score")}
+            >
+              Score{sortArrow("score")}
+            </button>
+          </div>
+        </div>
+
+        <div className="table-head">
+          <p className="panel-title">Recent ledger entries</p>
+          <span className="result-count">
+            {sorted.length} of {ENTRIES.length}
+          </span>
+        </div>
+
+        {sorted.length > 0 ? (
+          <table className="ledger-table">
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Model</th>
+                <th>Score</th>
+                <th>Status</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((e) => (
+                <tr key={e.account + e.time}>
+                  <td>{e.account}</td>
+                  <td>{e.model}</td>
+                  <td>{e.score}</td>
+                  <td>
+                    <span className={`pill ${e.status}`}>{e.status}</span>
+                  </td>
+                  <td>{e.time}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty-state">
+            No entries match the current filter.
+          </div>
+        )}
       </main>
     </div>
   );
