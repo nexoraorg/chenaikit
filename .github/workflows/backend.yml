@@ -6,12 +6,14 @@ on:
     paths:
       - "apps/backend/**"
       - "packages/**"
+      - "tests/integration/**"
       - "pnpm-workspace.yaml"
       - ".github/workflows/backend.yml"
   pull_request:
     paths:
       - "apps/backend/**"
       - "packages/**"
+      - "tests/integration/**"
       - "pnpm-workspace.yaml"
       - ".github/workflows/backend.yml"
   workflow_dispatch:
@@ -82,6 +84,9 @@ jobs:
           else
             echo "::notice::No \"test\" script in apps/backend — skipping."
           fi
+
+      - name: Integration Tests
+        run: pnpm run test:integration
 
       - name: Build
         working-directory: apps/backend
