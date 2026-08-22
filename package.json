@@ -11,6 +11,7 @@
     "packages:build": "pnpm --filter ./packages/* run build",
     "blockchain:build": "pnpm --filter ./scripts run contracts:build",
     "test:all": "pnpm -r run test",
+    "test:integration": "pnpm --filter @chenaikit/integration-tests run test",
     "lint": "pnpm -r run lint",
     "prepare": "husky"
   },
