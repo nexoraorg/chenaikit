@@ -1,16 +1,59 @@
 # CI/CD
 
-Three independent pipelines, one per area of the monorepo. Each is
+Three independent build pipelines, one per area of the monorepo. Each is
 **path-filtered**, so touching the frontend never spins up a Rust toolchain.
+A fourth workflow, `pr-checklist.yml`, is intentionally *not* path-filtered and
+runs on every pull request.
 
 | Workflow | Triggers on changes to | What it does |
 | --- | --- | --- |
 | `frontend.yml` | `apps/frontend/**` | install (npm) → lint → typecheck → test → `vite build` → upload `dist` |
 | `backend.yml` | `apps/backend/**`, `packages/**`, `pnpm-workspace.yaml` | install (pnpm) → `prisma generate` → lint → typecheck → test → build; plus a separate shared-packages build job |
 | `contracts.yml` | `contracts/**` | Rust toolchain + wasm target → `cargo fmt --check` → `clippy` → `test` → release wasm build → upload `.wasm` |
+| `pr-checklist.yml` | *every pull request* | unit-tests the validator → validates the PR description against `.github/PULL_REQUEST_TEMPLATE.md` |
 
-All three also run on `pull_request` and can be started manually via
+All of them also run on `pull_request` and can be started manually via
 **workflow_dispatch**.
+
+## PR checklist validation
+
+`pr-checklist.yml` fails a pull request whose description is missing the
+sections `.github/PULL_REQUEST_TEMPLATE.md` asks for, with an annotation and a
+job summary naming exactly what is absent.
+
+- **Required:** `## Summary`, `## Testing done`, and `## Checklist` (with at
+  least one `- [x]` ticked). Heading aliases (`Test plan`, `Overview`, …),
+  emoji and `###` levels are all accepted; headings inside fenced code blocks
+  are not.
+- **Conditionally required:** `## Screenshots`, when the diff touches UI files
+  (`apps/frontend/**`, `*.tsx`, `*.jsx`, `*.css`, `*.scss`, `*.svg`).
+- **Unfilled counts as missing.** The template's hints are HTML comments, which
+  are stripped before a section is checked for content.
+- **Bypass:** apply the maintainer-only `skip-checklist` label, or open the PR
+  as a bot (`dependabot[bot]`, `github-actions[bot]`, `renovate[bot]`, or any
+  `*[bot]` login). `labeled`/`unlabeled` are trigger types, so the label takes
+  effect right away.
+
+The rules live in `.github/scripts/check-pr-checklist.mjs` as a pure function
+and are covered by `.github/scripts/check-pr-checklist.test.mjs`. The workflow
+runs those tests as one of its own steps. Locally:
+
+```bash
+node --test '.github/scripts/*.test.mjs'
+```
+
+### Why `pull_request` and not `pull_request_target`
+
+The workflow executes contributor-authored code from the PR head, so it uses
+the plain `pull_request` trigger: on fork PRs GitHub hands the job a
+**read-only `GITHUB_TOKEN` and no repository secrets**, leaving nothing
+privileged to exfiltrate. `pull_request_target` would grant a write token and
+secrets while running against a ref the contributor controls — and validating a
+description needs neither. That read-only token is also why the check *fails
+loudly* instead of posting a bot comment (commenting needs
+`pull-requests: write`, which fork PRs cannot have here). The PR body itself is
+untrusted input and is never interpolated into a shell command via `${{ … }}`;
+the validator reads it from the webhook payload on disk (`GITHUB_EVENT_PATH`).
 
 ## Designed to be green today, meaningful tomorrow
 
