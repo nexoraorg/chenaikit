@@ -36,9 +36,13 @@ else
   exit 1
 fi
 
-ARTIFACT_DIR_ABS="$(cd "$ARTIFACT_DIR" && pwd)"
+# -P resolves symlinks to their physical path. Without it, ARTIFACT_DIR
+# and OUTPUT_FILE reaching the same directory through different symlinks
+# would fail to match below, and a later run would hash the existing
+# checksum file into itself instead of excluding it.
+ARTIFACT_DIR_ABS="$(cd "$ARTIFACT_DIR" && pwd -P)"
 mkdir -p "$(dirname "$OUTPUT_FILE")"
-OUTPUT_DIR_ABS="$(cd "$(dirname "$OUTPUT_FILE")" && pwd)"
+OUTPUT_DIR_ABS="$(cd "$(dirname "$OUTPUT_FILE")" && pwd -P)"
 OUTPUT_FILE_ABS="$OUTPUT_DIR_ABS/$(basename "$OUTPUT_FILE")"
 
 # Exclude the *exact* output path (relative to the artifact dir), not
