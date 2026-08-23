@@ -9,12 +9,11 @@
 #
 # The output file uses the same format as `sha256sum`, so it can be
 # verified with the standard `sha256sum -c` / `shasum -a 256 -c` tools —
-# no project-specific tooling required (satisfies the issue's acceptance
-# criterion that consumers can verify without project-specific tooling).
+# no project-specific tooling required.
 #
-# Reproducibility: this only hashes file bytes, so the same artifact
-# content always produces the same checksum file, regardless of when or
-# where it's generated.
+# Reproducibility: file order is sorted under the C locale and only file
+# byte content is hashed, so identical artifact content always produces
+# a byte-for-byte identical checksum file.
 
 set -euo pipefail
 
@@ -26,28 +25,64 @@ if [ ! -d "$ARTIFACT_DIR" ]; then
   exit 1
 fi
 
-HASH_CMD=""
+# Use an array, not a plain string, so multi-word commands (shasum -a 256)
+# survive word-splitting correctly when invoked below (fixes SC2086).
 if command -v sha256sum >/dev/null 2>&1; then
-  HASH_CMD="sha256sum"
+  HASH_CMD=(sha256sum)
 elif command -v shasum >/dev/null 2>&1; then
-  HASH_CMD="shasum -a 256"
+  HASH_CMD=(shasum -a 256)
 else
   echo "error: neither sha256sum nor shasum is available on this system" >&2
   exit 1
 fi
 
-TMP_OUTPUT="$(mktemp)"
-trap 'rm -f "$TMP_OUTPUT"' EXIT
+ARTIFACT_DIR_ABS="$(cd "$ARTIFACT_DIR" && pwd)"
+mkdir -p "$(dirname "$OUTPUT_FILE")"
+OUTPUT_DIR_ABS="$(cd "$(dirname "$OUTPUT_FILE")" && pwd)"
+OUTPUT_FILE_ABS="$OUTPUT_DIR_ABS/$(basename "$OUTPUT_FILE")"
 
-# Walk files in a stable, sorted order so the checksum file itself is
-# byte-for-byte reproducible across runs (same file set -> same output).
+# Exclude the *exact* output path (relative to the artifact dir), not
+# every file anywhere that happens to share its basename.
+OUTPUT_REL=""
+case "$OUTPUT_FILE_ABS" in
+  "$ARTIFACT_DIR_ABS"/*)
+    OUTPUT_REL="${OUTPUT_FILE_ABS#"$ARTIFACT_DIR_ABS"/}"
+    ;;
+esac
+
+# Build the file list FIRST, before any temp file exists on disk — a
+# temp file created ahead of time would risk being picked up by `find`
+# itself if it landed inside ARTIFACT_DIR_ABS.
+FILE_LIST="$(mktemp)"
+trap 'rm -f "$FILE_LIST"' EXIT
+
 (
-  cd "$ARTIFACT_DIR"
-  find . -type f ! -name "$(basename "$OUTPUT_FILE")" -print0 \
-    | sort -z \
-    | xargs -0 $HASH_CMD
-) > "$TMP_OUTPUT"
+  cd "$ARTIFACT_DIR_ABS"
+  if [ -n "$OUTPUT_REL" ]; then
+    find . -type f -not -path "./$OUTPUT_REL" -print0
+  else
+    find . -type f -print0
+  fi
+) | LC_ALL=C sort -z > "$FILE_LIST"
 
-mv "$TMP_OUTPUT" "$OUTPUT_FILE"
+# Only now create the temp output file, in the same directory as the
+# final destination so the closing `mv` is an atomic same-filesystem
+# rename rather than a cross-filesystem copy+delete — readers never see
+# a partially written checksum file.
+TMP_OUTPUT="$(mktemp "$OUTPUT_DIR_ABS/.SHA256SUMS.XXXXXX")"
+trap 'rm -f "$FILE_LIST" "$TMP_OUTPUT"' EXIT
 
-echo "Wrote $(wc -l < "$OUTPUT_FILE" | tr -d ' ') checksum(s) to $OUTPUT_FILE"
+if [ ! -s "$FILE_LIST" ]; then
+  echo "warning: no files found in '$ARTIFACT_DIR' to checksum" >&2
+  : > "$TMP_OUTPUT"
+else
+  # Guard against xargs invoking the hash command with zero arguments
+  # (which would otherwise hash stdin and emit a bogus "-" entry).
+  (cd "$ARTIFACT_DIR_ABS" && xargs -0 "${HASH_CMD[@]}" < "$FILE_LIST") > "$TMP_OUTPUT"
+fi
+
+mv "$TMP_OUTPUT" "$OUTPUT_FILE_ABS"
+trap - EXIT
+rm -f "$FILE_LIST"
+
+echo "Wrote $(wc -l < "$OUTPUT_FILE_ABS" | tr -d ' ') checksum(s) to $OUTPUT_FILE_ABS"
