@@ -89,8 +89,18 @@ describe("Backend API Integration Test Suite", () => {
     });
   });
 
-  describe("Error Diagnostic Flow (/api/trigger-error)", () => {
-    it("should return 500 Internal Server Error with request/response diagnostic context (5xx path)", async () => {
+  describe("Error Diagnostic & Middleware Behavior", () => {
+    it("should preserve 400 status code on malformed JSON payload", async () => {
+      const response = await request(app)
+        .post("/api/records")
+        .set("Content-Type", "application/json")
+        .send("{ malformed json ");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe("Bad Request");
+    });
+
+    it("should return 500 Internal Server Error with request/response diagnostic context in test mode", async () => {
       const response = await request(app).get("/api/trigger-error");
 
       expect(response.status).toBe(500);
@@ -101,6 +111,22 @@ describe("Backend API Integration Test Suite", () => {
         path: "/api/trigger-error",
         method: "GET",
       });
+      expect(response.body.context.stack).toBeDefined();
+    });
+
+    it("should genericize 500 errors in production environment", async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      try {
+        process.env.NODE_ENV = "production";
+        const response = await request(app).get("/api/trigger-error");
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe("Internal Server Error");
+        expect(response.body.message).toBe("An unexpected error occurred");
+        expect(response.body.context.stack).toBeUndefined();
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
     });
   });
 });

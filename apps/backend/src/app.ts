@@ -53,26 +53,45 @@ app.post("/api/records", async (req: Request, res: Response, next: NextFunction)
   }
 });
 
-// Route triggering persistence / internal error (for 5xx testing)
-app.get("/api/trigger-error", async (_req: Request, _res: Response, next: NextFunction) => {
-  try {
-    // Intentional throw or Prisma operation on broken connection/table
-    throw new Error("Database persistence error simulated");
-  } catch (error) {
-    next(error);
-  }
-});
+// Route triggering persistence / internal error (for 5xx testing in test environment)
+if (process.env.NODE_ENV === "test") {
+  app.get("/api/trigger-error", async (_req: Request, _res: Response, next: NextFunction) => {
+    try {
+      // Intentional throw or Prisma operation on broken connection/table
+      throw new Error("Database persistence error simulated");
+    } catch (error) {
+      next(error);
+    }
+  });
+}
+
+interface HttpError extends Error {
+  status?: number;
+  statusCode?: number;
+}
 
 // Error handling middleware providing diagnostic response context
-app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+app.use((err: HttpError, req: Request, res: Response, _next: NextFunction) => {
   const isDevOrTest = process.env.NODE_ENV !== "production";
-  res.status(500).json({
-    error: "Internal Server Error",
-    message: err.message || "An unexpected error occurred",
+  const rawStatus = err?.status ?? err?.statusCode;
+  const status = typeof rawStatus === "number" && rawStatus >= 400 && rawStatus < 600 ? rawStatus : 500;
+  const isClientError = status >= 400 && status < 500;
+
+  const errorTitle = isClientError
+    ? (status === 400 ? "Bad Request" : "Client Error")
+    : "Internal Server Error";
+
+  const message = isClientError
+    ? (err.message || "Bad Request")
+    : (isDevOrTest ? (err?.message || "An unexpected error occurred") : "An unexpected error occurred");
+
+  res.status(status).json({
+    error: errorTitle,
+    message,
     context: {
       path: req.path,
       method: req.method,
-      stack: isDevOrTest ? err.stack : undefined,
+      stack: isDevOrTest ? err?.stack : undefined,
     },
   });
 });

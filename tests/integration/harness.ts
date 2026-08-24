@@ -43,6 +43,7 @@ export function cleanupTestDatabase(dbPath: string = TEST_DB_FILE): void {
       fs.unlinkSync(journalPath);
     }
   } catch (err) {
-    console.warn("Failed to clean up test database file:", err);
+    console.error("Failed to clean up test database file:", err);
+    throw err;
   }
 }
