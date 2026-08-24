@@ -4,18 +4,22 @@ on:
   push:
     branches: [main]
     paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/backend.yml"
       - "apps/backend/**"
       - "packages/**"
       - "tests/integration/**"
-      - "pnpm-workspace.yaml"
-      - ".github/workflows/backend.yml"
   pull_request:
     paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/backend.yml"
       - "apps/backend/**"
       - "packages/**"
       - "tests/integration/**"
-      - "pnpm-workspace.yaml"
-      - ".github/workflows/backend.yml"
   workflow_dispatch:
 
 concurrency:
