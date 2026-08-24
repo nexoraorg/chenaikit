@@ -9,14 +9,19 @@ export function App() {
 
   return (
     <ErrorBoundary>
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
       <div className="ledger-margin" />
       <TopNav view={view} onChange={setView} />
-      {/* Keyed on `view` so switching views after a caught error remounts
-          the page instead of re-rendering into a boundary still tripped
-          by the previous page's error. */}
-      <ErrorBoundary key={view}>
-        {view === "landing" ? <Landing /> : <Dashboard />}
-      </ErrorBoundary>
+      <div id="main-content">
+        {/* Keyed on `view` so switching views after a caught error remounts
+            the page instead of re-rendering into a boundary still tripped
+            by the previous page's error. */}
+        <ErrorBoundary key={view}>
+          {view === "landing" ? <Landing /> : <Dashboard />}
+        </ErrorBoundary>
+      </div>
     </ErrorBoundary>
   );
 }
