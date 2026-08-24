@@ -65,8 +65,13 @@ if (process.env.NODE_ENV === "test") {
   });
 }
 
+interface HttpError extends Error {
+  status?: number;
+  statusCode?: number;
+}
+
 // Error handling middleware providing diagnostic response context
-app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+app.use((err: HttpError, req: Request, res: Response, _next: NextFunction) => {
   const isDevOrTest = process.env.NODE_ENV !== "production";
   const rawStatus = err?.status ?? err?.statusCode;
   const status = typeof rawStatus === "number" && rawStatus >= 400 && rawStatus < 600 ? rawStatus : 500;
