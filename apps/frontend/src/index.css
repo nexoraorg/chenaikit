@@ -282,6 +282,21 @@
 
   .panel-title{font-family:var(--mono-display); font-weight:700; font-size:15px; margin:0 0 14px;}
 
+  /* ERROR BOUNDARY */
+  .error-boundary{
+    position:relative; z-index:1;
+    max-width:560px; margin:64px auto;
+    background:var(--card); border:1px solid var(--rule-strong);
+    border-left:4px solid var(--stamp-red);
+    padding:28px 32px;
+  }
+  .error-boundary-title{
+    font-family:var(--mono-display); font-weight:700; font-size:18px;
+    color:var(--stamp-red); margin:0 0 10px;
+  }
+  .error-boundary-desc{color:var(--ink-soft); line-height:1.6; margin:0 0 22px;}
+  .error-boundary-actions{display:flex; gap:14px; flex-wrap:wrap;}
+
   /* FILTER BAR */
   .filter-bar{
     display:flex; align-items:center; gap:28px; flex-wrap:wrap;

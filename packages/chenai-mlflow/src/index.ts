@@ -1,381 +1,704 @@
-// @chenaikit/chenai-mlflow — ML experiment tracking integration
+// @chenaikit/chenai-mlflow — ML experiment tracking integration.
+//
+// This module is the machine-readable half of the ML pipeline data contract.
+// The prose half — units, provenance and the rationale behind every
+// missing-value rule — lives in `ml/README.md`. The two are meant to be read
+// together: `ml/README.md` explains *why*, the specs below enforce *what*.
+
 export const VERSION = "0.1.0";
 
-/**
- * Version of the model artifact provenance format emitted and understood by
- * this package.
- *
- * The format version is embedded in every {@link ProvenanceMetadata} record so
- * that consumers (the backend, the ML pipeline in `ml/`, and the Soroban
- * `model-attestation` contract) can tell whether they are able to interpret a
- * payload before trusting it. Bump this constant whenever the meaning or the
- * set of required fields changes; add the old version to
- * {@link SUPPORTED_PROVENANCE_FORMAT_VERSIONS} only if it stays readable.
- */
-export const PROVENANCE_FORMAT_VERSION = 1;
+/** Schema version of the {@link FeatureVector} contract (semver). */
+export const FEATURE_VECTOR_SCHEMA_VERSION = "1.0.0";
+
+/** Schema version of the {@link ModelResult} contract (semver). */
+export const MODEL_RESULT_SCHEMA_VERSION = "1.0.0";
 
 /**
- * Every format version this package can parse. `parseProvenance` rejects any
- * payload whose `formatVersion` is not listed here rather than guessing.
+ * Stroops per XLM. All monetary feature fields are integer stroops so that no
+ * value in the pipeline ever depends on binary floating-point rounding.
  */
-export const SUPPORTED_PROVENANCE_FORMAT_VERSIONS: readonly number[] = [
-  PROVENANCE_FORMAT_VERSION,
-];
+export const STROOPS_PER_XLM = 10_000_000;
 
-/** A single resolved dependency that contributed to building an artifact. */
-export interface Dependency {
-  /** Package name as resolved by the build, e.g. `"scikit-learn"`. */
-  name: string;
-  /** Exact resolved version, e.g. `"1.5.1"`. Ranges are not provenance. */
-  version: string;
+// ---------------------------------------------------------------------------
+// Feature vector (pipeline input)
+// ---------------------------------------------------------------------------
+
+/** What the feature vector describes: a Stellar account, or a single payment. */
+export type SubjectKind = "account" | "transaction";
+
+/**
+ * Customer due-diligence level known to the caller at feature-build time.
+ * `0` = unverified. This is never `null`: the caller always knows the tier it
+ * has on file, and "unverified" is exactly what tier `0` means.
+ */
+export type KycTier = 0 | 1 | 2 | 3;
+
+/** Names of the nullable numeric features. */
+export type NumericFeatureName =
+  | "accountAgeDays"
+  | "transactionCount30d"
+  | "averageBalanceStroops"
+  | "largestTransferStroops"
+  | "distinctCounterparties30d"
+  | "failedPaymentCount90d"
+  | "disputeRatio90d"
+  | "crossBorderTransferRatio30d"
+  | "medianSettlementLatencySeconds";
+
+/**
+ * Declarative spec for one numeric feature. The validator and the imputer are
+ * both driven off these records, so the documented contract and the enforced
+ * contract cannot drift apart.
+ */
+export interface NumericFeatureSpec {
+  /** Field name as it appears on {@link FeatureVector}. */
+  readonly name: NumericFeatureName;
+  /** Physical unit, for documentation and for downstream unit assertions. */
+  readonly unit: "days" | "count" | "stroops" | "ratio" | "seconds";
+  /** Whether the field must be an integer (counts and stroops) or may be fractional. */
+  readonly integer: boolean;
+  /** Inclusive lower bound. */
+  readonly min: number;
+  /** Inclusive upper bound. */
+  readonly max: number;
+  /** Value substituted by {@link imputeFeatureVector} when the field is `null`. */
+  readonly missingDefault: number;
+  /** Human-readable meaning, mirrored in `ml/README.md`. */
+  readonly description: string;
 }
 
 /**
- * Provenance attached to a model artifact: enough information to reproduce how
- * the artifact was built, and to attest to it on-chain.
+ * The nullable numeric features, in canonical order.
  *
- * Format version 1 requires all six fields below. Producers must never publish
- * an artifact with partial provenance — use {@link createProvenance} (or
- * {@link validateProvenance} followed by {@link serializeProvenance}) so that
- * incomplete records are rejected instead of silently accepted.
+ * Imputation defaults lean toward the risk-averse reading of "unknown" rather
+ * than mechanically toward zero — see `medianSettlementLatencySeconds`, where
+ * `0` would falsely claim instant settlement.
  */
-export interface ProvenanceMetadata {
-  /** Provenance format version. Always {@link PROVENANCE_FORMAT_VERSION} for newly created records. */
-  formatVersion: number;
-  /** Source revision the artifact was built from — a full git commit SHA. */
-  sourceRevision: string;
-  /** URL of the repository holding that revision. */
-  sourceRepository: string;
-  /**
-   * Ordered list of dependencies present at build time. Order is significant
-   * (it mirrors the resolver's output) and is preserved across serialization.
-   */
-  dependencies: Dependency[];
-  /**
-   * Identifier or hash of the training/build configuration used, e.g. the
-   * digest of the resolved config file.
-   */
-  configurationId: string;
-  /** Creation timestamp of the artifact, ISO 8601 with an explicit offset. */
-  createdAt: string;
-}
-
-/**
- * Required fields of provenance format version 1, in canonical order. Kept in
- * sync with `PROVENANCE_FIELDS` in `contracts/model-attestation/src/lib.rs`.
- */
-export const REQUIRED_PROVENANCE_FIELDS = [
-  "formatVersion",
-  "sourceRevision",
-  "sourceRepository",
-  "dependencies",
-  "configurationId",
-  "createdAt",
+export const NUMERIC_FEATURE_SPECS: readonly NumericFeatureSpec[] = [
+  {
+    name: "accountAgeDays",
+    unit: "days",
+    integer: true,
+    min: 0,
+    max: 36_500,
+    missingDefault: 0,
+    description:
+      "Whole days between account creation and observedAt. Unknown age is treated as a brand-new account.",
+  },
+  {
+    name: "transactionCount30d",
+    unit: "count",
+    integer: true,
+    min: 0,
+    max: 1_000_000_000,
+    missingDefault: 0,
+    description: "Settled payments in the 30 days ending at observedAt.",
+  },
+  {
+    name: "averageBalanceStroops",
+    unit: "stroops",
+    integer: true,
+    min: 0,
+    max: Number.MAX_SAFE_INTEGER,
+    missingDefault: 0,
+    description:
+      "Time-weighted mean native balance over the 30 days ending at observedAt, in stroops.",
+  },
+  {
+    name: "largestTransferStroops",
+    unit: "stroops",
+    integer: true,
+    min: 0,
+    max: Number.MAX_SAFE_INTEGER,
+    missingDefault: 0,
+    description:
+      "Largest single outbound payment in the 30 days ending at observedAt, in stroops.",
+  },
+  {
+    name: "distinctCounterparties30d",
+    unit: "count",
+    integer: true,
+    min: 0,
+    max: 1_000_000_000,
+    missingDefault: 0,
+    description:
+      "Distinct counterparty accounts transacted with in the 30 days ending at observedAt.",
+  },
+  {
+    name: "failedPaymentCount90d",
+    unit: "count",
+    integer: true,
+    min: 0,
+    max: 1_000_000_000,
+    missingDefault: 0,
+    description:
+      "Submitted payments that failed or were reverted in the 90 days ending at observedAt.",
+  },
+  {
+    name: "disputeRatio90d",
+    unit: "ratio",
+    integer: false,
+    min: 0,
+    max: 1,
+    missingDefault: 0,
+    description:
+      "Disputed payments divided by total payments over the 90 days ending at observedAt.",
+  },
+  {
+    name: "crossBorderTransferRatio30d",
+    unit: "ratio",
+    integer: false,
+    min: 0,
+    max: 1,
+    missingDefault: 0,
+    description:
+      "Share of 30-day payment volume whose counterparty anchor is in a different jurisdiction.",
+  },
+  {
+    name: "medianSettlementLatencySeconds",
+    unit: "seconds",
+    integer: false,
+    min: 0,
+    max: 2_592_000,
+    missingDefault: 86_400,
+    description:
+      "Median seconds from submission to ledger close over the 30 days ending at observedAt. Unknown latency imputes to one day, never to zero.",
+  },
 ] as const;
 
-export type RequiredProvenanceField = (typeof REQUIRED_PROVENANCE_FIELDS)[number];
-
 /**
- * Result of checking a candidate provenance record.
+ * A single scored subject, as handed to a model.
  *
- * - `missingFields` — required fields that are absent, `null`/`undefined`, or
- *   blank. These are the fields a producer still has to supply.
- * - `invalidFields` — required fields that are present but malformed (wrong
- *   type, unsupported format version, non-ISO timestamp, dependency entry
- *   without a name or version).
- *
- * `valid` is true only when both lists are empty.
+ * Missing-value convention: every numeric feature is `number | null`, where
+ * `null` means "the upstream source had no value". The key must still be
+ * present — an absent key is a producer bug and is rejected, not silently
+ * treated as `null`.
  */
-export interface ProvenanceValidationResult {
-  valid: boolean;
-  missingFields: string[];
-  invalidFields: string[];
+export interface FeatureVector {
+  /** Semver of this contract; must equal {@link FEATURE_VECTOR_SCHEMA_VERSION}. */
+  schemaVersion: string;
+  /** Opaque pseudonymous identifier. `[A-Za-z0-9_-]{1,128}` — never PII. */
+  subjectId: string;
+  /** Whether `subjectId` names an account or a single payment. */
+  subjectKind: SubjectKind;
+  /** ISO-8601 UTC instant the features were computed as of, e.g. `2026-01-15T00:00:00.000Z`. */
+  observedAt: string;
+  /** Customer due-diligence tier. Required — see {@link KycTier}. */
+  kycTier: KycTier;
+
+  /** Whole days since account creation. Unit: days. `null` = unknown. */
+  accountAgeDays: number | null;
+  /** Settled payments in the trailing 30 days. Unit: count. `null` = unknown. */
+  transactionCount30d: number | null;
+  /** Time-weighted mean native balance. Unit: stroops. `null` = unknown. */
+  averageBalanceStroops: number | null;
+  /** Largest single outbound payment in 30 days. Unit: stroops. `null` = unknown. */
+  largestTransferStroops: number | null;
+  /** Distinct counterparties in 30 days. Unit: count. `null` = unknown. */
+  distinctCounterparties30d: number | null;
+  /** Failed or reverted payments in 90 days. Unit: count. `null` = unknown. */
+  failedPaymentCount90d: number | null;
+  /** Disputed / total payments over 90 days. Unit: ratio in [0,1]. `null` = unknown. */
+  disputeRatio90d: number | null;
+  /** Cross-border share of 30-day volume. Unit: ratio in [0,1]. `null` = unknown. */
+  crossBorderTransferRatio30d: number | null;
+  /** Median submit-to-close latency over 30 days. Unit: seconds. `null` = unknown. */
+  medianSettlementLatencySeconds: number | null;
 }
 
-/** Input accepted by {@link createProvenance}; `formatVersion` defaults to the current one. */
-export type ProvenanceInput = Omit<ProvenanceMetadata, "formatVersion"> & {
-  formatVersion?: number;
+/**
+ * A {@link FeatureVector} with every `null` replaced by its documented default.
+ * This — not the raw vector — is what a model consumes.
+ */
+export type ImputedFeatureVector = Omit<FeatureVector, NumericFeatureName> & {
+  readonly [K in NumericFeatureName]: number;
+} & {
+  /** Feature names that were `null` and have been filled with their default. */
+  readonly imputedFields: readonly NumericFeatureName[];
 };
 
-/** Outcome of {@link createProvenance}: either a complete record, or the reasons it was refused. */
-export type CreateProvenanceResult =
-  | { ok: true; provenance: ProvenanceMetadata }
-  | {
-      ok: false;
-      error: string;
-      missingFields: string[];
-      invalidFields: string[];
-    };
+// ---------------------------------------------------------------------------
+// Model result (pipeline output)
+// ---------------------------------------------------------------------------
 
-/** Outcome of {@link parseProvenance}. Never returns a partially understood record. */
-export type ParseProvenanceResult =
-  | { ok: true; provenance: ProvenanceMetadata }
-  | {
-      ok: false;
-      /**
-       * - `malformed-json` — the payload is not valid JSON, or not a JSON object.
-       * - `unsupported-format-version` — `formatVersion` is missing or not one
-       *   this package understands; the record is refused, not guessed at.
-       * - `incomplete-provenance` — the version is understood but required
-       *   fields are missing or malformed.
-       */
-      reason:
-        | "malformed-json"
-        | "unsupported-format-version"
-        | "incomplete-provenance";
-      error: string;
-      missingFields: string[];
-      invalidFields: string[];
-    };
+/** Which head produced the result. Mirrors the Soroban contracts of the same name. */
+export type ModelTask = "credit-score" | "fraud-detect";
 
-/** Thrown by {@link serializeProvenance} when asked to publish incomplete provenance. */
-export class ProvenanceValidationError extends Error {
-  readonly missingFields: string[];
-  readonly invalidFields: string[];
+/** Discrete class emitted alongside the continuous score. */
+export type RiskLabel = "low" | "medium" | "high";
 
-  constructor(missingFields: string[], invalidFields: string[]) {
-    super(describeInvalidProvenance(missingFields, invalidFields));
-    this.name = "ProvenanceValidationError";
-    this.missingFields = missingFields;
-    this.invalidFields = invalidFields;
+/**
+ * A model's verdict on one subject.
+ *
+ * No field is nullable. A model that cannot score a subject emits *no*
+ * `ModelResult` at all and records the failure out of band — a partially
+ * populated result must never reach the chain, because downstream Soroban
+ * contracts cannot distinguish "unknown" from "benign".
+ */
+export interface ModelResult {
+  /** Semver of this contract; must equal {@link MODEL_RESULT_SCHEMA_VERSION}. */
+  schemaVersion: string;
+  /** Stable model identifier, e.g. `credit-score-gbm`. `[A-Za-z0-9._-]{1,128}`. */
+  modelId: string;
+  /** Semver of the trained artifact that produced this result. */
+  modelVersion: string;
+  /** `schemaVersion` of the {@link FeatureVector} that was scored. */
+  featureVectorVersion: string;
+  /** Which head produced the result. */
+  task: ModelTask;
+  /** Echoes {@link FeatureVector.subjectId}. */
+  subjectId: string;
+  /** ISO-8601 UTC instant the score was produced. */
+  scoredAt: string;
+  /** Continuous risk score. Unit: ratio in [0,1]; higher = riskier. */
+  score: number;
+  /** Discrete bucket derived from `score` via the model's calibrated thresholds. */
+  label: RiskLabel;
+  /** Calibrated confidence in `label`. Unit: ratio in [0,1]. */
+  confidence: number;
+  /** Feature names that were imputed on the way in. Empty when nothing was missing. */
+  imputedFields: NumericFeatureName[];
+}
+
+// ---------------------------------------------------------------------------
+// Validation
+// ---------------------------------------------------------------------------
+
+/** Raised when a payload does not satisfy a documented contract. */
+export class SchemaValidationError extends Error {
+  /** Every violation found, not just the first. */
+  readonly issues: readonly string[];
+  /** Name of the contract that rejected the payload. */
+  readonly schema: string;
+
+  constructor(schema: string, issues: readonly string[]) {
+    super(`${schema} validation failed: ${issues.join("; ")}`);
+    this.name = "SchemaValidationError";
+    this.schema = schema;
+    this.issues = issues;
+    Object.setPrototypeOf(this, SchemaValidationError.prototype);
   }
 }
 
-/** True when this package understands records stamped with `formatVersion`. */
-export function isSupportedProvenanceFormatVersion(
-  formatVersion: unknown
-): formatVersion is number {
-  return (
-    typeof formatVersion === "number" &&
-    SUPPORTED_PROVENANCE_FORMAT_VERSIONS.includes(formatVersion)
-  );
+const SUBJECT_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+const MODEL_ID_PATTERN = /^[A-Za-z0-9._-]{1,128}$/;
+const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
+const ISO_UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
+
+const SUBJECT_KINDS: readonly SubjectKind[] = ["account", "transaction"];
+const KYC_TIERS: readonly KycTier[] = [0, 1, 2, 3];
+const MODEL_TASKS: readonly ModelTask[] = ["credit-score", "fraud-detect"];
+const RISK_LABELS: readonly RiskLabel[] = ["low", "medium", "high"];
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function isIso8601(value: string): boolean {
-  // Date, time, and an explicit UTC marker or numeric offset.
-  const pattern =
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
-  return pattern.test(value) && !Number.isNaN(Date.parse(value));
-}
-
-function isDependency(value: unknown): value is Dependency {
-  if (typeof value !== "object" || value === null) return false;
-  const candidate = value as Partial<Dependency>;
-  return isNonEmptyString(candidate.name) && isNonEmptyString(candidate.version);
-}
-
-function describeInvalidProvenance(
-  missingFields: string[],
-  invalidFields: string[]
-): string {
-  const parts: string[] = [];
-  if (missingFields.length > 0) {
-    parts.push(`missing fields: ${missingFields.join(", ")}`);
+function checkTimestamp(
+  issues: string[],
+  record: Record<string, unknown>,
+  field: string,
+): void {
+  const value = record[field];
+  if (typeof value !== "string" || !ISO_UTC_PATTERN.test(value)) {
+    issues.push(`${field} must be an ISO-8601 UTC timestamp ending in "Z"`);
+    return;
   }
-  if (invalidFields.length > 0) {
-    parts.push(`invalid fields: ${invalidFields.join(", ")}`);
+  if (Number.isNaN(Date.parse(value))) {
+    issues.push(`${field} is not a real calendar instant`);
   }
-  return `Incomplete model artifact provenance (${
-    parts.join("; ") || "unknown reason"
-  }).`;
+}
+
+function checkString(
+  issues: string[],
+  record: Record<string, unknown>,
+  field: string,
+  pattern: RegExp,
+  expectation: string,
+): void {
+  const value = record[field];
+  if (typeof value !== "string") {
+    issues.push(`${field} must be a string`);
+  } else if (!pattern.test(value)) {
+    issues.push(`${field} must ${expectation}`);
+  }
+}
+
+function checkEnum<T>(
+  issues: string[],
+  record: Record<string, unknown>,
+  field: string,
+  allowed: readonly T[],
+): void {
+  if (!allowed.includes(record[field] as T)) {
+    issues.push(
+      `${field} must be one of ${allowed.map((v) => JSON.stringify(v)).join(", ")}`,
+    );
+  }
+}
+
+function checkBoundedNumber(
+  issues: string[],
+  record: Record<string, unknown>,
+  field: string,
+  min: number,
+  max: number,
+): void {
+  const value = record[field];
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    issues.push(`${field} must be a finite number`);
+  } else if (value < min || value > max) {
+    issues.push(`${field} must be within [${min}, ${max}], got ${value}`);
+  }
 }
 
 /**
- * Check a candidate provenance record against format version 1.
+ * Validate an untrusted payload against the {@link FeatureVector} contract.
  *
- * Absent or blank required fields are reported in `missingFields`; present but
- * malformed ones in `invalidFields`. Nothing is defaulted or repaired here —
- * the caller decides what to do with an incomplete record.
+ * Rejects, with every issue listed: unknown or absent keys, `undefined` in
+ * place of an explicit `null`, `NaN`/`Infinity`, fractional values in integer
+ * fields, out-of-range values, a `subjectId` that looks like PII (anything
+ * outside `[A-Za-z0-9_-]`, which excludes emails and account addresses with
+ * punctuation), and a `schemaVersion` this build does not implement.
+ *
+ * @throws {SchemaValidationError}
  */
-export function validateProvenance(
-  input: Partial<ProvenanceMetadata> | null | undefined
-): ProvenanceValidationResult {
-  const missingFields: string[] = [];
-  const invalidFields: string[] = [];
+export function validateFeatureVector(input: unknown): FeatureVector {
+  const issues: string[] = [];
 
-  if (typeof input !== "object" || input === null) {
-    return {
-      valid: false,
-      missingFields: [...REQUIRED_PROVENANCE_FIELDS],
-      invalidFields: [],
-    };
+  if (!isPlainObject(input)) {
+    throw new SchemaValidationError("FeatureVector", [
+      "payload must be a plain object",
+    ]);
   }
 
-  const record = input as Record<string, unknown>;
+  const known = new Set<string>([
+    "schemaVersion",
+    "subjectId",
+    "subjectKind",
+    "observedAt",
+    "kycTier",
+    ...NUMERIC_FEATURE_SPECS.map((spec) => spec.name),
+  ]);
+  for (const key of Object.keys(input)) {
+    if (!known.has(key)) {
+      issues.push(`unknown field ${JSON.stringify(key)}`);
+    }
+  }
 
-  for (const field of REQUIRED_PROVENANCE_FIELDS) {
-    const value = record[field];
+  checkString(
+    issues,
+    input,
+    "schemaVersion",
+    SEMVER_PATTERN,
+    "be a semver string such as \"1.0.0\"",
+  );
+  if (
+    typeof input.schemaVersion === "string" &&
+    SEMVER_PATTERN.test(input.schemaVersion) &&
+    input.schemaVersion !== FEATURE_VECTOR_SCHEMA_VERSION
+  ) {
+    issues.push(
+      `schemaVersion ${input.schemaVersion} is not supported by this build (expected ${FEATURE_VECTOR_SCHEMA_VERSION})`,
+    );
+  }
 
-    if (value === undefined || value === null) {
-      missingFields.push(field);
+  checkString(
+    issues,
+    input,
+    "subjectId",
+    SUBJECT_ID_PATTERN,
+    "be an opaque pseudonymous id matching [A-Za-z0-9_-]{1,128} and must not carry personal data",
+  );
+  checkEnum(issues, input, "subjectKind", SUBJECT_KINDS);
+  checkTimestamp(issues, input, "observedAt");
+  checkEnum(issues, input, "kycTier", KYC_TIERS);
+
+  for (const spec of NUMERIC_FEATURE_SPECS) {
+    if (!Object.prototype.hasOwnProperty.call(input, spec.name)) {
+      issues.push(
+        `${spec.name} is required; use an explicit null to signal a missing value`,
+      );
       continue;
     }
 
-    switch (field) {
-      case "formatVersion":
-        if (!isSupportedProvenanceFormatVersion(value)) invalidFields.push(field);
-        break;
-      case "dependencies":
-        if (!Array.isArray(value) || !value.every(isDependency)) {
-          invalidFields.push(field);
-        }
-        break;
-      case "createdAt":
-        if (typeof value !== "string") invalidFields.push(field);
-        else if (value.trim().length === 0) missingFields.push(field);
-        else if (!isIso8601(value)) invalidFields.push(field);
-        break;
-      default:
-        // Remaining required fields are plain non-empty strings.
-        if (typeof value !== "string") invalidFields.push(field);
-        else if (value.trim().length === 0) missingFields.push(field);
-        break;
+    const value = input[spec.name];
+    if (value === null) continue;
+
+    if (value === undefined) {
+      issues.push(
+        `${spec.name} must not be undefined; use an explicit null to signal a missing value`,
+      );
+      continue;
+    }
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      issues.push(
+        `${spec.name} must be a finite number or null (unit: ${spec.unit})`,
+      );
+      continue;
+    }
+    if (spec.integer && !Number.isInteger(value)) {
+      issues.push(`${spec.name} must be an integer (unit: ${spec.unit})`);
+      continue;
+    }
+    if (value < spec.min || value > spec.max) {
+      issues.push(
+        `${spec.name} must be within [${spec.min}, ${spec.max}], got ${value}`,
+      );
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new SchemaValidationError("FeatureVector", issues);
+  }
+  return input as unknown as FeatureVector;
+}
+
+/** Non-throwing type guard over {@link validateFeatureVector}. */
+export function isFeatureVector(input: unknown): input is FeatureVector {
+  try {
+    validateFeatureVector(input);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validate an untrusted payload against the {@link ModelResult} contract.
+ *
+ * Nulls are rejected everywhere: an output is complete or it does not exist.
+ *
+ * @throws {SchemaValidationError}
+ */
+export function validateModelResult(input: unknown): ModelResult {
+  const issues: string[] = [];
+
+  if (!isPlainObject(input)) {
+    throw new SchemaValidationError("ModelResult", [
+      "payload must be a plain object",
+    ]);
+  }
+
+  const known = new Set<string>([
+    "schemaVersion",
+    "modelId",
+    "modelVersion",
+    "featureVectorVersion",
+    "task",
+    "subjectId",
+    "scoredAt",
+    "score",
+    "label",
+    "confidence",
+    "imputedFields",
+  ]);
+  for (const key of Object.keys(input)) {
+    if (!known.has(key)) {
+      issues.push(`unknown field ${JSON.stringify(key)}`);
+    }
+  }
+
+  checkString(
+    issues,
+    input,
+    "schemaVersion",
+    SEMVER_PATTERN,
+    "be a semver string such as \"1.0.0\"",
+  );
+  if (
+    typeof input.schemaVersion === "string" &&
+    SEMVER_PATTERN.test(input.schemaVersion) &&
+    input.schemaVersion !== MODEL_RESULT_SCHEMA_VERSION
+  ) {
+    issues.push(
+      `schemaVersion ${input.schemaVersion} is not supported by this build (expected ${MODEL_RESULT_SCHEMA_VERSION})`,
+    );
+  }
+
+  checkString(
+    issues,
+    input,
+    "modelId",
+    MODEL_ID_PATTERN,
+    "match [A-Za-z0-9._-]{1,128}",
+  );
+  checkString(
+    issues,
+    input,
+    "modelVersion",
+    SEMVER_PATTERN,
+    "be a semver string such as \"2.3.1\"",
+  );
+  checkString(
+    issues,
+    input,
+    "featureVectorVersion",
+    SEMVER_PATTERN,
+    "be a semver string such as \"1.0.0\"",
+  );
+  checkEnum(issues, input, "task", MODEL_TASKS);
+  checkString(
+    issues,
+    input,
+    "subjectId",
+    SUBJECT_ID_PATTERN,
+    "be an opaque pseudonymous id matching [A-Za-z0-9_-]{1,128} and must not carry personal data",
+  );
+  checkTimestamp(issues, input, "scoredAt");
+  checkBoundedNumber(issues, input, "score", 0, 1);
+  checkEnum(issues, input, "label", RISK_LABELS);
+  checkBoundedNumber(issues, input, "confidence", 0, 1);
+
+  const featureNames = new Set<string>(
+    NUMERIC_FEATURE_SPECS.map((spec) => spec.name),
+  );
+  const imputed = input.imputedFields;
+  if (!Array.isArray(imputed)) {
+    issues.push("imputedFields must be an array (empty when nothing was imputed)");
+  } else {
+    for (const name of imputed) {
+      if (typeof name !== "string" || !featureNames.has(name)) {
+        issues.push(
+          `imputedFields contains ${JSON.stringify(name)}, which is not a known feature name`,
+        );
+      }
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new SchemaValidationError("ModelResult", issues);
+  }
+  return input as unknown as ModelResult;
+}
+
+/** Non-throwing type guard over {@link validateModelResult}. */
+export function isModelResult(input: unknown): input is ModelResult {
+  try {
+    validateModelResult(input);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Apply the documented missing-value policy: replace every `null` feature with
+ * its `missingDefault` and record which fields were filled in.
+ *
+ * The input is validated first, so this is the single supported way to turn an
+ * untrusted payload into something a model may consume.
+ *
+ * @throws {SchemaValidationError} if `input` is not a valid {@link FeatureVector}.
+ */
+export function imputeFeatureVector(input: unknown): ImputedFeatureVector {
+  const vector = validateFeatureVector(input);
+  const imputedFields: NumericFeatureName[] = [];
+  // Every NumericFeatureName is assigned in the loop below, one per spec.
+  const filled = {} as Record<NumericFeatureName, number>;
+
+  for (const spec of NUMERIC_FEATURE_SPECS) {
+    const value = vector[spec.name];
+    if (value === null) {
+      imputedFields.push(spec.name);
+      filled[spec.name] = spec.missingDefault;
+    } else {
+      filled[spec.name] = value;
     }
   }
 
   return {
-    valid: missingFields.length === 0 && invalidFields.length === 0,
-    missingFields,
-    invalidFields,
+    schemaVersion: vector.schemaVersion,
+    subjectId: vector.subjectId,
+    subjectKind: vector.subjectKind,
+    observedAt: vector.observedAt,
+    kycTier: vector.kycTier,
+    ...filled,
+    imputedFields,
   };
 }
 
-/**
- * Build a {@link ProvenanceMetadata} record from complete input.
- *
- * `formatVersion` defaults to {@link PROVENANCE_FORMAT_VERSION}. Incomplete or
- * malformed input never produces a record: the result is tagged `ok: false` and
- * carries the exact field names that need fixing.
- */
-export function createProvenance(
-  input: Partial<ProvenanceInput> | null | undefined
-): CreateProvenanceResult {
-  const candidate: Partial<ProvenanceMetadata> = {
-    ...(input ?? {}),
-    formatVersion: input?.formatVersion ?? PROVENANCE_FORMAT_VERSION,
-  };
+// ---------------------------------------------------------------------------
+// Synthetic examples
+// ---------------------------------------------------------------------------
+//
+// Fabricated by hand for documentation and tests. `subjectId` values are
+// literal placeholders, not hashes of anything real, and no field derives from
+// a real account, person, or ledger entry.
 
-  const { valid, missingFields, invalidFields } = validateProvenance(candidate);
-  if (!valid) {
-    return {
-      ok: false,
-      error: describeInvalidProvenance(missingFields, invalidFields),
-      missingFields,
-      invalidFields,
-    };
-  }
-
-  const complete = candidate as ProvenanceMetadata;
-  return {
-    ok: true,
-    provenance: {
-      formatVersion: complete.formatVersion,
-      sourceRevision: complete.sourceRevision,
-      sourceRepository: complete.sourceRepository,
-      // Copy defensively; dependency order is part of the provenance.
-      dependencies: complete.dependencies.map((dependency) => ({
-        name: dependency.name,
-        version: dependency.version,
-      })),
-      configurationId: complete.configurationId,
-      createdAt: complete.createdAt,
-    },
-  };
-}
+/** Synthetic {@link FeatureVector} with every field populated. */
+export const EXAMPLE_FEATURE_VECTOR: FeatureVector = {
+  schemaVersion: FEATURE_VECTOR_SCHEMA_VERSION,
+  subjectId: "synthetic-account-0001",
+  subjectKind: "account",
+  observedAt: "2026-01-15T00:00:00.000Z",
+  kycTier: 2,
+  accountAgeDays: 418,
+  transactionCount30d: 37,
+  averageBalanceStroops: 1_250_000_000, // 125 XLM
+  largestTransferStroops: 400_000_000, // 40 XLM
+  distinctCounterparties30d: 12,
+  failedPaymentCount90d: 1,
+  disputeRatio90d: 0.0,
+  crossBorderTransferRatio30d: 0.24,
+  medianSettlementLatencySeconds: 5.4,
+};
 
 /**
- * Serialize provenance to the JSON payload that accompanies a published
- * artifact.
- *
- * This is the last gate before publishing: incomplete provenance throws a
- * {@link ProvenanceValidationError} listing the offending fields rather than
- * emitting a half-populated payload.
+ * Synthetic {@link FeatureVector} exercising the missing-value convention:
+ * three sources were unavailable, so those fields are explicitly `null`.
  */
-export function serializeProvenance(provenance: ProvenanceMetadata): string {
-  const { valid, missingFields, invalidFields } = validateProvenance(provenance);
-  if (!valid) {
-    throw new ProvenanceValidationError(missingFields, invalidFields);
-  }
+export const EXAMPLE_FEATURE_VECTOR_WITH_GAPS: FeatureVector = {
+  schemaVersion: FEATURE_VECTOR_SCHEMA_VERSION,
+  subjectId: "synthetic-account-0002",
+  subjectKind: "account",
+  observedAt: "2026-01-15T00:00:00.000Z",
+  kycTier: 0,
+  accountAgeDays: null,
+  transactionCount30d: 2,
+  averageBalanceStroops: null,
+  largestTransferStroops: 90_000_000, // 9 XLM
+  distinctCounterparties30d: 2,
+  failedPaymentCount90d: 0,
+  disputeRatio90d: 0.0,
+  crossBorderTransferRatio30d: 1.0,
+  medianSettlementLatencySeconds: null,
+};
 
-  // Canonical key order matches REQUIRED_PROVENANCE_FIELDS so payloads hash
-  // reproducibly.
-  return JSON.stringify({
-    formatVersion: provenance.formatVersion,
-    sourceRevision: provenance.sourceRevision,
-    sourceRepository: provenance.sourceRepository,
-    dependencies: provenance.dependencies.map((dependency) => ({
-      name: dependency.name,
-      version: dependency.version,
-    })),
-    configurationId: provenance.configurationId,
-    createdAt: provenance.createdAt,
-  });
-}
+/** Synthetic {@link ModelResult} corresponding to {@link EXAMPLE_FEATURE_VECTOR}. */
+export const EXAMPLE_MODEL_RESULT: ModelResult = {
+  schemaVersion: MODEL_RESULT_SCHEMA_VERSION,
+  modelId: "credit-score-gbm",
+  modelVersion: "2.3.1",
+  featureVectorVersion: FEATURE_VECTOR_SCHEMA_VERSION,
+  task: "credit-score",
+  subjectId: "synthetic-account-0001",
+  scoredAt: "2026-01-15T00:00:03.412Z",
+  score: 0.17,
+  label: "low",
+  confidence: 0.91,
+  imputedFields: [],
+};
 
 /**
- * Parse a serialized provenance payload.
- *
- * Compatibility is checked before anything else: a payload with a
- * `formatVersion` this package does not know is refused with
- * `reason: "unsupported-format-version"` instead of being read on a best-effort
- * basis. Recognized-but-incomplete payloads are refused too, with the missing
- * and invalid field names attached.
+ * Synthetic {@link ModelResult} corresponding to
+ * {@link EXAMPLE_FEATURE_VECTOR_WITH_GAPS}: the same three fields that were
+ * `null` on the way in are reported back on the way out.
  */
-export function parseProvenance(payload: string): ParseProvenanceResult {
-  let decoded: unknown;
-  try {
-    decoded = JSON.parse(payload);
-  } catch (cause) {
-    return {
-      ok: false,
-      reason: "malformed-json",
-      error: `Provenance payload is not valid JSON: ${
-        cause instanceof Error ? cause.message : String(cause)
-      }`,
-      missingFields: [],
-      invalidFields: [],
-    };
-  }
-
-  if (typeof decoded !== "object" || decoded === null || Array.isArray(decoded)) {
-    return {
-      ok: false,
-      reason: "malformed-json",
-      error: "Provenance payload must be a JSON object.",
-      missingFields: [],
-      invalidFields: [],
-    };
-  }
-
-  const record = decoded as Record<string, unknown>;
-  if (!isSupportedProvenanceFormatVersion(record.formatVersion)) {
-    return {
-      ok: false,
-      reason: "unsupported-format-version",
-      error: `Unsupported provenance formatVersion ${JSON.stringify(
-        record.formatVersion ?? null
-      )}; this build understands ${SUPPORTED_PROVENANCE_FORMAT_VERSIONS.join(
-        ", "
-      )}.`,
-      missingFields: record.formatVersion === undefined ? ["formatVersion"] : [],
-      invalidFields: record.formatVersion === undefined ? [] : ["formatVersion"],
-    };
-  }
-
-  const created = createProvenance(record as Partial<ProvenanceInput>);
-  if (!created.ok) {
-    return {
-      ok: false,
-      reason: "incomplete-provenance",
-      error: created.error,
-      missingFields: created.missingFields,
-      invalidFields: created.invalidFields,
-    };
-  }
-
-  return { ok: true, provenance: created.provenance };
-}
+export const EXAMPLE_MODEL_RESULT_WITH_IMPUTATION: ModelResult = {
+  schemaVersion: MODEL_RESULT_SCHEMA_VERSION,
+  modelId: "fraud-detect-iforest",
+  modelVersion: "0.9.0",
+  featureVectorVersion: FEATURE_VECTOR_SCHEMA_VERSION,
+  task: "fraud-detect",
+  subjectId: "synthetic-account-0002",
+  scoredAt: "2026-01-15T00:00:03.907Z",
+  score: 0.78,
+  label: "high",
+  confidence: 0.62,
+  imputedFields: [
+    "accountAgeDays",
+    "averageBalanceStroops",
+    "medianSettlementLatencySeconds",
+  ],
+};
