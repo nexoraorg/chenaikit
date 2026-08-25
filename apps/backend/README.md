@@ -82,3 +82,27 @@ pnpm run test --ui
 ## Deployment
 
 Rate limiting is configured with in-memory storage by default, suitable for single-instance deployments. For distributed deployments, implement a shared store (Redis, Memcached) by modifying `middleware/rateLimiter.ts` to use `express-rate-limit` with an appropriate store.
+
+## Graceful shutdown
+
+The process listens for `SIGTERM` (sent by orchestrators like Kubernetes and
+most PaaS platforms during a deploy) and `SIGINT` (Ctrl+C locally) and runs a
+shutdown sequence instead of dying mid-request:
+
+1. The HTTP server stops accepting **new** connections while letting
+   in-flight requests finish (`server.close()`).
+2. The Prisma database connection is closed (`prisma.$disconnect()`).
+3. The process exits `0`.
+
+If the sequence doesn't complete within the timeout, the process force-exits
+with code `1` instead of hanging — resources are always closed, but never
+more than once. Configure the timeout with:
+
+```bash
+# Milliseconds to wait before forcing an exit. Defaults to 10000 (10s).
+SHUTDOWN_TIMEOUT_MS=15000
+```
+
+The sequencing logic lives in `src/lifecycle.ts` and is covered by
+`src/lifecycle.test.ts`; `src/index.ts` only wires it to the real server,
+Prisma client, and OS signals.
