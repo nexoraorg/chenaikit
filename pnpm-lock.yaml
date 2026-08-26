@@ -23,6 +23,9 @@ importers:
       '@chenaikit/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@chenaikit/oracle-node':
+        specifier: workspace:*
+        version: link:../../packages/oracle-node
       '@prisma/client':
         specifier: ^5.0.0
         version: 5.22.0(prisma@5.22.0)
@@ -152,6 +155,16 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@26.2.0)(@vitest/ui@2.1.9)(jsdom@25.0.1)(terser@5.50.0)
 
+  examples/oracle-node-client:
+    dependencies:
+      '@chenaikit/oracle-node':
+        specifier: workspace:*
+        version: link:../../packages/oracle-node
+    devDependencies:
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+
   packages/chenai-mlflow:
     devDependencies:
       typescript:
@@ -162,6 +175,13 @@ importers:
         version: 2.1.9(@types/node@26.2.0)(@vitest/ui@2.1.9)(jsdom@25.0.1)(terser@5.50.0)
 
   packages/cli:
+    dependencies:
+      '@chenaikit/core':
+        specifier: workspace:*
+        version: link:../core
+      '@chenaikit/oracle-node':
+        specifier: workspace:*
+        version: link:../oracle-node
     devDependencies:
       typescript:
         specifier: ^5.5.0
@@ -180,6 +200,22 @@ importers:
         version: 2.1.9(@types/node@26.2.0)(@vitest/ui@2.1.9)(jsdom@25.0.1)(terser@5.50.0)
 
   packages/oracle-node:
+    devDependencies:
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@26.2.0)(@vitest/ui@2.1.9)(jsdom@25.0.1)(terser@5.50.0)
+
+  tests/integration:
+    dependencies:
+      '@chenaikit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@chenaikit/oracle-node':
+        specifier: workspace:*
+        version: link:../../packages/oracle-node
     devDependencies:
       typescript:
         specifier: ^5.5.0

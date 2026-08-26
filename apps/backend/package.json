@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@chenaikit/core": "workspace:*",
+    "@chenaikit/oracle-node": "workspace:*",
     "@prisma/client": "^5.0.0",
     "express": "^4.19.0",
     "express-rate-limit": "^7.1.5"
