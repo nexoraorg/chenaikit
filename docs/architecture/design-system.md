@@ -10,9 +10,11 @@ in issue #286.
 ## Tokens
 
 | Category   | Examples                                  |
-|------------|--------------------------------------------|
+|------------|-------------------------------------------|
 | Color      | `background`, `surface`, `primary`, `danger` |
-| Spacing    | `xs` (4px) → `xl` (40px)                   |
+| Spacing    | `xs` (4px) → `xl` (40px)                 |
+| Radius     | `sm` (2px), `md` (3px), `pill` (20px), `full` (50%) |
+| Motion     | `duration` (fast/base/slow), `easing` (standard/decelerate) |
 | Typography | `fontFamily`, `size`, `weight`             |
 
 ## Adding a new token
