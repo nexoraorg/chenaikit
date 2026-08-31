@@ -45,6 +45,16 @@ pnpm build
 pnpm test:all
 ```
 
+### Integration testing
+
+To run the backend API integration test suite against an isolated test database:
+
+```bash
+pnpm test:integration
+```
+
+No external database configuration or production credentials are required. Environment variables (`NODE_ENV=test` and `DATABASE_URL`) are automatically handled by the test harness.
+
 Contracts:
 
 ```bash

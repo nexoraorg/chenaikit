@@ -191,6 +191,31 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@26.2.0)(@vitest/ui@2.1.9)(jsdom@25.0.1)(terser@5.50.0)
 
+  tests/integration:
+    dependencies:
+      '@chenaikit/backend':
+        specifier: workspace:*
+        version: link:../../apps/backend
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.0
+        version: 20.19.43
+      '@types/supertest':
+        specifier: ^6.0.2
+        version: 6.0.3
+      prisma:
+        specifier: ^5.0.0
+        version: 5.22.0
+      supertest:
+        specifier: ^6.3.4
+        version: 6.3.4
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@20.19.43)(@vitest/ui@2.1.9)(terser@5.50.0)
+
 packages:
 
   '@adobe/css-tools@4.5.0':
