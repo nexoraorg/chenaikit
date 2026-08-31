@@ -28,6 +28,27 @@ export const spacing = {
   xl: "40px",
 } as const;
 
+export const radius = {
+  xs: "2px",
+  sm: "3px",
+  md: "4px",
+  lg: "8px",
+  full: "9999px",
+} as const;
+
+export const motion = {
+  duration: {
+    fast: "150ms",
+    normal: "250ms",
+    slow: "400ms",
+  },
+  easing: {
+    default: "cubic-bezier(0.4, 0, 0.2, 1)",
+    in: "cubic-bezier(0.4, 0, 1, 1)",
+    out: "cubic-bezier(0, 0, 0.2, 1)",
+  },
+} as const;
+
 export const typography = {
   fontDisplay: "'JetBrains Mono', monospace",
   fontData: "'IBM Plex Mono', monospace",
