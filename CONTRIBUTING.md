@@ -76,3 +76,44 @@ cd contracts
 cargo build
 cargo test
 ```
+
+## Secret scanning
+
+**Never commit secrets, API keys, or sensitive credentials to the repository.**
+
+### What to avoid
+
+- API keys (Stripe, OpenAI, AWS, etc.)
+- Private keys or certificates
+- Database credentials
+- OAuth tokens
+- Environment files containing secrets (`.env`, `.env.local`)
+- Personal access tokens
+
+### Pre-commit checks
+
+Before committing, run secret scanning locally:
+
+```bash
+# Using truffleHog (recommended)
+npx trufflehog filesystem .
+
+# Or using gitleaks
+gitleaks detect --source .
+```
+
+### If you accidentally commit a secret
+
+1. **Do not** just remove it from the latest commit — the secret remains in git history
+2. Rotate/revolve the compromised credential immediately
+3. Remove the secret from all commits using `git filter-repo` or BFG Repo-Cleaner
+4. Force push with caution (notify team first)
+5. Consider the repository compromised if it was a high-value secret
+
+### Best practices
+
+- Use environment variables for secrets (document required variables in `.env.example`)
+- Add `.env` and `.env.local` to `.gitignore`
+- Use secret management services (e.g., AWS Secrets Manager, HashiCorp Vault) for production
+- Enable GitHub secret scanning in repository settings (enabled by default on public repos)
+- Review the [GitHub Secret Scanning documentation](https://docs.github.com/en/code-security/secret-scanning)

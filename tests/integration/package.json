@@ -1,0 +1,24 @@
+{
+  "name": "@chenaikit/integration-tests",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@chenaikit/core": "workspace:*",
+    "@chenaikit/oracle-node": "workspace:*"
+  },
+  "devDependencies": {
+    "@chenaikit/backend": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/supertest": "^6.0.2",
+    "prisma": "^5.0.0",
+    "supertest": "^6.3.4",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

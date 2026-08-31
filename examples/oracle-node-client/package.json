@@ -1,0 +1,15 @@
+{
+  "name": "@chenaikit/example-oracle-node-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Example demonstrating resilient oracle node client with retry and timeout policies",
+  "scripts": {
+    "start": "ts-node index.ts"
+  },
+  "dependencies": {
+    "@chenaikit/oracle-node": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

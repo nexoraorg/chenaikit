@@ -7,6 +7,9 @@
 
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+/**
+ * @chenaikit/cli — Command-line interface for chenaikit
+ */
 
 export const VERSION = "0.1.0";
 export const BIN_NAME = "chenaikit";
