@@ -1,56 +1,61 @@
 #![no_std]
-//! model-attestation — on-chain registry for model attestation records.
+//! model-attestation — on-chain attestation surface for model artifacts.
 //!
-//! Provides explicit lifecycle guarantees so consumers can distinguish
-//! current evidence from revoked or stale records.
+//! Scaffolded fresh per issue #286; port real logic in from the old contracts/ tree.
+//!
+//! # Compatible provenance fields
+//!
+//! Off-chain, a model artifact carries a `ProvenanceMetadata` record produced by
+//! the `@chenaikit/chenai-mlflow` package (`packages/chenai-mlflow/src/index.ts`)
+//! and documented in `ml/README.md`. This contract documents which fields of
+//! that record an attestation can carry, so producers know what an on-chain
+//! attestation will and will not commit to.
+//!
+//! Provenance **format version 1** — the version this contract is written
+//! against — requires all six fields below. They are exposed on-chain by
+//! [`Contract::provenance_fields`], in the same canonical order used by the
+//! TypeScript `REQUIRED_PROVENANCE_FIELDS` constant and by the serialized JSON
+//! payload:
+//!
+//! | Field              | Off-chain type      | Meaning                                                            |
+//! |--------------------|---------------------|--------------------------------------------------------------------|
+//! | `formatVersion`    | integer             | Provenance format version; `1` is the version documented here.       |
+//! | `sourceRevision`   | string              | Git commit SHA the artifact was built from.                          |
+//! | `sourceRepository` | string              | URL of the repository holding that revision.                         |
+//! | `dependencies`     | ordered `{name, version}` list | Resolved build dependencies; order is significant.        |
+//! | `configurationId`  | string              | Identifier/hash of the training or build configuration.              |
+//! | `createdAt`        | ISO 8601 string     | Artifact creation timestamp, with an explicit UTC offset.            |
+//!
+//! Attestation payloads should commit to `dependencies` by hash rather than
+//! storing the list verbatim: the list is unbounded, while the other five
+//! fields are fixed-size. Producers must not attest to an artifact whose
+//! provenance is incomplete — `@chenaikit/chenai-mlflow` refuses to serialize
+//! such a record, and the same rule applies here.
+//!
+//! When [`PROVENANCE_FORMAT_VERSION`] and the TypeScript
+//! `PROVENANCE_FORMAT_VERSION` diverge, the two sides are no longer describing
+//! the same record and must be reconciled before attestations are trusted.
 
-use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, Address, BytesN, Env, String,
-};
+use soroban_sdk::{contract, contractimpl, Env, Symbol, Vec};
 
-/// Persistent storage keys.
-#[contracttype]
-#[derive(Clone)]
-pub enum DataKey {
-    Admin,
-    Record(String),
-}
+/// Provenance format version this contract documents and is compatible with.
+///
+/// Mirrors `PROVENANCE_FORMAT_VERSION` in `packages/chenai-mlflow/src/index.ts`.
+pub const PROVENANCE_FORMAT_VERSION: u32 = 1;
 
-/// Lifecycle status of an attestation record.
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum AttestationStatus {
-    /// Record exists and is valid evidence.
-    Active,
-    /// Record was revoked; must not be treated as current evidence.
-    Invalidated,
-}
-
-/// Stored attestation record.
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AttestationRecord {
-    pub record_id: String,
-    pub model_hash: BytesN<32>,
-    pub version: u32,
-    pub status: AttestationStatus,
-    pub created_at: u64,
-    pub updated_at: u64,
-    pub invalidated_at: Option<u64>,
-}
-
-#[contracterror]
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
-#[repr(u32)]
-pub enum Error {
-    NotInitialized = 1,
-    AlreadyInitialized = 2,
-    Unauthorized = 3,
-    NotFound = 4,
-    AlreadyExists = 5,
-    AlreadyInvalidated = 6,
-    StaleVersion = 7,
-}
+/// Required provenance fields of format version 1, in canonical order.
+///
+/// Kept in sync with `REQUIRED_PROVENANCE_FIELDS` in
+/// `packages/chenai-mlflow/src/index.ts`; the names are the JSON keys of the
+/// serialized provenance payload.
+pub const PROVENANCE_FIELDS: [&str; 6] = [
+    "formatVersion",
+    "sourceRevision",
+    "sourceRepository",
+    "dependencies",
+    "configurationId",
+    "createdAt",
+];
 
 #[contract]
 pub struct Contract;
@@ -416,5 +421,49 @@ mod test {
             Err(Ok(Error::NotInitialized))
         );
         assert!(client.get_attestation(&id).is_none());
+    }
+
+    #[test]
+    fn test_provenance_format_version() {
+        let env = Env::default();
+        let contract_id = env.register(Contract, ());
+        let client = ContractClient::new(&env, &contract_id);
+        assert_eq!(client.provenance_format_version(), 1);
+        assert_eq!(
+            client.provenance_format_version(),
+            PROVENANCE_FORMAT_VERSION
+        );
+    }
+
+    #[test]
+    fn test_provenance_fields_match_documented_format() {
+        let env = Env::default();
+        let contract_id = env.register(Contract, ());
+        let client = ContractClient::new(&env, &contract_id);
+
+        let expected = vec![
+            &env,
+            Symbol::new(&env, "formatVersion"),
+            Symbol::new(&env, "sourceRevision"),
+            Symbol::new(&env, "sourceRepository"),
+            Symbol::new(&env, "dependencies"),
+            Symbol::new(&env, "configurationId"),
+            Symbol::new(&env, "createdAt"),
+        ];
+
+        assert_eq!(client.provenance_fields(), expected);
+    }
+
+    #[test]
+    fn test_provenance_fields_constant_is_the_source_of_truth() {
+        let env = Env::default();
+        let contract_id = env.register(Contract, ());
+        let client = ContractClient::new(&env, &contract_id);
+
+        let fields = client.provenance_fields();
+        assert_eq!(fields.len() as usize, PROVENANCE_FIELDS.len());
+        for (index, name) in PROVENANCE_FIELDS.iter().enumerate() {
+            assert_eq!(fields.get_unchecked(index as u32), Symbol::new(&env, name));
+        }
     }
 }
