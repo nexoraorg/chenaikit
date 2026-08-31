@@ -1,0 +1,79 @@
+name: PR Checklist
+
+# Unlike frontend.yml / backend.yml / contracts.yml, this workflow is
+# deliberately NOT path-filtered: every pull request needs a filled-in
+# description, whatever it touches.
+#
+# `labeled`/`unlabeled` are included so applying the `skip-checklist` bypass
+# label re-runs the check immediately instead of waiting for the next push.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
+  workflow_dispatch:
+
+# ---------------------------------------------------------------------------
+# Fork safety
+# ---------------------------------------------------------------------------
+# This uses the plain `pull_request` trigger, never `pull_request_target`.
+#
+# * `pull_request` runs in the context of the *fork's* merge ref. For PRs from
+#   forks GitHub issues a `GITHUB_TOKEN` that is read-only, and repository
+#   secrets are NOT injected into the job. So even though the steps below
+#   execute contributor-authored code from the PR head, that code has nothing
+#   privileged to steal.
+# * `pull_request_target` would do the opposite: run with a read/write token
+#   and full access to secrets, against a ref the contributor controls. That is
+#   the classic exfiltration hole, and it buys us nothing here — validating a PR
+#   description needs no write access.
+# * Because the token is read-only on forks, this check *fails the job* with
+#   annotations and a job summary rather than posting a review comment. A bot
+#   comment would need `pull-requests: write`, which fork PRs cannot get under
+#   `pull_request` — the failure + summary is the actionable signal instead.
+# * The PR body is untrusted input. It is never interpolated into a shell
+#   command via `${{ ... }}`; the validator reads it from the webhook payload
+#   on disk (`GITHUB_EVENT_PATH`), which sidesteps script injection entirely.
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checklist-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checklist:
+    name: Validate PR description
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Two commits: the PR merge commit and its parents, enough to diff
+          # the PR against its base without a full clone.
+          fetch-depth: 2
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The validator is pure and unit-tested; the tests run here so a
+      # regression in the rules is caught on every PR, not just when someone
+      # remembers to run them locally.
+      - name: Unit test the validator
+        run: node --test '.github/scripts/*.test.mjs'
+
+      # Only used to decide whether the "Screenshots" section is required.
+      # Computed from git (no API call, no token). If the shallow history
+      # cannot produce a diff we fall back to an empty list, which simply
+      # means screenshots are not demanded.
+      - name: Collect changed files
+        run: |
+          {
+            echo 'CHANGED_FILES<<__EOF__'
+            git diff --name-only HEAD^1 HEAD 2>/dev/null || true
+            echo '__EOF__'
+          } >> "$GITHUB_ENV"
+
+      - name: Validate PR description
+        run: node .github/scripts/check-pr-checklist.mjs
