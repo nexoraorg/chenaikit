@@ -66,3 +66,31 @@ export const typography = {
     black: 800,
   },
 } as const;
+
+export const radius = {
+  /** 2px — small corners for buttons, chips, nested borders */
+  sm: "2px",
+  /** 3px — default card/panel/stamp rounding */
+  md: "3px",
+  /** 20px — pill-shaped badges and tags */
+  pill: "20px",
+  /** 50% — circular indicator dots */
+  full: "50%",
+} as const;
+
+export const motion = {
+  duration: {
+    /** 100ms — micro-interactions (hover colour swap) */
+    fast: "100ms",
+    /** 200ms — standard button/link transitions */
+    base: "200ms",
+    /** 400ms — panel reveals, entrance animations */
+    slow: "400ms",
+  },
+  easing: {
+    /** Standard ease-out — most UI transitions */
+    standard: "cubic-bezier(0.2, 0, 0, 1)",
+    /** Decelerate — elements entering the viewport */
+    decelerate: "cubic-bezier(0, 0, 0.2, 1)",
+  },
+} as const;
