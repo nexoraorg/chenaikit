@@ -69,6 +69,9 @@ jobs:
       - name: Build
         run: npx --no-install vite build
 
+      - name: Generate checksums
+        run: bash ../../scripts/generate-checksums.sh dist
+
       - name: Upload build output
         uses: actions/upload-artifact@v4
         with:
