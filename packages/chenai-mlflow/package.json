@@ -1,13 +1,13 @@
 {
   "name": "@chenaikit/chenai-mlflow",
   "version": "0.1.0",
-  "description": "ML experiment tracking integration",
+  "description": "MLflow tracking & model registry integration for chenaikit",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "lint": "eslint ."
+    "lint": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

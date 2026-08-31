@@ -7,6 +7,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@chenaikit/core": "workspace:*",
+    "@chenaikit/oracle-node": "workspace:*"
+  },
+  "devDependencies": {
     "@chenaikit/backend": "workspace:*"
   },
   "devDependencies": {
