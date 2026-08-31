@@ -1,4 +1,10 @@
 #![no_std]
+//! credit-score — Soroban contract for credit scoring.
+//!
+//! First adopter of the shared `ErrorCategory` from `common-utils`.
+
+use common_utils::ErrorCategory;
+use soroban_sdk::{contract, contractimpl, Env};
 //! credit-score — stores subject credit scores behind explicit authorization.
 //!
 //! Privileged writes require admin or scorer roles. Rejected callers must leave
@@ -137,6 +143,18 @@ impl Contract {
 
     pub fn get_scorer(env: Env) -> Option<Address> {
         env.storage().instance().get(&DataKey::Scorer)
+    }
+
+    /// Validates that a credit score is within the accepted 0–100 range.
+    ///
+    /// Returns `Ok(())` for valid scores and `Err(ErrorCategory::Validation)`
+    /// for scores outside the range.
+    pub fn validate_score(_env: &Env, score: u32) -> Result<(), ErrorCategory> {
+        if score > 100 {
+            Err(ErrorCategory::Validation)
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -366,5 +384,32 @@ mod test {
             Err(Ok(Error::AlreadyInitialized))
         );
         assert_eq!(client.get_admin(), Some(admin));
+    }
+
+    #[test]
+    fn test_validate_score_success() {
+        let env = Env::default();
+        assert_eq!(Contract::validate_score(&env, 50), Ok(()));
+    }
+
+    #[test]
+    fn test_validate_score_validation_error() {
+        let env = Env::default();
+        assert_eq!(
+            Contract::validate_score(&env, 101),
+            Err(ErrorCategory::Validation)
+        );
+    }
+
+    #[test]
+    fn test_validate_score_zero_boundary() {
+        let env = Env::default();
+        assert_eq!(Contract::validate_score(&env, 0), Ok(()));
+    }
+
+    #[test]
+    fn test_validate_score_max_boundary() {
+        let env = Env::default();
+        assert_eq!(Contract::validate_score(&env, 100), Ok(()));
     }
 }
