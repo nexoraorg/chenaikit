@@ -1,27 +1,17 @@
 #![no_std]
-//! common-utils — shared library for Chenai contract error categories.
+//! common-utils — shared library for Chenai contract error categories and access control primitives.
 //!
 //! This crate is intentionally a pure `rlib` (no `cdylib`, no `#[contract]`).
-//! Contracts import `ErrorCategory` and return it directly as their error type.
-//! Clients must branch on the stable u32 codes, never on `Debug` strings.
+//! Contracts import `ErrorCategory` and role primitives directly.
 
+pub mod roles;
+
+pub use roles::{RiskLevel, Role, RoleKey, RoleRegistry};
 use soroban_sdk::contracterror;
 
 /// Shared, externally-observable error categories for all contracts.
 ///
 /// Codes 1–5 are frozen. New categories may append at 6+.
-///
-/// # Client contract
-///
-/// ```
-/// use common_utils::ErrorCategory;
-///
-/// // Clients decode the u32 code and branch on it.
-/// let category = ErrorCategory::Validation;
-/// let code = category as u32; // 2
-/// // The Debug representation is NOT stable and must not be parsed.
-/// let _ = format!("{:?}", category); // diagnostic only
-/// ```
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -79,7 +69,6 @@ mod test {
         ];
         codes.sort_unstable();
         let deduped = codes.as_slice();
-        // Count unique adjacent runs in the sorted slice.
         let unique_count = deduped
             .iter()
             .fold((0u32, None), |(count, last), &code| {
