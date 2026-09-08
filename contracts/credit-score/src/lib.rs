@@ -3,14 +3,10 @@
 //!
 //! First adopter of the shared `ErrorCategory` from `common-utils`.
 
-use common_utils::ErrorCategory;
-use soroban_sdk::{contract, contractimpl, Env};
-//! credit-score — stores subject credit scores behind explicit authorization.
-//!
-//! Privileged writes require admin or scorer roles. Rejected callers must leave
-//! storage unchanged so sensitive decisions are not corrupted.
-
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, String};
+use common_utils::{ErrorCategory, RiskLevel};
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, vec, Address, Env, String, Symbol,
+};
 
 #[contracttype]
 #[derive(Clone)]
@@ -18,6 +14,7 @@ pub enum DataKey {
     Admin,
     Scorer,
     Score(Address),
+    FraudContract,
 }
 
 #[contracttype]
@@ -39,6 +36,7 @@ pub enum Error {
     NotFound = 4,
     InvalidScore = 5,
     AlreadyExists = 6,
+    FraudDetected = 7,
 }
 
 /// Maximum accepted score value (inclusive).
@@ -67,6 +65,19 @@ impl Contract {
         Ok(())
     }
 
+    /// Admin-only: configure the fraud detection contract address for cross-contract checks.
+    pub fn set_fraud_contract(
+        env: Env,
+        caller: Address,
+        fraud_contract: Address,
+    ) -> Result<(), Error> {
+        require_admin(&env, &caller)?;
+        env.storage()
+            .instance()
+            .set(&DataKey::FraudContract, &fraud_contract);
+        Ok(())
+    }
+
     /// Scorer-only: create a score for a subject that has none yet.
     pub fn record_score(
         env: Env,
@@ -79,6 +90,22 @@ impl Contract {
         if value > MAX_SCORE {
             return Err(Error::InvalidScore);
         }
+
+        if let Some(fraud_addr) = env
+            .storage()
+            .instance()
+            .get::<DataKey, Address>(&DataKey::FraudContract)
+        {
+            let risk = env.invoke_contract::<RiskLevel>(
+                &fraud_addr,
+                &Symbol::new(&env, "get_current_risk"),
+                vec![&env, subject.to_val()],
+            );
+            if risk == RiskLevel::Critical {
+                return Err(Error::FraudDetected);
+            }
+        }
+
         let key = DataKey::Score(subject.clone());
         if env.storage().persistent().has(&key) {
             return Err(Error::AlreadyExists);
@@ -105,6 +132,22 @@ impl Contract {
         if value > MAX_SCORE {
             return Err(Error::InvalidScore);
         }
+
+        if let Some(fraud_addr) = env
+            .storage()
+            .instance()
+            .get::<DataKey, Address>(&DataKey::FraudContract)
+        {
+            let risk = env.invoke_contract::<RiskLevel>(
+                &fraud_addr,
+                &Symbol::new(&env, "get_current_risk"),
+                vec![&env, subject.to_val()],
+            );
+            if risk == RiskLevel::Critical {
+                return Err(Error::FraudDetected);
+            }
+        }
+
         let key = DataKey::Score(subject.clone());
         if !env.storage().persistent().has(&key) {
             return Err(Error::NotFound);
@@ -143,6 +186,10 @@ impl Contract {
 
     pub fn get_scorer(env: Env) -> Option<Address> {
         env.storage().instance().get(&DataKey::Scorer)
+    }
+
+    pub fn get_fraud_contract(env: Env) -> Option<Address> {
+        env.storage().instance().get(&DataKey::FraudContract)
     }
 
     /// Validates that a credit score is within the accepted 0–100 range.

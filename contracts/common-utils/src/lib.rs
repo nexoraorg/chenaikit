@@ -5,7 +5,47 @@
 //! Contracts import `ErrorCategory` and return it directly as their error type.
 //! Clients must branch on the stable u32 codes, never on `Debug` strings.
 
-use soroban_sdk::contracterror;
+use soroban_sdk::{contracterror, contracttype, Address, Env};
+
+/// Graded risk level matching ModelResult verdict shape and on-chain fraud tiers.
+#[contracttype]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum RiskLevel {
+    Low = 1,
+    Medium = 2,
+    High = 3,
+    Critical = 4,
+}
+
+/// Storage key for authorized writers.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WriterDataKey {
+    Writer(Address),
+}
+
+/// Shared writer registry pattern for role-based contract writes.
+pub struct WriterRegistry;
+
+impl WriterRegistry {
+    /// Returns true if the address is registered as an authorized writer.
+    pub fn is_writer(env: &Env, writer: &Address) -> bool {
+        env.storage()
+            .instance()
+            .has(&WriterDataKey::Writer(writer.clone()))
+    }
+
+    /// Sets or clears writer authorization in instance storage.
+    pub fn set_writer(env: &Env, writer: &Address, authorized: bool) {
+        let key = WriterDataKey::Writer(writer.clone());
+        if authorized {
+            env.storage().instance().set(&key, &true);
+        } else {
+            env.storage().instance().remove(&key);
+        }
+    }
+}
 
 /// Shared, externally-observable error categories for all contracts.
 ///
@@ -41,7 +81,12 @@ pub enum ErrorCategory {
 #[cfg(test)]
 mod test {
     use super::*;
+    use soroban_sdk::contract;
+    use soroban_sdk::testutils::Address as _;
     use soroban_sdk::Error;
+
+    #[contract]
+    pub struct DummyContract;
 
     #[test]
     fn test_serialization_codes() {
@@ -91,5 +136,30 @@ mod test {
             })
             .0;
         assert_eq!(unique_count, 5);
+    }
+
+    #[test]
+    fn test_risk_level_variants() {
+        assert_eq!(RiskLevel::Low as u32, 1);
+        assert_eq!(RiskLevel::Medium as u32, 2);
+        assert_eq!(RiskLevel::High as u32, 3);
+        assert_eq!(RiskLevel::Critical as u32, 4);
+    }
+
+    #[test]
+    fn test_writer_registry_operations() {
+        let env = Env::default();
+        let contract_id = env.register(DummyContract, ());
+        let writer = Address::generate(&env);
+
+        env.as_contract(&contract_id, || {
+            assert!(!WriterRegistry::is_writer(&env, &writer));
+
+            WriterRegistry::set_writer(&env, &writer, true);
+            assert!(WriterRegistry::is_writer(&env, &writer));
+
+            WriterRegistry::set_writer(&env, &writer, false);
+            assert!(!WriterRegistry::is_writer(&env, &writer));
+        });
     }
 }

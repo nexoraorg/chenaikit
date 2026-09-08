@@ -50,4 +50,16 @@ pub enum ContractError {
     AlreadyExists = 21,
     /// Target entry was not found in storage.
     NotFound = 22,
+    /// Caller is not authorized as a flag writer.
+    UnauthorizedWriter = 23,
+    /// Provided risk level is invalid or unsupported.
+    InvalidRiskLevel = 24,
+    /// Target fraud flag was not found.
+    FlagNotFound = 25,
+    /// Target fraud flag has already been resolved.
+    AlreadyResolved = 26,
+    /// Writer address is already authorized.
+    WriterAlreadyAuthorized = 27,
+    /// Writer address was not found in registry.
+    WriterNotFound = 28,
 }

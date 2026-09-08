@@ -1,6 +1,6 @@
-//! Soroban event emission for auditability and boundary violation telemetry.
-
-use crate::types::{AlertLevel, FraudAlertData, PatternMatch, RiskScore, TransactionRecord};
+use crate::types::{
+    AlertLevel, FraudAlertData, PatternMatch, RiskLevel, RiskScore, TransactionRecord,
+};
 use soroban_sdk::{symbol_short, Address, BytesN, Env, String, Symbol};
 
 const TOPIC_FRAUD_ALERT: Symbol = symbol_short!("fr_alert");
@@ -12,6 +12,9 @@ const TOPIC_CONFIG: Symbol = symbol_short!("cfg_upd");
 const TOPIC_BLACKLIST: Symbol = symbol_short!("blk_upd");
 const TOPIC_WHITELIST: Symbol = symbol_short!("wht_upd");
 const TOPIC_VALIDATION_ERR: Symbol = symbol_short!("val_err");
+const TOPIC_FLAG_SUBMITTED: Symbol = symbol_short!("flg_sub");
+const TOPIC_FLAG_RESOLVED: Symbol = symbol_short!("flg_res");
+const TOPIC_STATUS_OVERRIDDEN: Symbol = symbol_short!("override");
 
 /// Emits an event when a high-risk fraud alert is generated.
 pub fn emit_fraud_alert(env: &Env, alert: &FraudAlertData) {
@@ -179,5 +182,58 @@ pub fn emit_rollback_performed(
     env.events().publish(
         (symbol_short!("rollback"), admin.clone()),
         (current_version, rolled_back_version),
+    );
+}
+
+/// Emits an event when a new fraud risk flag is recorded.
+pub fn emit_flag_submitted(
+    env: &Env,
+    subject: &Address,
+    flag_id: u64,
+    risk_level: RiskLevel,
+    flagged_by: &Address,
+    evidence_hash: &BytesN<32>,
+) {
+    env.events().publish(
+        (TOPIC_FLAG_SUBMITTED, subject.clone()),
+        (
+            flag_id,
+            risk_level as u32,
+            flagged_by.clone(),
+            env.ledger().timestamp(),
+            evidence_hash.clone(),
+        ),
+    );
+}
+
+/// Emits an event when an existing fraud risk flag is resolved.
+pub fn emit_flag_resolved(
+    env: &Env,
+    subject: &Address,
+    flag_id: u64,
+    resolved_by: &Address,
+    resolution_note: &Symbol,
+) {
+    env.events().publish(
+        (TOPIC_FLAG_RESOLVED, subject.clone()),
+        (
+            flag_id,
+            resolved_by.clone(),
+            env.ledger().timestamp(),
+            resolution_note.clone(),
+        ),
+    );
+}
+
+/// Emits an event when an admin manually overrides a subject's risk status.
+pub fn emit_status_overridden(
+    env: &Env,
+    admin: &Address,
+    subject: &Address,
+    risk_level: RiskLevel,
+) {
+    env.events().publish(
+        (TOPIC_STATUS_OVERRIDDEN, subject.clone()),
+        (admin.clone(), risk_level as u32, env.ledger().timestamp()),
     );
 }

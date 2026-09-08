@@ -1,6 +1,22 @@
 //! Data structures, domain entities, and value objects for the fraud detection contract.
 
-use soroban_sdk::{contracttype, Address, BytesN, String, Vec};
+pub use common_utils::RiskLevel;
+use soroban_sdk::{contracttype, Address, BytesN, String, Symbol, Vec};
+
+/// Record of a fraud flag submitted against a subject.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RiskFlag {
+    pub id: u64,
+    pub subject: Address,
+    pub risk_level: RiskLevel,
+    pub reasons: Vec<Symbol>,
+    pub evidence_hash: BytesN<32>,
+    pub flagged_at: u64,
+    pub flagged_by: Address,
+    pub resolved: bool,
+    pub resolution_note: Option<Symbol>,
+}
 
 /// Represents an individual recorded transaction in user history.
 #[contracttype]
