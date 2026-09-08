@@ -7,10 +7,8 @@
 
 export const VERSION = "0.1.0";
 
-// Export client
 export { OracleNodeClient } from "./client.js";
 
-// Export types & interfaces
 export type {
   HttpMethod,
   IdempotencyClassification,
@@ -41,7 +39,6 @@ export type {
   NodeRegistrationPayload,
 } from "./types.js";
 
-// Export error classes
 export {
   OracleError,
   OracleClientError,
@@ -54,7 +51,6 @@ export {
   OracleCircuitBreakerError,
 } from "./errors.js";
 
-// Export policy classes and utilities
 export {
   BackoffCalculator,
   DEFAULT_INITIAL_DELAY_MS,
@@ -96,16 +92,38 @@ export {
   DEFAULT_MAX_RETRY_AFTER_MS,
 } from "./policy/rate-limit.js";
 
-// Export transports
 export { FetchTransport } from "./transport/fetch-transport.js";
 export { MockTransport } from "./transport/mock-transport.js";
 export type { MockHandler, QueuedMockResponse } from "./transport/mock-transport.js";
 export { buildUrl, serializeRequestBody, parseResponseBody } from "./transport/transport.js";
 
-// Export telemetry
 export { TelemetryCollector } from "./telemetry/metrics.js";
 export type { MetricsSnapshot } from "./telemetry/metrics.js";
 
-// Export utility functions
 export { sleep } from "./utils/sleep.js";
 export { normalizeHeaders, getHeader, mergeHeaders } from "./utils/headers.js";
+
+export { loadConfig } from "./config.js";
+export type { OracleNodeConfig } from "./config.js";
+
+export { Logger } from "./logger.js";
+export type { LogLevel, LoggerOptions } from "./logger.js";
+
+export { createGracefulShutdown, registerShutdownSignals } from "./lifecycle.js";
+export type { ClosableServer, OracleShutdownDeps, ShutdownHandler } from "./lifecycle.js";
+
+export * from "./adapters/index.js";
+
+export { OracleSubmitter } from "./submitter.js";
+export type {
+  OracleTransactionPayload,
+  OracleSubmissionReceipt,
+  TxExecutor,
+  SubmitterOptions,
+} from "./submitter.js";
+
+export { OracleHttpServer } from "./server.js";
+export type { ServerOptions } from "./server.js";
+
+export { OracleNodeService } from "./service.js";
+export type { OracleServiceOptions } from "./service.js";
