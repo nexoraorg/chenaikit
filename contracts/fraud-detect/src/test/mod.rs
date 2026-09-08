@@ -10,6 +10,7 @@ pub mod test_indicator_bounds;
 pub mod test_malformed_inputs;
 pub mod test_maximum_values;
 pub mod test_patterns_boundary;
+pub mod test_risk_flags;
 pub mod test_scoring_bounds;
 pub mod test_state_rejection;
 pub mod test_upgrade_boundary;

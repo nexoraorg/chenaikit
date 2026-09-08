@@ -36,7 +36,53 @@
 //! `PROVENANCE_FORMAT_VERSION` diverge, the two sides are no longer describing
 //! the same record and must be reconciled before attestations are trusted.
 
-use soroban_sdk::{contract, contractimpl, Env, Symbol, Vec};
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, Address, BytesN, Env, String, Symbol, Vec,
+};
+
+/// Persistent storage keys.
+#[contracttype]
+#[derive(Clone)]
+pub enum DataKey {
+    Admin,
+    Record(String),
+}
+
+/// Lifecycle status of an attestation record.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum AttestationStatus {
+    /// Record exists and is valid evidence.
+    Active,
+    /// Record was revoked; must not be treated as current evidence.
+    Invalidated,
+}
+
+/// Stored attestation record.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AttestationRecord {
+    pub record_id: String,
+    pub model_hash: BytesN<32>,
+    pub version: u32,
+    pub status: AttestationStatus,
+    pub created_at: u64,
+    pub updated_at: u64,
+    pub invalidated_at: Option<u64>,
+}
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum Error {
+    NotInitialized = 1,
+    AlreadyInitialized = 2,
+    Unauthorized = 3,
+    NotFound = 4,
+    AlreadyExists = 5,
+    AlreadyInvalidated = 6,
+    StaleVersion = 7,
+}
 
 /// Provenance format version this contract documents and is compatible with.
 ///
@@ -62,6 +108,18 @@ pub struct Contract;
 
 #[contractimpl]
 impl Contract {
+    pub fn provenance_format_version(_env: Env) -> u32 {
+        PROVENANCE_FORMAT_VERSION
+    }
+
+    pub fn provenance_fields(env: Env) -> Vec<Symbol> {
+        let mut fields = Vec::new(&env);
+        for field in PROVENANCE_FIELDS {
+            fields.push_back(Symbol::new(&env, field));
+        }
+        fields
+    }
+
     /// Establish the admin once. Subsequent calls fail with `AlreadyInitialized`.
     pub fn initialize(env: Env, admin: Address) -> Result<(), Error> {
         if env.storage().instance().has(&DataKey::Admin) {
@@ -186,6 +244,7 @@ fn load_active(
 mod test {
     use super::*;
     use soroban_sdk::testutils::Address as _;
+    use soroban_sdk::vec;
 
     fn hash(env: &Env, fill: u8) -> BytesN<32> {
         BytesN::from_array(env, &[fill; 32])

@@ -1,7 +1,7 @@
 //! Storage abstraction layer providing safe instance and persistent state management.
 
 use crate::errors::ContractError;
-use crate::types::{FraudConfig, TransactionRecord};
+use crate::types::{FraudConfig, RiskFlag, RiskLevel, TransactionRecord};
 use crate::validation::MAX_HISTORY_CAPACITY;
 use soroban_sdk::{symbol_short, Address, Env, Map, Symbol, Vec};
 
@@ -11,6 +11,12 @@ const WHITELIST_KEY: Symbol = symbol_short!("whtlist");
 const CONFIG_KEY: Symbol = symbol_short!("config");
 const ADMIN_KEY: Symbol = symbol_short!("admin");
 const INIT_KEY: Symbol = symbol_short!("is_init");
+const FLAG_HISTORY_KEY: Symbol = symbol_short!("flg_hist");
+const FLAG_SEQ_KEY: Symbol = symbol_short!("flg_seq");
+const EFFECTIVE_RISK_KEY: Symbol = symbol_short!("eff_risk");
+const OVERRIDE_RISK_KEY: Symbol = symbol_short!("ovr_risk");
+
+pub const MAX_FLAG_HISTORY_CAPACITY: u32 = 50;
 
 const YEAR_LEDGERS: u32 = 6_307_200;
 
@@ -168,4 +174,161 @@ pub fn get_transactions_in_window(
     }
 
     filtered
+}
+
+/// Allocates the next monotonic flag identifier.
+pub fn next_flag_id(env: &Env) -> u64 {
+    let current = env.storage().instance().get(&FLAG_SEQ_KEY).unwrap_or(0u64);
+    let next = current.saturating_add(1);
+    env.storage().instance().set(&FLAG_SEQ_KEY, &next);
+    next
+}
+
+/// Retrieves stored risk flags for a subject.
+pub fn get_flag_history(env: &Env, subject: &Address) -> Vec<RiskFlag> {
+    let key = (FLAG_HISTORY_KEY, subject.clone());
+    env.storage()
+        .persistent()
+        .get(&key)
+        .unwrap_or_else(|| Vec::new(env))
+}
+
+/// Retrieves risk flags for a subject up to a requested limit.
+pub fn get_flag_history_with_limit(env: &Env, subject: &Address, limit: u32) -> Vec<RiskFlag> {
+    let history = get_flag_history(env, subject);
+    if limit == 0 || history.len() <= limit {
+        return history;
+    }
+    let mut truncated = Vec::new(env);
+    let start_idx = history.len().saturating_sub(limit);
+    for i in start_idx..history.len() {
+        if let Some(item) = history.get(i) {
+            truncated.push_back(item);
+        }
+    }
+    truncated
+}
+
+/// Stores a new flag into bounded history and extends storage TTL.
+pub fn store_flag(env: &Env, subject: &Address, flag: &RiskFlag) {
+    let key = (FLAG_HISTORY_KEY, subject.clone());
+    let mut history = get_flag_history(env, subject);
+
+    if history.len() >= MAX_FLAG_HISTORY_CAPACITY {
+        let mut drop_idx = None;
+        for (i, item) in history.iter().enumerate() {
+            if item.resolved {
+                drop_idx = Some(i as u32);
+                break;
+            }
+        }
+        let remove_at = drop_idx.unwrap_or(0);
+        history.remove(remove_at);
+    }
+
+    history.push_back(flag.clone());
+    env.storage().persistent().set(&key, &history);
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, YEAR_LEDGERS, YEAR_LEDGERS);
+}
+
+/// Marks a flag as resolved with an explanatory note.
+pub fn resolve_flag(
+    env: &Env,
+    subject: &Address,
+    flag_id: u64,
+    note: &Symbol,
+) -> Result<RiskFlag, ContractError> {
+    let key = (FLAG_HISTORY_KEY, subject.clone());
+    let mut history = get_flag_history(env, subject);
+    let mut found_idx = None;
+    let mut resolved_flag = None;
+
+    for (i, item) in history.iter().enumerate() {
+        if item.id == flag_id {
+            if item.resolved {
+                return Err(ContractError::AlreadyResolved);
+            }
+            let mut updated = item.clone();
+            updated.resolved = true;
+            updated.resolution_note = Some(note.clone());
+            found_idx = Some(i as u32);
+            resolved_flag = Some(updated);
+            break;
+        }
+    }
+
+    match (found_idx, resolved_flag) {
+        (Some(idx), Some(updated)) => {
+            history.set(idx, updated.clone());
+            env.storage().persistent().set(&key, &history);
+            env.storage()
+                .persistent()
+                .extend_ttl(&key, YEAR_LEDGERS, YEAR_LEDGERS);
+            Ok(updated)
+        }
+        _ => Err(ContractError::FlagNotFound),
+    }
+}
+
+/// Returns the current effective risk level for a subject in O(1) time.
+pub fn get_effective_risk(env: &Env, subject: &Address) -> RiskLevel {
+    let ovr_key = (OVERRIDE_RISK_KEY, subject.clone());
+    if let Some(override_risk) = env.storage().persistent().get::<_, RiskLevel>(&ovr_key) {
+        return override_risk;
+    }
+
+    let eff_key = (EFFECTIVE_RISK_KEY, subject.clone());
+    env.storage()
+        .persistent()
+        .get::<_, RiskLevel>(&eff_key)
+        .unwrap_or(RiskLevel::Low)
+}
+
+/// Recalculates effective risk from unresolved flags or manual override.
+pub fn update_effective_risk(env: &Env, subject: &Address) {
+    let ovr_key = (OVERRIDE_RISK_KEY, subject.clone());
+    if let Some(override_risk) = env.storage().persistent().get::<_, RiskLevel>(&ovr_key) {
+        let eff_key = (EFFECTIVE_RISK_KEY, subject.clone());
+        env.storage().persistent().set(&eff_key, &override_risk);
+        env.storage()
+            .persistent()
+            .extend_ttl(&eff_key, YEAR_LEDGERS, YEAR_LEDGERS);
+        return;
+    }
+
+    let history = get_flag_history(env, subject);
+    let mut max_risk = RiskLevel::Low;
+    for flag in history.iter() {
+        if !flag.resolved && (flag.risk_level as u32) > (max_risk as u32) {
+            max_risk = flag.risk_level;
+        }
+    }
+
+    let eff_key = (EFFECTIVE_RISK_KEY, subject.clone());
+    env.storage().persistent().set(&eff_key, &max_risk);
+    env.storage()
+        .persistent()
+        .extend_ttl(&eff_key, YEAR_LEDGERS, YEAR_LEDGERS);
+}
+
+/// Sets an administrative risk override that takes precedence over model flags.
+pub fn set_override_risk(env: &Env, subject: &Address, risk: &RiskLevel) {
+    let ovr_key = (OVERRIDE_RISK_KEY, subject.clone());
+    let eff_key = (EFFECTIVE_RISK_KEY, subject.clone());
+    env.storage().persistent().set(&ovr_key, risk);
+    env.storage()
+        .persistent()
+        .extend_ttl(&ovr_key, YEAR_LEDGERS, YEAR_LEDGERS);
+    env.storage().persistent().set(&eff_key, risk);
+    env.storage()
+        .persistent()
+        .extend_ttl(&eff_key, YEAR_LEDGERS, YEAR_LEDGERS);
+}
+
+/// Clears an administrative risk override.
+pub fn remove_override_risk(env: &Env, subject: &Address) {
+    let ovr_key = (OVERRIDE_RISK_KEY, subject.clone());
+    env.storage().persistent().remove(&ovr_key);
 }

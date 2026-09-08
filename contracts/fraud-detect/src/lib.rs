@@ -13,27 +13,33 @@ pub mod types;
 pub mod upgrade;
 pub mod validation;
 
+use common_utils::WriterRegistry;
 use errors::ContractError;
 use events::{
     create_fraud_alert, emit_anomaly_detected, emit_blacklist_updated, emit_config_updated,
-    emit_fraud_alert, emit_pattern_detected, emit_risk_score_calculated, emit_transaction_analyzed,
+    emit_flag_resolved, emit_flag_submitted, emit_fraud_alert, emit_pattern_detected,
+    emit_risk_score_calculated, emit_status_overridden, emit_transaction_analyzed,
     emit_validation_failure, emit_whitelist_updated,
 };
 use patterns::analyze_all_patterns;
 use risk_scorer::{calculate_comprehensive_risk_score, detect_anomalies};
 use storage::{
     add_to_blacklist, add_to_whitelist, clear_transaction_history, get_admin, get_config,
-    get_transaction_history, is_blacklisted, is_initialized, is_whitelisted, remove_from_blacklist,
-    remove_from_whitelist, set_config, set_initialized, store_transaction,
+    get_effective_risk, get_flag_history_with_limit, get_transaction_history, is_blacklisted,
+    is_initialized, is_whitelisted, next_flag_id, remove_from_blacklist, remove_from_whitelist,
+    remove_override_risk, resolve_flag as storage_resolve_flag, set_config, set_initialized,
+    set_override_risk, store_flag, store_transaction, update_effective_risk,
 };
-use types::{FraudConfig, InputBoundsInventory, TransactionRecord, UpgradeRecord};
+use types::{
+    FraudConfig, InputBoundsInventory, RiskFlag, RiskLevel, TransactionRecord, UpgradeRecord,
+};
 use validation::{
     validate_amount, validate_config, validate_transaction_type, MAX_HISTORY_CAPACITY,
     MAX_SCORE_BOUND, MAX_TX_TYPE_LEN, MAX_VALID_AMOUNT, MAX_VELOCITY_THRESHOLD,
     MAX_VELOCITY_WINDOW, MIN_VALID_AMOUNT, MIN_VELOCITY_THRESHOLD, MIN_VELOCITY_WINDOW,
 };
 
-use soroban_sdk::{contract, contractimpl, Address, BytesN, Env, String, Vec};
+use soroban_sdk::{contract, contractimpl, Address, BytesN, Env, String, Symbol, Vec};
 
 #[contract]
 pub struct Contract;
@@ -401,6 +407,135 @@ impl Contract {
     /// Retrieves historical upgrade audit records.
     pub fn get_upgrade_history(env: Env) -> Vec<UpgradeRecord> {
         upgrade::get_upgrade_history(&env)
+    }
+
+    /// Sets or removes writer authorization for flag submission. Admin-only.
+    pub fn set_writer(
+        env: Env,
+        admin: Address,
+        writer: Address,
+        authorized: bool,
+    ) -> Result<(), ContractError> {
+        Self::require_admin(&env, &admin)?;
+        WriterRegistry::set_writer(&env, &writer, authorized);
+        Ok(())
+    }
+
+    /// Queries whether an address is an authorized writer.
+    pub fn is_writer(env: Env, writer: Address) -> bool {
+        WriterRegistry::is_writer(&env, &writer)
+    }
+
+    /// Submits a new fraud risk flag for a subject.
+    ///
+    /// Requires authorization from an admin or registered writer.
+    pub fn submit_flag(
+        env: Env,
+        caller: Address,
+        subject: Address,
+        risk_level: RiskLevel,
+        reasons: Vec<Symbol>,
+        evidence_hash: BytesN<32>,
+    ) -> Result<u64, ContractError> {
+        if !is_initialized(&env) {
+            return Err(ContractError::NotInitialized);
+        }
+        caller.require_auth();
+
+        let admin = get_admin(&env)?;
+        if caller != admin && !WriterRegistry::is_writer(&env, &caller) {
+            return Err(ContractError::UnauthorizedWriter);
+        }
+
+        if reasons.is_empty() {
+            return Err(ContractError::MalformedInput);
+        }
+
+        let flag_id = next_flag_id(&env);
+        let flag = RiskFlag {
+            id: flag_id,
+            subject: subject.clone(),
+            risk_level,
+            reasons,
+            evidence_hash: evidence_hash.clone(),
+            flagged_at: env.ledger().timestamp(),
+            flagged_by: caller.clone(),
+            resolved: false,
+            resolution_note: None,
+        };
+
+        store_flag(&env, &subject, &flag);
+        update_effective_risk(&env, &subject);
+        emit_flag_submitted(&env, &subject, flag_id, risk_level, &caller, &evidence_hash);
+
+        Ok(flag_id)
+    }
+
+    /// Marks an existing fraud flag as resolved with an explanatory note.
+    ///
+    /// Requires authorization from an admin or registered writer.
+    pub fn resolve_flag(
+        env: Env,
+        caller: Address,
+        subject: Address,
+        flag_id: u64,
+        resolution_note: Symbol,
+    ) -> Result<(), ContractError> {
+        if !is_initialized(&env) {
+            return Err(ContractError::NotInitialized);
+        }
+        caller.require_auth();
+
+        let admin = get_admin(&env)?;
+        if caller != admin && !WriterRegistry::is_writer(&env, &caller) {
+            return Err(ContractError::NotAuthorized);
+        }
+
+        storage_resolve_flag(&env, &subject, flag_id, &resolution_note)?;
+        update_effective_risk(&env, &subject);
+        emit_flag_resolved(&env, &subject, flag_id, &caller, &resolution_note);
+
+        Ok(())
+    }
+
+    /// Returns the current effective risk level for a subject in O(1) time.
+    pub fn get_current_risk(env: Env, subject: Address) -> RiskLevel {
+        get_effective_risk(&env, &subject)
+    }
+
+    /// Returns the bounded flag history for a subject up to the requested limit.
+    pub fn get_flag_history(env: Env, subject: Address, limit: u32) -> Vec<RiskFlag> {
+        get_flag_history_with_limit(&env, &subject, limit)
+    }
+
+    /// Admin-only manual override for a subject's risk level.
+    pub fn override_status(
+        env: Env,
+        admin: Address,
+        subject: Address,
+        risk_level: RiskLevel,
+    ) -> Result<(), ContractError> {
+        Self::require_admin(&env, &admin)?;
+        set_override_risk(&env, &subject, &risk_level);
+        emit_status_overridden(&env, &admin, &subject, risk_level);
+        Ok(())
+    }
+
+    /// Admin-only removal of manual override, restoring model-driven risk level.
+    pub fn remove_override(
+        env: Env,
+        admin: Address,
+        subject: Address,
+    ) -> Result<(), ContractError> {
+        Self::require_admin(&env, &admin)?;
+        remove_override_risk(&env, &subject);
+        update_effective_risk(&env, &subject);
+        Ok(())
+    }
+
+    /// Helper boolean check whether a subject is flagged as Critical fraud risk.
+    pub fn is_fraud_critical(env: Env, subject: Address) -> bool {
+        get_effective_risk(&env, &subject) == RiskLevel::Critical
     }
 
     /// Internal administrator authorization check.

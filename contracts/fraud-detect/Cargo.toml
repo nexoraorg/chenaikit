@@ -8,7 +8,9 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+common-utils = { path = "../common-utils" }
 soroban-sdk = { workspace = true }
 
 [dev-dependencies]
+credit-score = { path = "../credit-score" }
 soroban-sdk = { workspace = true, features = ["testutils"] }
