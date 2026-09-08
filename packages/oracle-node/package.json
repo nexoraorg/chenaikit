@@ -4,12 +4,17 @@
   "description": "Oracle node runtime",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "oracle-node": "dist/bin.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "start": "node dist/bin.js",
     "test": "vitest run",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@types/node": "^20.14.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
   }
