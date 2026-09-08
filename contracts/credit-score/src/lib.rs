@@ -1,15 +1,10 @@
 #![no_std]
-//! credit-score — Soroban contract for credit scoring.
-//!
-//! First adopter of the shared `ErrorCategory` from `common-utils`.
-
-use common_utils::ErrorCategory;
-use soroban_sdk::{contract, contractimpl, Env};
 //! credit-score — stores subject credit scores behind explicit authorization.
 //!
 //! Privileged writes require admin or scorer roles. Rejected callers must leave
 //! storage unchanged so sensitive decisions are not corrupted.
 
+use common_utils::ErrorCategory;
 use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, String};
 
 #[contracttype]
@@ -18,6 +13,7 @@ pub enum DataKey {
     Admin,
     Scorer,
     Score(Address),
+    ExpiryWindow,
 }
 
 #[contracttype]
@@ -143,6 +139,23 @@ impl Contract {
 
     pub fn get_scorer(env: Env) -> Option<Address> {
         env.storage().instance().get(&DataKey::Scorer)
+    }
+
+    /// Admin-only: configure credit score validity expiration window in seconds.
+    pub fn set_expiry_window(env: Env, caller: Address, window_secs: u64) -> Result<(), Error> {
+        require_admin(&env, &caller)?;
+        env.storage()
+            .instance()
+            .set(&DataKey::ExpiryWindow, &window_secs);
+        Ok(())
+    }
+
+    /// Public read: get credit score validity expiration window in seconds.
+    pub fn get_expiry_window(env: Env) -> u64 {
+        env.storage()
+            .instance()
+            .get(&DataKey::ExpiryWindow)
+            .unwrap_or(86400 * 30)
     }
 
     /// Validates that a credit score is within the accepted 0–100 range.

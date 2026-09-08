@@ -51,3 +51,26 @@ pub enum ContractError {
     /// Target entry was not found in storage.
     NotFound = 22,
 }
+
+impl ContractError {
+    /// Maps specific contract error to external error category.
+    pub fn category(&self) -> common_utils::ErrorCategory {
+        match self {
+            ContractError::NotAuthorized => common_utils::ErrorCategory::Authorization,
+            ContractError::NotFound => common_utils::ErrorCategory::NotFound,
+            ContractError::AlreadyInitialized
+            | ContractError::NotInitialized
+            | ContractError::InvalidState
+            | ContractError::ArithmeticOverflow
+            | ContractError::ArithmeticUnderflow
+            | ContractError::DivisionByZero => common_utils::ErrorCategory::Internal,
+            _ => common_utils::ErrorCategory::Validation,
+        }
+    }
+}
+
+impl From<ContractError> for common_utils::ErrorCategory {
+    fn from(err: ContractError) -> Self {
+        err.category()
+    }
+}

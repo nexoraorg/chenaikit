@@ -9,6 +9,10 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 soroban-sdk = { workspace = true }
+common-utils = { path = "../common-utils" }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
+model-attestation = { path = "../model-attestation" }
+oracle-network = { path = "../oracle-network" }
+credit-score = { path = "../credit-score" }

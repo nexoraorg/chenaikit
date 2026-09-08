@@ -17,6 +17,7 @@ pub const MAX_DEVIATION_BPS: i128 = 500;
 #[derive(Clone)]
 pub enum DataKey {
     Admin,
+    Governance,
     Sources,
     Registered(Address),
     Reading(String, Address),
@@ -53,6 +54,8 @@ pub enum Error {
     InsufficientSources = 6,
     ConflictingSources = 7,
     AlreadyRegistered = 8,
+    InvalidAmount = 9,
+    NotFound = 10,
 }
 
 #[contract]
@@ -75,9 +78,23 @@ impl Contract {
         STALE_THRESHOLD_SECS
     }
 
-    /// Register an oracle source. Admin only.
+    /// Appoint governance address. Admin only.
+    pub fn set_governance(env: Env, admin: Address, governance: Address) -> Result<(), Error> {
+        require_admin(&env, &admin)?;
+        env.storage()
+            .instance()
+            .set(&DataKey::Governance, &governance);
+        Ok(())
+    }
+
+    /// Retrieve configured governance contract address.
+    pub fn get_governance(env: Env) -> Option<Address> {
+        env.storage().instance().get(&DataKey::Governance)
+    }
+
+    /// Register an oracle source. Admin or Governance only.
     pub fn register_source(env: Env, caller: Address, source: Address) -> Result<(), Error> {
-        require_admin(&env, &caller)?;
+        require_admin_or_governance(&env, &caller)?;
         if env
             .storage()
             .instance()
@@ -96,6 +113,53 @@ impl Contract {
         sources.push_back(source);
         env.storage().instance().set(&DataKey::Sources, &sources);
         Ok(())
+    }
+
+    /// Deregister an oracle source. Admin or Governance only.
+    pub fn deregister_source(env: Env, caller: Address, source: Address) -> Result<(), Error> {
+        require_admin_or_governance(&env, &caller)?;
+        if !env
+            .storage()
+            .instance()
+            .has(&DataKey::Registered(source.clone()))
+        {
+            return Err(Error::NotFound);
+        }
+        env.storage()
+            .instance()
+            .remove(&DataKey::Registered(source.clone()));
+        let sources: Vec<Address> = env
+            .storage()
+            .instance()
+            .get(&DataKey::Sources)
+            .unwrap_or_else(|| Vec::new(&env));
+        let mut updated: Vec<Address> = Vec::new(&env);
+        let mut i: u32 = 0;
+        while i < sources.len() {
+            let s = sources.get(i).unwrap();
+            if s != source {
+                updated.push_back(s);
+            }
+            i += 1;
+        }
+        env.storage().instance().set(&DataKey::Sources, &updated);
+        Ok(())
+    }
+
+    /// Slashes an oracle node stake by amount. Admin or Governance only.
+    pub fn slash_node(env: Env, caller: Address, node: Address, amount: i128) -> Result<(), Error> {
+        require_admin_or_governance(&env, &caller)?;
+        if amount <= 0 {
+            return Err(Error::InvalidAmount);
+        }
+        env.events()
+            .publish((soroban_sdk::symbol_short!("slash"), node), amount);
+        Ok(())
+    }
+
+    /// Returns true if the given address is registered as an oracle source.
+    pub fn is_registered(env: Env, source: Address) -> bool {
+        env.storage().instance().has(&DataKey::Registered(source))
     }
 
     /// Store a source reading. Rejects unregistered sources.
@@ -227,6 +291,19 @@ fn require_admin(env: &Env, caller: &Address) -> Result<(), Error> {
     }
     caller.require_auth();
     Ok(())
+}
+
+fn require_admin_or_governance(env: &Env, caller: &Address) -> Result<(), Error> {
+    caller.require_auth();
+    let admin: Option<Address> = env.storage().instance().get(&DataKey::Admin);
+    let gov: Option<Address> = env.storage().instance().get(&DataKey::Governance);
+    let is_admin = admin.as_ref() == Some(caller);
+    let is_gov = gov.as_ref() == Some(caller);
+    if is_admin || is_gov {
+        Ok(())
+    } else {
+        Err(Error::Unauthorized)
+    }
 }
 
 fn is_stale(now: u64, observed_at: u64) -> bool {
@@ -466,5 +543,54 @@ mod test {
             client.try_aggregate(&id),
             Err(Ok(Error::ConflictingSources))
         );
+    }
+
+    #[test]
+    fn test_deregister_source_lifecycle() {
+        let env = Env::default();
+        let (admin, client) = setup(&env);
+        let source = Address::generate(&env);
+        let stranger = Address::generate(&env);
+
+        client.register_source(&admin, &source);
+        assert!(client.is_registered(&source));
+
+        assert_eq!(
+            client.try_deregister_source(&stranger, &source),
+            Err(Ok(Error::Unauthorized))
+        );
+
+        client.deregister_source(&admin, &source);
+        assert!(!client.is_registered(&source));
+
+        assert_eq!(
+            client.try_deregister_source(&admin, &source),
+            Err(Ok(Error::NotFound))
+        );
+    }
+
+    #[test]
+    fn test_governance_can_register_deregister_and_slash() {
+        let env = Env::default();
+        let (admin, client) = setup(&env);
+        let gov = Address::generate(&env);
+        let source = Address::generate(&env);
+
+        assert_eq!(client.get_governance(), None);
+        client.set_governance(&admin, &gov);
+        assert_eq!(client.get_governance(), Some(gov.clone()));
+
+        client.register_source(&gov, &source);
+        assert!(client.is_registered(&source));
+
+        client.slash_node(&gov, &source, &500_000);
+
+        assert_eq!(
+            client.try_slash_node(&gov, &source, &0),
+            Err(Ok(Error::InvalidAmount))
+        );
+
+        client.deregister_source(&gov, &source);
+        assert!(!client.is_registered(&source));
     }
 }
