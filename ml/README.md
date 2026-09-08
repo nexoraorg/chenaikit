@@ -412,6 +412,66 @@ same change.
 ## Verifying the contract
 
 ```bash
+# Build TypeScript contract package
 pnpm --filter @chenaikit/chenai-mlflow run build   # tsc -p tsconfig.json
 pnpm --filter @chenaikit/chenai-mlflow run test    # vitest run
+
+# Run Python ML test suite (unit and cross-language contract verification)
+pytest ml/tests
+```
+
+## Python ML Pipeline
+
+### Architecture
+
+```
+Stellar Horizon API ──> ingest.py ──> features.py ──> contract.py (validate & impute)
+                                                            │
+                                                            ▼
+                                                        models.py (GBM / IForest)
+                                                            │
+                                                            ▼
+                                                        emitter.py (ModelResult + Soroban Attestation)
+                                                            │
+                                    ┌───────────────────────┼──────────────────────┐
+                                    ▼                       ▼                      ▼
+                            FileDropSink (.jsonl)     SqliteSink (DB)       StdoutSink (CLI)
+```
+
+### Components
+
+1. **Contract Layer (`contract.py`)**: Loads feature specifications dynamically from `packages/chenai-mlflow/src/index.ts`. Provides strict validation and missing-value imputation adhering to `FeatureVector` and `ModelResult` schemas.
+2. **Horizon Ingest (`ingest.py`)**: REST client for Stellar Horizon accounts, operations, payments, and transactions.
+3. **Feature Builder (`features.py`)**: Transforms raw Horizon ledger history into contract-compliant `FeatureVector` payloads.
+4. **Scoring Models (`models.py`)**:
+   - `CreditScoreModel`: Gradient Boosting classifier predicting default risk in `[0, 1]` with risk labels (`low`, `medium`, `high`).
+   - `FraudDetectModel`: Isolation Forest anomaly detector calibrated to anomaly risk in `[0, 1]`.
+   - Computes 32-byte SHA-256 artifact digests matching Soroban `BytesN<32>` in `contracts/model-attestation`.
+5. **ModelResult Emitter (`emitter.py`)**: Validates input vectors, performs inference, tracks `imputedFields`, and formats contract-compliant `ModelResult` records and Soroban attestation payloads.
+6. **Sinks (`sinks.py`)**:
+   - `FileDropSink`: Appends newline-delimited JSON (`.jsonl`) or writes atomic individual JSON files per `{subjectId}_{task}.json`.
+   - `SqliteSink`: Stores structured results in SQLite `model_results` table with indexed fields.
+   - `StdoutSink`: Streams newline-delimited JSON to stdout.
+7. **Training Pipeline (`train.py`)**: Reproducible training on `ml/data/sample_dataset.json` with evaluation reports (`ml/evaluation_report.py`) and artifact manifest (`ml/artifacts/manifest.json`).
+
+### Training Models
+
+```bash
+python3 ml/train.py
+```
+
+### Running Scoring Pipeline
+
+```bash
+# Score single account via Horizon testnet
+python3 ml/pipeline.py --mode single --subject-id GACC123 --task all --sink stdout
+
+# Score single FeatureVector from JSON file
+python3 ml/pipeline.py --mode single --input-file vector.json --task credit-score --sink stdout
+
+# Batch score accounts from JSONL file into SQLite database
+python3 ml/pipeline.py --mode batch --input-file ml/data/sample_vectors.jsonl --sink sqlite --output ml/output/scores.db
+
+# Batch score accounts into newline-delimited JSON
+python3 ml/pipeline.py --mode batch --input-file ml/data/sample_vectors.jsonl --sink file --output ml/output/scores.jsonl
 ```

@@ -1,0 +1,20 @@
+{
+  "models": {
+    "credit-score-gbm": {
+      "version": "1.0.0",
+      "artifact": "credit_score_gbm.joblib",
+      "artifact_hash_sha256": "a7108f71280a656e101518cac9257fc3106f84707937d8252f38b2e1f69d53fd",
+      "report_id": "er-dfcce5a2c0283f5e",
+      "attestation_bytes32": "a7108f71280a656e101518cac9257fc3106f84707937d8252f38b2e1f69d53fd"
+    },
+    "fraud-detect-iforest": {
+      "version": "1.0.0",
+      "artifact": "fraud_detect_iforest.joblib",
+      "artifact_hash_sha256": "5d3e9e037b4d32883db2e4e85c8c71ac5e74aff40f5d833de154da7f256a9e76",
+      "report_id": "er-ca764cedf3c9342e",
+      "attestation_bytes32": "5d3e9e037b4d32883db2e4e85c8c71ac5e74aff40f5d833de154da7f256a9e76"
+    }
+  },
+  "random_state": 42,
+  "dataset": "sample_dataset.json"
+}
