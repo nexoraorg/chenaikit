@@ -639,6 +639,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 name = "fraud-detect"
 version = "0.1.0"
 dependencies = [
+ "common-utils",
  "soroban-sdk",
 ]
 
@@ -694,6 +695,10 @@ dependencies = [
 name = "governance"
 version = "0.1.0"
 dependencies = [
+ "common-utils",
+ "credit-score",
+ "model-attestation",
+ "oracle-network",
  "soroban-sdk",
 ]
 
@@ -940,6 +945,7 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 name = "model-attestation"
 version = "0.1.0"
 dependencies = [
+ "common-utils",
  "soroban-sdk",
 ]
 
@@ -998,6 +1004,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 name = "oracle-network"
 version = "0.1.0"
 dependencies = [
+ "common-utils",
  "soroban-sdk",
 ]
 
