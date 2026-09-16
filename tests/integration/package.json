@@ -11,9 +11,7 @@
     "@chenaikit/oracle-node": "workspace:*"
   },
   "devDependencies": {
-    "@chenaikit/backend": "workspace:*"
-  },
-  "devDependencies": {
+    "@chenaikit/backend": "workspace:*",
     "@types/node": "^20.14.0",
     "@types/supertest": "^6.0.2",
     "prisma": "^5.0.0",
@@ -22,3 +20,4 @@
     "vitest": "^2.0.0"
   }
 }
+

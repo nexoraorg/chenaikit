@@ -14,6 +14,9 @@ importers:
       lint-staged:
         specifier: ^15.0.0
         version: 15.5.2
+      pnpm:
+        specifier: ^9.15.9
+        version: 9.15.9
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
@@ -216,10 +219,16 @@ importers:
 
   tests/integration:
     dependencies:
+      '@chenaikit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@chenaikit/oracle-node':
+        specifier: workspace:*
+        version: link:../../packages/oracle-node
+    devDependencies:
       '@chenaikit/backend':
         specifier: workspace:*
         version: link:../../apps/backend
-    devDependencies:
       '@types/node':
         specifier: ^20.14.0
         version: 20.19.43
@@ -237,7 +246,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.0.0
-        version: 2.1.9(@types/node@20.19.43)(@vitest/ui@2.1.9)(terser@5.50.0)
+        version: 2.1.9(@types/node@20.19.43)(@vitest/ui@2.1.9)(jsdom@25.0.1)(terser@5.50.0)
 
 packages:
 
@@ -2693,6 +2702,11 @@ packages:
   pidtree@0.6.1:
     resolution: {integrity: sha512-e0F9AOF1JMrCfBsyJOwU9lNvQ0WtXTq0j/4jk0BQ5JSI9VAybPXmDpPRw/2FQ3e5d3ZFN1mLh7jW99m/jjaptw==}
     engines: {node: '>=0.10'}
+    hasBin: true
+
+  pnpm@9.15.9:
+    resolution: {integrity: sha512-aARhQYk8ZvrQHAeSMRKOmvuJ74fiaR1p5NQO7iKJiClf1GghgbrlW1hBjDolO95lpQXsfF+UA+zlzDzTfc8lMQ==}
+    engines: {node: '>=18.12'}
     hasBin: true
 
   postcss@8.5.26:
@@ -5959,6 +5973,8 @@ snapshots:
   picomatch@4.0.5: {}
 
   pidtree@0.6.1: {}
+
+  pnpm@9.15.9: {}
 
   postcss@8.5.26:
     dependencies:

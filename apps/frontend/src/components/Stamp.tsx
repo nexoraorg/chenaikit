@@ -15,7 +15,7 @@ export function Stamp({
   return (
     <span
       className={`stamp ${color}${faded ? " faded" : ""}`}
-      style={{ transition: `opacity ${motion.duration.fast} ${motion.easing.out}` }}
+      style={{ transition: `opacity ${motion.duration.fast} ${motion.easing.standard}` }}
     >
       {children}
     </span>

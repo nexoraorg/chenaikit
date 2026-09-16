@@ -29,45 +29,6 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  xs: "2px",
-  sm: "3px",
-  md: "4px",
-  lg: "8px",
-  full: "9999px",
-} as const;
-
-export const motion = {
-  duration: {
-    fast: "150ms",
-    normal: "250ms",
-    slow: "400ms",
-  },
-  easing: {
-    default: "cubic-bezier(0.4, 0, 0.2, 1)",
-    in: "cubic-bezier(0.4, 0, 1, 1)",
-    out: "cubic-bezier(0, 0, 0.2, 1)",
-  },
-} as const;
-
-export const typography = {
-  fontDisplay: "'JetBrains Mono', monospace",
-  fontData: "'IBM Plex Mono', monospace",
-  fontBody: "'Inter', system-ui, sans-serif",
-  size: {
-    sm: "13px",
-    base: "15px",
-    lg: "18px",
-    xl: "24px",
-  },
-  weight: {
-    regular: 400,
-    medium: 500,
-    bold: 700,
-    black: 800,
-  },
-} as const;
-
-export const radius = {
   /** 2px — small corners for buttons, chips, nested borders */
   sm: "2px",
   /** 3px — default card/panel/stamp rounding */
@@ -94,3 +55,22 @@ export const motion = {
     decelerate: "cubic-bezier(0, 0, 0.2, 1)",
   },
 } as const;
+
+export const typography = {
+  fontDisplay: "'JetBrains Mono', monospace",
+  fontData: "'IBM Plex Mono', monospace",
+  fontBody: "'Inter', system-ui, sans-serif",
+  size: {
+    sm: "13px",
+    base: "15px",
+    lg: "18px",
+    xl: "24px",
+  },
+  weight: {
+    regular: 400,
+    medium: 500,
+    bold: 700,
+    black: 800,
+  },
+} as const;
+
