@@ -1,0 +1,5 @@
+[target.wasm32-unknown-unknown]
+rustflags = [
+  "-C", "target-feature=+reference-types",
+  "-C", "target-feature=+relaxed-simd",
+]

@@ -4,12 +4,6 @@
 //! First adopter of the shared `ErrorCategory` from `common-utils`.
 
 use common_utils::ErrorCategory;
-use soroban_sdk::{contract, contractimpl, Env};
-//! credit-score — stores subject credit scores behind explicit authorization.
-//!
-//! Privileged writes require admin or scorer roles. Rejected callers must leave
-//! storage unchanged so sensitive decisions are not corrupted.
-
 use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, String};
 
 #[contracttype]
