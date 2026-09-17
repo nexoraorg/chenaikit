@@ -11,6 +11,7 @@ on:
       - "apps/backend/**"
       - "packages/**"
       - "tests/integration/**"
+      - "ml/**"
   pull_request:
     paths:
       - "package.json"
@@ -20,6 +21,7 @@ on:
       - "apps/backend/**"
       - "packages/**"
       - "tests/integration/**"
+      - "ml/**"
   workflow_dispatch:
 
 concurrency:
@@ -127,3 +129,41 @@ jobs:
       # so a missing build script must not red-X the whole pipeline.
       - name: Build packages
         run: pnpm --filter "./packages/**" run build --if-present || true
+
+  ml-pipeline:
+    name: Python ML Pipeline
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install JS dependencies and build chenai-mlflow
+        run: |
+          pnpm install --no-frozen-lockfile
+          pnpm --filter @chenaikit/chenai-mlflow run build
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r ml/requirements.txt
+
+      - name: Run ML tests
+        run: |
+          PYTHONPATH=ml pytest ml/tests

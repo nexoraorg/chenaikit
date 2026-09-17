@@ -153,6 +153,8 @@ describe("parsing and integrity", () => {
 
   it("rejects malformed JSON", () => {
     expect(() => parseEvaluationReport("{oops")).toThrow(ReportIntegrityError);
+  });
+});
 
 import {
   EXAMPLE_FEATURE_VECTOR,
