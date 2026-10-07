@@ -63,6 +63,8 @@ issue #286, task 5).
 
 ## Local setup
 
+For comprehensive prerequisites, environment setups, and domain-specific commands, consult the **[Local Development Workflow Guide](docs/contributing/local-development.md)**.
+
 ```bash
 pnpm install
 pnpm build

@@ -26,14 +26,12 @@ __pycache__/
 .pytest_cache/
 
 # Env
-.env
-.env.*
 !.env.example
 
 # Editors
-.vscode/*
 !.vscode/extensions.json
 .idea/
 
 # Vercel
 .vercel
+config.bat
