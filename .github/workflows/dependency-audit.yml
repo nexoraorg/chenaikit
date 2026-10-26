@@ -1,0 +1,276 @@
+name: Dependency Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "apps/**/package.json"
+      - "apps/frontend/package-lock.json"
+      - "packages/**/package.json"
+      - "contracts/**/Cargo.toml"
+      - "contracts/Cargo.lock"
+      - ".github/workflows/dependency-audit.yml"
+  pull_request:
+    paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "apps/**/package.json"
+      - "apps/frontend/package-lock.json"
+      - "packages/**/package.json"
+      - "contracts/**/Cargo.toml"
+      - "contracts/Cargo.lock"
+      - ".github/workflows/dependency-audit.yml"
+  schedule:
+    # Weekly scan every Monday at 06:00 UTC to surface newly disclosed advisories
+    # even when lockfiles have not changed.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      enforce_blockers:
+        description: "Fail the workflow when release-blocking (critical) advisories are present"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  js-audit:
+    name: JavaScript dependency audit (pnpm + npm)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run workspace (pnpm) and frontend (npm) audits
+        env:
+          ENFORCE_BLOCKERS: ${{ inputs.enforce_blockers || 'false' }}
+        run: |
+          mkdir -p audit-reports
+
+          pnpm audit --json > audit-reports/pnpm-audit.json || true
+          if [ -d apps/frontend ]; then
+            (cd apps/frontend && npm audit --json) > audit-reports/frontend-npm-audit.json || true
+          else
+            echo '{}' > audit-reports/frontend-npm-audit.json
+          fi
+
+          node - <<'EOF'
+          const fs = require('node:fs');
+
+          function readJson(filePath) {
+            try {
+              const raw = fs.readFileSync(filePath, 'utf8').trim();
+              return raw ? JSON.parse(raw) : {};
+            } catch {
+              return {};
+            }
+          }
+
+          function collectAdvisories(report, ecosystem) {
+            const findings = [];
+            if (report && report.advisories && typeof report.advisories === 'object') {
+              for (const adv of Object.values(report.advisories)) {
+                findings.push({
+                  ecosystem,
+                  package: adv.module_name || 'unknown',
+                  severity: String(adv.severity || 'unknown').toLowerCase(),
+                  title: adv.title || 'Advisory',
+                  url: adv.url || '',
+                  fix: adv.patched_versions || 'review lockfile',
+                });
+              }
+            } else if (report && report.vulnerabilities && typeof report.vulnerabilities === 'object') {
+              for (const [pkg, vuln] of Object.entries(report.vulnerabilities)) {
+                const viaObj = Array.isArray(vuln.via)
+                  ? vuln.via.find((v) => v && typeof v === 'object')
+                  : null;
+                findings.push({
+                  ecosystem,
+                  package: pkg,
+                  severity: String(vuln.severity || 'unknown').toLowerCase(),
+                  title: (viaObj && viaObj.title) || 'Dependency vulnerability',
+                  url: (viaObj && viaObj.url) || '',
+                  fix: vuln.fixAvailable ? 'upgrade available' : 'no direct patch yet',
+                });
+              }
+            }
+            return findings;
+          }
+
+          const pnpmFindings = collectAdvisories(readJson('audit-reports/pnpm-audit.json'), 'pnpm-workspace');
+          const npmFindings = collectAdvisories(readJson('audit-reports/frontend-npm-audit.json'), 'apps/frontend');
+          const all = [...pnpmFindings, ...npmFindings];
+
+          const blockers = all.filter((f) => f.severity === 'critical' && f.fix !== 'no direct patch yet');
+          const warnings = all.filter((f) => !(f.severity === 'critical' && f.fix !== 'no direct patch yet'));
+
+          const lines = [
+            '## JavaScript Dependency Audit Report',
+            '',
+            `- **Total findings:** ${all.length}`,
+            `- **Release blockers (\`critical\` with available patch):** ${blockers.length}`,
+            `- **Non-blocking warnings (\`high\` / \`moderate\` / \`low\` / unpatched):** ${warnings.length}`,
+            '',
+          ];
+
+          if (all.length > 0) {
+            lines.push('| Ecosystem | Package | Classification | Severity | Title | Remediation |');
+            lines.push('| --- | --- | --- | --- | --- | --- |');
+            for (const f of all) {
+              const tier = f.severity === 'critical' && f.fix !== 'no direct patch yet'
+                ? 'RELEASE BLOCKER'
+                : 'WARNING';
+              const link = f.url ? `[advisory](${f.url})` : f.title;
+              lines.push(`| \`${f.ecosystem}\` | \`${f.package}\` | **${tier}** | \`${f.severity}\` | ${link} | ${f.fix} |`);
+              const msg = `[${f.ecosystem}] ${f.package} (${f.severity}): ${f.title} — fix: ${f.fix} ${f.url}`.trim();
+              if (tier === 'RELEASE BLOCKER' && process.env.ENFORCE_BLOCKERS === 'true') {
+                console.log(`::error title=Dependency Release Blocker::${msg}`);
+              } else {
+                console.log(`::warning title=Dependency Advisory (${tier})::${msg}`);
+              }
+            }
+          } else {
+            lines.push('No known JavaScript dependency vulnerabilities reported.');
+          }
+
+          const summary = lines.join('\n') + '\n';
+          fs.writeFileSync('audit-reports/js-summary.md', summary);
+          if (process.env.GITHUB_STEP_SUMMARY) {
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          }
+
+          if (blockers.length > 0 && process.env.ENFORCE_BLOCKERS === 'true') {
+            process.exit(1);
+          }
+          EOF
+
+      - name: Upload JavaScript audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: js-dependency-audit-report
+          path: audit-reports/
+          retention-days: 14
+
+  rust-audit:
+    name: Rust dependency audit (cargo-audit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: Run cargo audit
+        env:
+          ENFORCE_BLOCKERS: ${{ inputs.enforce_blockers || 'false' }}
+        run: |
+          mkdir -p ../audit-reports-rust
+          cargo audit --json > ../audit-reports-rust/cargo-audit.json || true
+
+          node - <<'EOF'
+          const fs = require('node:fs');
+
+          let report = {};
+          try {
+            report = JSON.parse(fs.readFileSync('../audit-reports-rust/cargo-audit.json', 'utf8'));
+          } catch {
+            report = {};
+          }
+
+          const vulns = (report.vulnerabilities && Array.isArray(report.vulnerabilities.list))
+            ? report.vulnerabilities.list
+            : [];
+          const warnings = (report.warnings && typeof report.warnings === 'object')
+            ? Object.values(report.warnings).flat()
+            : [];
+
+          const lines = [
+            '## Rust (`contracts/`) Dependency Audit Report',
+            '',
+            `- **Vulnerabilities reported:** ${vulns.length}`,
+            `- **Informational / unmaintained warnings:** ${warnings.length}`,
+            '',
+          ];
+
+          let blockerCount = 0;
+          if (vulns.length > 0 || warnings.length > 0) {
+            lines.push('| Crate | Version | Advisory | Classification | Patched Versions |');
+            lines.push('| --- | --- | --- | --- | --- |');
+
+            for (const entry of vulns) {
+              const adv = entry.advisory || {};
+              const pkg = entry.package || {};
+              const patched = (entry.versions && Array.isArray(entry.versions.patched))
+                ? entry.versions.patched.join(', ')
+                : '';
+              const hasPatch = Boolean(patched);
+              const tier = hasPatch ? 'RELEASE BLOCKER' : 'WARNING';
+              if (hasPatch) blockerCount += 1;
+              lines.push(`| \`${pkg.name || 'unknown'}\` | \`${pkg.version || ''}\` | \`${adv.id || ''}\` (${adv.title || ''}) | **${tier}** | ${patched || 'none'} |`);
+              const msg = `[contracts] ${pkg.name}@${pkg.version} ${adv.id}: ${adv.title} (patched: ${patched || 'none'})`;
+              if (hasPatch && process.env.ENFORCE_BLOCKERS === 'true') {
+                console.log(`::error title=Rust Dependency Release Blocker::${msg}`);
+              } else {
+                console.log(`::warning title=Rust Advisory (${tier})::${msg}`);
+              }
+            }
+
+            for (const w of warnings) {
+              const adv = w.advisory || {};
+              const pkg = w.package || {};
+              lines.push(`| \`${pkg.name || 'unknown'}\` | \`${pkg.version || ''}\` | \`${adv.id || w.kind || 'warning'}\` | **WARNING** | n/a |`);
+            }
+          } else {
+            lines.push('No known Rust dependency vulnerabilities or warnings reported.');
+          }
+
+          const summary = lines.join('\n') + '\n';
+          fs.writeFileSync('../audit-reports-rust/rust-summary.md', summary);
+          if (process.env.GITHUB_STEP_SUMMARY) {
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          }
+
+          if (blockerCount > 0 && process.env.ENFORCE_BLOCKERS === 'true') {
+            process.exit(1);
+          }
+          EOF
+
+      - name: Upload Rust audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-dependency-audit-report
+          path: audit-reports-rust/
+          retention-days: 14

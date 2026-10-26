@@ -117,3 +117,37 @@ gitleaks detect --source .
 - Use secret management services (e.g., AWS Secrets Manager, HashiCorp Vault) for production
 - Enable GitHub secret scanning in repository settings (enabled by default on public repos)
 - Review the [GitHub Secret Scanning documentation](https://docs.github.com/en/code-security/secret-scanning)
+
+## Dependency auditing & advisory triage
+
+Continuous integration runs `.github/workflows/dependency-audit.yml` across both the JavaScript/TypeScript workspaces (`pnpm audit` at the repo root and `npm audit` in `apps/frontend`) and the Rust Soroban workspace (`cargo audit` in `contracts/`).
+
+### Running audits locally
+
+```bash
+# Workspace JavaScript/TypeScript packages (apps/backend, packages/*)
+pnpm audit
+
+# Frontend application (apps/frontend)
+cd apps/frontend && npm audit
+
+# Soroban smart contracts (contracts/*)
+cd contracts && cargo audit
+```
+
+### Warnings vs. release blockers
+
+To avoid blocking unrelated pull requests on newly disclosed upstream transitive advisories while maintaining a strict release gate, findings are classified into two tiers:
+
+| Classification | Criteria | CI & release behavior |
+| --- | --- | --- |
+| **Warning** | `low`, `moderate`, or `high` JS advisories; `unmaintained` / informational Rust advisories; or advisories with no upstream patch yet | Emitted as CI `::warning::` annotations and included in the workflow step summary and JSON artifacts without failing unrelated PRs. Triaged during weekly maintenance. |
+| **Release blocker** | `critical` runtime vulnerabilities or Rust soundness/security advisories where a patched version exists | Highlighted as **RELEASE BLOCKER** in the audit report (and fails the workflow when `enforce_blockers: true` is triggered prior to cutting a release). Must be patched or explicitly mitigated before release. |
+
+### Triage & upgrade ownership
+
+| Domain / Lockfile | Primary Owners | Remediation workflow |
+| --- | --- | --- |
+| `pnpm-lock.yaml` (`apps/backend/`, `packages/*`) | Backend & SDK maintainers | Upgrade the affected package in the workspace manifest, regenerate `pnpm-lock.yaml`, and verify with `pnpm build && pnpm test:all`. |
+| `apps/frontend/package-lock.json` (`apps/frontend/`) | Frontend maintainers | Upgrade the dependency in `apps/frontend/package.json`, run `npm install`, and verify with `npm run lint && npx tsc --noEmit && npx vite build`. |
+| `contracts/Cargo.lock` (`contracts/*`) | Smart-contract maintainers | Run `cargo update -p <crate>` in `contracts/` (or bump the version in `contracts/Cargo.toml`) and verify with `cargo test --workspace`. |
