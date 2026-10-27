@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm --filter @chenaikit/core --filter @chenaikit/oracle-node run build && tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "test": "vitest run",
-    "lint": "eslint ."
+    "test": "pnpm --filter @chenaikit/core --filter @chenaikit/oracle-node run build && vitest run",
+    "lint": "pnpm --filter @chenaikit/core --filter @chenaikit/oracle-node run build && eslint ."
   },
   "dependencies": {
     "@chenaikit/core": "workspace:*",

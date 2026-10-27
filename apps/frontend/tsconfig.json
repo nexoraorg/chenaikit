@@ -14,7 +14,10 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@chenaikit/core": ["../../packages/core/src/index.ts"]
+    }
   },
   "include": ["src"]
 }

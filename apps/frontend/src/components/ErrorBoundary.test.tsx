@@ -138,4 +138,25 @@ describe("ErrorBoundary", () => {
 
     expect(screen.getByText("custom: kaboom")).toBeInTheDocument();
   });
+
+  it("displays structured API error message and requestId when error wraps an ApiErrorPayload", () => {
+    function ApiFailureBomb(): JSX.Element {
+      throw Object.assign(new Error("transport failed"), {
+        cause: {
+          error: "internal_error",
+          message: "Upstream oracle service unavailable.",
+          requestId: "req-trace-999",
+        },
+      });
+    }
+
+    render(
+      <ErrorBoundary>
+        <ApiFailureBomb />
+      </ErrorBoundary>,
+    );
+
+    expect(screen.getByText("Upstream oracle service unavailable.")).toBeInTheDocument();
+    expect(screen.getByText("Request ID: req-trace-999")).toBeInTheDocument();
+  });
 });

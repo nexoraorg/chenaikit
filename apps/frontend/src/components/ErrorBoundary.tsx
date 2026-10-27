@@ -1,4 +1,8 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { normalizeClientError } from "@chenaikit/core";
+
+const PROD_FALLBACK_MESSAGE =
+  "This part of the page hit an unexpected error. Try again, or reload the page.";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -52,14 +56,18 @@ export class ErrorBoundary extends Component<
       return this.props.fallback(error, this.retry);
     }
 
+    const normalized = normalizeClientError(error, {
+      exposeErrorMessage: !import.meta.env.PROD,
+      fallbackMessage: PROD_FALLBACK_MESSAGE,
+    });
+
     return (
       <div className="error-boundary" role="alert">
         <p className="error-boundary-title">Something went wrong.</p>
-        <p className="error-boundary-desc">
-          {import.meta.env.PROD
-            ? "This part of the page hit an unexpected error. Try again, or reload the page."
-            : error.message}
-        </p>
+        <p className="error-boundary-desc">{normalized.message}</p>
+        {normalized.requestId ? (
+          <p className="error-boundary-request-id">Request ID: {normalized.requestId}</p>
+        ) : null}
         <div className="error-boundary-actions">
           <button className="btn primary" onClick={this.retry}>
             Try again

@@ -1,5 +1,3 @@
-import { app } from "./app.js";
-
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import { apiLimiter } from "./middleware/rateLimiter.js";
@@ -36,5 +34,12 @@ const server = app.listen(port, () => {
   console.log(`[backend] listening on :${port}`);
 });
 
-export { app } from "./app.js";
-export { prisma } from "./db.js";
+const shutdown = createGracefulShutdown({
+  server,
+  disconnect: () => prisma.$disconnect(),
+  timeoutMs: shutdownTimeoutMs,
+});
+
+registerShutdownSignals(shutdown);
+
+export { app, server, prisma };

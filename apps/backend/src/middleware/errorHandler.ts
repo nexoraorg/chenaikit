@@ -1,21 +1,21 @@
 import { randomUUID } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
+import {
+  createApiErrorPayload,
+  toUnknownApiErrorPayload,
+  type ApiErrorPayload,
+} from "@chenaikit/core";
 import { AppError, mapPrismaError } from "../errors/index.js";
 
-export interface ErrorBody {
-  error: string;
-  message: string;
-  requestId?: string;
-  details?: Record<string, unknown>;
-}
+export type ErrorBody = ApiErrorPayload;
 
 export function buildErrorBody(err: AppError, requestId?: string): ErrorBody {
-  return {
+  return createApiErrorPayload({
     error: err.code,
     message: err.message,
-    ...(requestId ? { requestId } : {}),
-    ...(err.details ? { details: err.details } : {}),
-  };
+    requestId,
+    details: err.details,
+  });
 }
 
 interface ErrorLogEvent {
@@ -72,11 +72,7 @@ export function createErrorHandler(options: ErrorHandlerOptions = {}) {
 
     const requestId = req.id ?? randomUUID();
     log({ requestId, method: req.method, path: req.path, statusCode: 500, error: err });
-    res.status(500).json({
-      error: "internal_error",
-      message: "An unexpected error occurred. Contact support with the request ID below if this persists.",
-      requestId,
-    });
+    res.status(500).json(toUnknownApiErrorPayload(err, { requestId }));
   };
 }
 

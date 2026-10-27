@@ -6,6 +6,7 @@ import { requestId } from "./requestId.js";
 import { asyncHandler } from "./asyncHandler.js";
 import { notFoundHandler } from "./notFoundHandler.js";
 import { createErrorHandler } from "./errorHandler.js";
+import { isApiErrorPayload } from "@chenaikit/core";
 import { ValidationError, NotFoundError, ConflictError } from "../errors/index.js";
 
 describe("centralized error handling", () => {
@@ -57,6 +58,7 @@ describe("centralized error handling", () => {
   it("returns a stable status code and safe body for a known validation error", async () => {
     const res = await request(app).get("/known/validation");
     expect(res.status).toBe(400);
+    expect(isApiErrorPayload(res.body)).toBe(true);
     expect(res.body).toEqual({
       error: "validation_error",
       message: "The 'amount' field must be a positive number.",
@@ -87,6 +89,7 @@ describe("centralized error handling", () => {
   it("returns a generic 500 with a request ID for an unexpected async error, without leaking the message or a stack trace", async () => {
     const res = await request(app).get("/unknown/async");
     expect(res.status).toBe(500);
+    expect(isApiErrorPayload(res.body)).toBe(true);
     expect(res.body.error).toBe("internal_error");
     expect(res.body.requestId).toEqual(expect.any(String));
     expect(res.body).not.toHaveProperty("stack");
