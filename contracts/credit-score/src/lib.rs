@@ -181,13 +181,22 @@ fn require_scorer(env: &Env, caller: &Address) -> Result<(), Error> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use soroban_sdk::testutils::Address as _;
+    use soroban_sdk::testutils::{Address as _, Ledger};
+
+    const INITIAL_LEDGER_TIME: u64 = 1_700_000_000;
+
+    fn set_time(env: &Env, timestamp: u64) {
+        env.ledger().with_mut(|info| {
+            info.timestamp = timestamp;
+        });
+    }
 
     fn factors(env: &Env) -> String {
         String::from_str(env, "base:100")
     }
 
     fn setup(env: &Env) -> (Address, Address, Address, ContractClient<'_>) {
+        set_time(env, INITIAL_LEDGER_TIME);
         let contract_id = env.register(Contract, ());
         let client = ContractClient::new(env, &contract_id);
         let admin = Address::generate(env);
@@ -261,12 +270,34 @@ mod test {
         let (_, scorer, _, client) = setup(&env);
         let subject = Address::generate(&env);
 
-        client.record_score(&scorer, &subject, &700, &factors(&env));
+        set_time(&env, 1_700_000_100);
+        let created = client.record_score(&scorer, &subject, &700, &factors(&env));
+        assert_eq!(created.updated_at, 1_700_000_100);
+
+        set_time(&env, 1_700_000_250);
         let updated = client.update_score(&scorer, &subject, &750, &factors(&env));
         assert_eq!(updated.value, 750);
+        assert_eq!(updated.updated_at, 1_700_000_250);
 
         let stored = client.get_score(&subject).unwrap();
         assert_eq!(stored.value, 750);
+        assert_eq!(stored.updated_at, 1_700_000_250);
+    }
+
+    #[test]
+    fn score_timestamps_cover_zero_and_u64_max_boundaries() {
+        let env = Env::default();
+        let (_, scorer, _, client) = setup(&env);
+        let subject = Address::generate(&env);
+
+        set_time(&env, 0);
+        let at_zero = client.record_score(&scorer, &subject, &600, &factors(&env));
+        assert_eq!(at_zero.updated_at, 0);
+
+        set_time(&env, u64::MAX);
+        let at_max = client.update_score(&scorer, &subject, &850, &factors(&env));
+        assert_eq!(at_max.updated_at, u64::MAX);
+        assert_eq!(client.get_score(&subject).unwrap().updated_at, u64::MAX);
     }
 
     #[test]

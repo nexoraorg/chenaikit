@@ -17,7 +17,7 @@ fn test_risk_score_never_exceeds_100() {
             &50_000, // Round amount above default max_single_amount of 10000
             &tx_type,
         );
-        assert!(score <= 100, "Score {} exceeded 100", score);
+        assert!(score <= 100, "Score {score} exceeded 100");
     }
 
     let final_score = fixture.client.get_risk_score(&fixture.user);
@@ -39,7 +39,7 @@ fn test_low_risk_transaction_scoring() {
     );
 
     // Normal single modest transaction should have a low risk score
-    assert!(score < 40, "Expected low score, got {}", score);
+    assert!(score < 40, "Expected low score, got {score}");
 }
 
 #[test]
@@ -58,7 +58,6 @@ fn test_large_amount_elevates_score() {
 
     assert!(
         score >= 30,
-        "Large amount should elevate score, got {}",
-        score
+        "Large amount should elevate score, got {score}"
     );
 }

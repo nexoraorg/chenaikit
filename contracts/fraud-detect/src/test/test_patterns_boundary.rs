@@ -1,6 +1,6 @@
 //! Tests for boundary behavior in pattern recognition heuristics.
 
-use super::setup_test_fixture;
+use super::{set_time, setup_test_fixture};
 use soroban_sdk::String;
 
 #[test]
@@ -120,5 +120,49 @@ fn test_address_repetition_triggers_at_five_transfers() {
     assert!(
         found_repetition,
         "Address repetition should trigger at 5 transfers"
+    );
+}
+
+#[test]
+fn test_velocity_window_exact_boundary_vs_one_second_expired() {
+    let fixture = setup_test_fixture();
+    let tx_type = String::from_str(&fixture.env, "velocity_boundary");
+    let velocity_indicator = String::from_str(
+        &fixture.env,
+        "High velocity: excessive transactions within time window",
+    );
+
+    // Record 10 transactions at t = 10_000 (default velocity_window = 3600s, threshold = 10)
+    set_time(&fixture.env, 10_000);
+    for _ in 0..10 {
+        fixture.client.analyze_transaction(
+            &fixture.user,
+            &fixture.from_addr,
+            &fixture.to_addr,
+            &100,
+            &tx_type,
+        );
+    }
+
+    // At t = 13_600 (exact upper edge of the 3600s window: window_start = 10_000),
+    // all 10 transactions remain inside [window_start, current_time].
+    set_time(&fixture.env, 13_600);
+    let indicators_at_edge = fixture.client.get_indicators(&fixture.user);
+    assert!(
+        indicators_at_edge
+            .iter()
+            .any(|ind| ind == velocity_indicator),
+        "Velocity indicator should remain active at exact window boundary (t = 13_600)"
+    );
+
+    // One second later at t = 13_601 (window_start = 10_001), all 10 transactions at t = 10_000
+    // have aged out of the window.
+    set_time(&fixture.env, 13_601);
+    let indicators_after_window = fixture.client.get_indicators(&fixture.user);
+    assert!(
+        !indicators_after_window
+            .iter()
+            .any(|ind| ind == velocity_indicator),
+        "Velocity indicator should expire one second past the velocity window (t = 13_601)"
     );
 }

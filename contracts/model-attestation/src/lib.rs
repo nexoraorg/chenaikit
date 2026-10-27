@@ -258,7 +258,18 @@ fn load_active(
 #[cfg(test)]
 mod test {
     use super::*;
-    use soroban_sdk::{testutils::Address as _, vec};
+    use soroban_sdk::{
+        testutils::{Address as _, Ledger},
+        vec,
+    };
+
+    const INITIAL_LEDGER_TIME: u64 = 1_700_000_000;
+
+    fn set_time(env: &Env, timestamp: u64) {
+        env.ledger().with_mut(|info| {
+            info.timestamp = timestamp;
+        });
+    }
 
     fn hash(env: &Env, fill: u8) -> BytesN<32> {
         BytesN::from_array(env, &[fill; 32])
@@ -269,6 +280,7 @@ mod test {
     }
 
     fn setup(env: &Env) -> (Address, Address, ContractClient<'_>) {
+        set_time(env, INITIAL_LEDGER_TIME);
         let contract_id = env.register(Contract, ());
         let client = ContractClient::new(env, &contract_id);
         let admin = Address::generate(env);
@@ -347,23 +359,37 @@ mod test {
         let (admin, _, client) = setup(&env);
         let id = record_id(&env, "model-d");
 
+        set_time(&env, 1_000);
         let created = client.create_attestation(&admin, &id, &hash(&env, 1));
         assert_eq!(created.status, AttestationStatus::Active);
         assert_eq!(created.version, 1);
+        assert_eq!(created.created_at, 1_000);
+        assert_eq!(created.updated_at, 1_000);
+        assert_eq!(created.invalidated_at, None);
 
+        set_time(&env, 2_500);
         let updated = client.update_attestation(&admin, &id, &hash(&env, 2), &1);
         assert_eq!(updated.status, AttestationStatus::Active);
         assert_eq!(updated.version, 2);
+        assert_eq!(updated.created_at, 1_000);
+        assert_eq!(updated.updated_at, 2_500);
+        assert_eq!(updated.invalidated_at, None);
 
+        set_time(&env, 4_000);
         let invalidated = client.invalidate_attestation(&admin, &id, &2);
         assert_eq!(invalidated.status, AttestationStatus::Invalidated);
         assert_eq!(invalidated.version, 2);
+        assert_eq!(invalidated.created_at, 1_000);
+        assert_eq!(invalidated.updated_at, 4_000);
+        assert_eq!(invalidated.invalidated_at, Some(4_000));
 
         let stored = client.get_attestation(&id).unwrap();
         assert_eq!(stored.status, AttestationStatus::Invalidated);
         assert_eq!(stored.version, 2);
         assert_eq!(stored.model_hash, hash(&env, 2));
-        assert!(stored.invalidated_at.is_some());
+        assert_eq!(stored.created_at, 1_000);
+        assert_eq!(stored.updated_at, 4_000);
+        assert_eq!(stored.invalidated_at, Some(4_000));
     }
 
     #[test]

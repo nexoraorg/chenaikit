@@ -51,7 +51,7 @@ impl GovernanceContract {
     pub fn create_proposal(env: Env, proposer: Address, description: String, end_time: u64) -> u64 {
         proposer.require_auth();
 
-        if description.len() == 0 {
+        if description.is_empty() {
             panic!("invalid proposal: description cannot be empty");
         }
 
@@ -220,6 +220,84 @@ mod test {
         client.init(&admin);
         env.ledger().with_mut(|li| li.timestamp = 1000);
         client.create_proposal(&proposer, &String::from_str(&env, "Prop"), &999);
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid proposal: end_time must be in the future")]
+    fn test_invalid_proposal_equal_start_and_end_time_boundary() {
+        let env = Env::default();
+        let admin = Address::generate(&env);
+        let proposer = Address::generate(&env);
+        let contract_id = env.register(GovernanceContract, ());
+        let client = GovernanceContractClient::new(&env, &contract_id);
+        env.mock_all_auths();
+        client.init(&admin);
+        env.ledger().with_mut(|li| li.timestamp = 1000);
+        client.create_proposal(&proposer, &String::from_str(&env, "Prop"), &1000);
+    }
+
+    #[test]
+    fn test_vote_succeeds_at_last_valid_second_and_finalizes_at_exact_end_time() {
+        let env = Env::default();
+        let admin = Address::generate(&env);
+        let proposer = Address::generate(&env);
+        let voter = Address::generate(&env);
+        let contract_id = env.register(GovernanceContract, ());
+        let client = GovernanceContractClient::new(&env, &contract_id);
+        env.mock_all_auths();
+        client.init(&admin);
+        client.add_voter(&admin, &voter);
+
+        env.ledger().with_mut(|li| li.timestamp = 1000);
+        let pid = client.create_proposal(&proposer, &String::from_str(&env, "Prop"), &2000);
+
+        // Last valid second before end_time (t = end_time - 1 = 1999).
+        env.ledger().with_mut(|li| li.timestamp = 1999);
+        client.vote(&voter, &pid, &true);
+
+        // Exact end_time boundary (t = end_time = 2000) allows finalization.
+        env.ledger().with_mut(|li| li.timestamp = 2000);
+        client.finalize(&admin, &pid);
+    }
+
+    #[test]
+    #[should_panic(expected = "voting is closed")]
+    fn test_vote_rejected_at_exact_end_time_boundary() {
+        let env = Env::default();
+        let admin = Address::generate(&env);
+        let proposer = Address::generate(&env);
+        let voter = Address::generate(&env);
+        let contract_id = env.register(GovernanceContract, ());
+        let client = GovernanceContractClient::new(&env, &contract_id);
+        env.mock_all_auths();
+        client.init(&admin);
+        client.add_voter(&admin, &voter);
+
+        env.ledger().with_mut(|li| li.timestamp = 1000);
+        let pid = client.create_proposal(&proposer, &String::from_str(&env, "Prop"), &2000);
+
+        // At current_time == end_time (2000), voting is already closed.
+        env.ledger().with_mut(|li| li.timestamp = 2000);
+        client.vote(&voter, &pid, &true);
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot finalize before end_time")]
+    fn test_finalize_rejected_one_second_before_end_time_boundary() {
+        let env = Env::default();
+        let admin = Address::generate(&env);
+        let proposer = Address::generate(&env);
+        let contract_id = env.register(GovernanceContract, ());
+        let client = GovernanceContractClient::new(&env, &contract_id);
+        env.mock_all_auths();
+        client.init(&admin);
+
+        env.ledger().with_mut(|li| li.timestamp = 1000);
+        let pid = client.create_proposal(&proposer, &String::from_str(&env, "Prop"), &2000);
+
+        // At current_time == end_time - 1 (1999), finalization must still panic.
+        env.ledger().with_mut(|li| li.timestamp = 1999);
+        client.finalize(&admin, &pid);
     }
 
     #[test]

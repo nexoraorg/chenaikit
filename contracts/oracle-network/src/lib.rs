@@ -404,6 +404,21 @@ mod test {
     }
 
     #[test]
+    fn one_second_past_threshold_age_is_rejected_as_stale() {
+        let env = Env::default();
+        let (admin, client) = setup(&env);
+        let (a, b) = register_pair(&env, &admin, &client);
+        let id = feed(&env);
+
+        set_time(&env, 10_000);
+        let just_stale = 10_000 - STALE_THRESHOLD_SECS - 1;
+        client.submit_reading(&a, &id, &100, &just_stale);
+        client.submit_reading(&b, &id, &100, &just_stale);
+
+        assert_eq!(client.try_aggregate(&id), Err(Ok(Error::StaleData)));
+    }
+
+    #[test]
     fn agreeing_fresh_sources_aggregate_to_median() {
         let env = Env::default();
         let (admin, client) = setup(&env);

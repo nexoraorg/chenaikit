@@ -82,7 +82,7 @@ fn test_fraud_alert_emitted_when_threshold_exceeded() {
         &tx_type,
     );
 
-    assert!(score >= 20, "Score {} should meet threshold 20", score);
+    assert!(score >= 20, "Score {score} should meet threshold 20");
 
     let events = fixture.env.events().all();
     let mut found_event = false;

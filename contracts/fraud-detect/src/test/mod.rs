@@ -1,7 +1,18 @@
 //! Fraud detection validation and boundary test suite.
 
 use crate::{Contract, ContractClient};
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger as _},
+    Address, Env,
+};
+
+pub const INITIAL_LEDGER_TIME: u64 = 1_700_000_000;
+
+pub fn set_time(env: &Env, timestamp: u64) {
+    env.ledger().with_mut(|li| {
+        li.timestamp = timestamp;
+    });
+}
 
 pub mod test_boundary_config;
 pub mod test_concurrency_sim;
@@ -28,6 +39,7 @@ pub struct TestFixture<'a> {
 pub fn setup_test_fixture() -> TestFixture<'static> {
     let env = Env::default();
     env.mock_all_auths();
+    set_time(&env, INITIAL_LEDGER_TIME);
 
     let contract_id = env.register(Contract, ());
     let client = ContractClient::new(&env, &contract_id);
