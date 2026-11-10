@@ -39,6 +39,8 @@ chenaikit/
 
 ## Getting started
 
+For complete prerequisites, environment variable configuration, and pre-PR CI validation commands across monorepo services, see the **[Local Development Workflow Guide](docs/contributing/local-development.md)**.
+
 ```bash
 pnpm install
 pnpm build
